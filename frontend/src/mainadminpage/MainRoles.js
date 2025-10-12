@@ -40,10 +40,10 @@ function MainRoles() {
 
           <div className="bg-light p-4 border-bottom text-center mb-4 shadow-sm">
             <div className="d-flex justify-content-between align-items-center mb-4">
-              <h4 className="mb-0">Admins</h4>
+              <h4 className="mb-0">Roles</h4>
               <div>
                 <button className="btn btn-outline-secondary me-2">
-                  <Plus /> Add Admin
+                  <Plus /> Add Role
                 </button>
               </div>
             </div>
@@ -57,21 +57,18 @@ function MainRoles() {
                   <tr>
                     <th>#</th>
                     <th>Full Name</th>
-                    <th>Role</th>
                     <th>Assigned Document</th>
-                    <th>Status</th>
-                    <th>Created Date</th>
+                    <th>Role</th>
                     <th>Action</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr>
-                    <td>1</td>
-                    <td>Paiz</td>
-                    <td>Admin</td>
-                    <td>All</td>
-                    <td>Active</td>
-                    <td>00-00-000</td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    
                     <td>
                       <button className="btn btn-sm">
                         <Pencil className="text-primary" />
@@ -85,6 +82,7 @@ function MainRoles() {
               </table>
             </div>
           </div>
+          
         </div>
       </MainSideBar>
     </>

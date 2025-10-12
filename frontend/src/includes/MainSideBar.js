@@ -150,7 +150,12 @@ function MainSideBar({ children }) {
       icon: History,
       path: "/oabps/main/transactions",
     },
-
+    {
+      id: "roles",
+      label: "Roles",
+      icon: User,
+      path: "/oabps/main/roles",
+    },
     {
       id: "users",
       label: "Users",
@@ -158,9 +163,9 @@ function MainSideBar({ children }) {
       path: "/users",
       children: [
         {
-          id: "admin",
+          id: "admins",
           label: "Admins",
-          path: "/oabps/main/roles",
+          path: "/oabps/main/admins",
         },
         {
           id: "owners",

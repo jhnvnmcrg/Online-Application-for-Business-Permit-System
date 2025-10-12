@@ -33,7 +33,7 @@ const upload = multer({
 // Register main admin endpoint
 app.post("/api/main/register", async (req, res) => {
   try {
-    const { fullname, email, username, password } = req.body;
+    const { fullname, email, username, password, status } = req.body;
 
     // Validation
     if (!fullname || !email || !username || !password) {
@@ -91,6 +91,7 @@ app.post("/api/main/register", async (req, res) => {
           email,
           username,
           password: hashedPassword,
+          status: status || "active",
         },
       ])
       .select();
