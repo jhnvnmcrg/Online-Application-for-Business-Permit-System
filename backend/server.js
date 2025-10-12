@@ -1641,34 +1641,53 @@ app.post("/api/role/add", async (req, res) => {
       });
     }
 
-    // For Superadmin, use "all" as category_id
-    const finalCategoryId = role_name === "Superadmin" ? "all" : category_id;
+    // Check if Superadmin role already exists for this admin
+    if (role_name === "Superadmin") {
+      const { data: existingSuperadmin } = await supabase
+        .from("Assigned Roles")
+        .select("role_id")
+        .eq("admin_id", admin_id)
+        .eq("role_name", "Superadmin")
+        .single();
 
-    // Check if role already exists for this admin and category
-    const { data: existingRole } = await supabase
-      .from("Assigned Roles")
-      .select("role_id")
-      .eq("admin_id", admin_id)
-      .eq("category_id", finalCategoryId)
-      .single();
+      if (existingSuperadmin) {
+        return res.status(400).json({
+          success: false,
+          error: "This admin already has a Superadmin role",
+        });
+      }
+    } else {
+      // Check if role already exists for this admin and category (for Processor)
+      const { data: existingRole } = await supabase
+        .from("Assigned Roles")
+        .select("role_id")
+        .eq("admin_id", admin_id)
+        .eq("category_id", category_id)
+        .single();
 
-    if (existingRole) {
-      return res.status(400).json({
-        success: false,
-        error: "This admin already has a role for this category",
-      });
+      if (existingRole) {
+        return res.status(400).json({
+          success: false,
+          error: "This admin already has a role for this category",
+        });
+      }
+    }
+
+    // Prepare insert data
+    const insertData = {
+      admin_id,
+      role_name,
+    };
+
+    // Only add category_id if role is Processor
+    if (role_name === "Processor") {
+      insertData.category_id = category_id;
     }
 
     // Insert role into database
     const { data, error } = await supabase
       .from("Assigned Roles")
-      .insert([
-        {
-          category_id: finalCategoryId,
-          admin_id,
-          role_name,
-        },
-      ])
+      .insert([insertData])
       .select();
 
     if (error) {

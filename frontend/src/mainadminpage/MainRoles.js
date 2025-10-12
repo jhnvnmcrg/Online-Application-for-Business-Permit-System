@@ -105,7 +105,7 @@ function MainRoles() {
   const handleRoleNameChange = (value) => {
     setRoleName(value);
     if (value === "Superadmin") {
-      setCategoryId("all");
+      setCategoryId(null);
     } else {
       setCategoryId("");
     }
@@ -117,13 +117,20 @@ function MainRoles() {
     setLoading(true);
 
     try {
+      // Prepare request data - only include category_id for Processor
+      const requestData = {
+        admin_id: adminId,
+        role_name: roleName,
+      };
+
+      // Only add category_id if role is Processor
+      if (roleName === "Processor") {
+        requestData.category_id = categoryId;
+      }
+
       const response = await axios.post(
         "https://oabs-f7by.onrender.com/api/role/add",
-        {
-          category_id: categoryId,
-          admin_id: adminId,
-          role_name: roleName,
-        }
+        requestData
       );
 
       if (response.data.success) {
@@ -185,7 +192,13 @@ function MainRoles() {
                       <tr key={role.role_id}>
                         <td>{index + 1}</td>
                         <td>{role.admin_fullname || "N/A"}</td>
-                        <td>{role.category_name || "N/A"}</td>
+                        <td>
+                          {role.category_id === null ||
+                           role.category_name === null ||
+                           role.category_name === "Unknown"
+                            ? <span className="badge bg-secondary">All</span>
+                            : role.category_name}
+                        </td>
                         <td>
                           <span
                             className={`badge ${
