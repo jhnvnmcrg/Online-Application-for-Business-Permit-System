@@ -127,7 +127,7 @@ function UserLogin() {
                     Create a new account
                   </Link>
                   <Link
-                    to="/forgot/user"
+                    to="/oabps/user/forgot"
                     className="text-decoration-none"
                     style={{ color: "#dc3545" }}
                   >

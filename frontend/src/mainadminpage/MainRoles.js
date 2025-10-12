@@ -193,11 +193,9 @@ function MainRoles() {
                         <td>{index + 1}</td>
                         <td>{role.admin_fullname || "N/A"}</td>
                         <td>
-                          {role.category_id === null ||
-                           role.category_name === null ||
-                           role.category_name === "Unknown"
+                          {!role.category_id || role.category_id === null
                             ? <span className="badge bg-secondary">All</span>
-                            : role.category_name}
+                            : role.category_name || "N/A"}
                         </td>
                         <td>
                           <span

@@ -1595,7 +1595,9 @@ app.get("/api/role/all", async (req, res) => {
       ...role,
       admin_fullname: role.Admins?.fullname || "Unknown",
       admin_username: role.Admins?.username || "Unknown",
-      category_name: role["Document Categories"]?.category_name || "Unknown",
+      category_name: role.category_id === null || !role.category_id
+        ? null
+        : (role["Document Categories"]?.category_name || null),
     }));
 
     res.status(200).json({

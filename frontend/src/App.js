@@ -17,12 +17,9 @@ import MainLogAudits from './mainadminpage/MainLogAudits'
 
 import UserRegister from './userpages/components/UserRegister'
 import UserLogin from './userpages/components/UserLogin'
+import UserForgot from './userpages/components/UserForgot'
 
 // --------------------------------------------------------
-
-import Loginfinal from './userpages/components/Loginfinal'
-import Creatw from './userpages/components/Creatw'
-import Forgot from './userpages/components/Forgot'
 
 import Home from './pages/Home'
 import Requirements from './pages/Requirements'
@@ -64,14 +61,10 @@ function App() {
 
         <Route path='/oabps/user/register' element={<UserRegister/>}></Route>
         <Route path='/oabps/user/login' element={<UserLogin/>}></Route>
+        <Route path='/oabps/user/forgot' element={<UserForgot/>}></Route>
 
         {/* ----------------------------------------------------------- */}
 
-        <Route path='/loginfinal/user' element={<Loginfinal/>}></Route>
-        <Route path='/create/user' element={<Creatw/>}></Route>
-        <Route path='/forgot/user' element={<Forgot/>}></Route>
-
-        
 
         <Route path='/' element={<Home/>}></Route>
         <Route path='/home' element={<Home/>}></Route>

@@ -30,7 +30,7 @@ function MainLogAudits() {
     <>
       <MainSideBar>
         <div className="container-fluid p-4">
-            <h2 className="display-5 fw-bold text-dark mb-2">Welcome, {username}!</h2>
+            
           {/* Header */}
 
           <div className="bg-light p-4 border-bottom text-center mb-4 shadow-sm">
@@ -59,29 +59,18 @@ function MainLogAudits() {
                 <thead className="table-light">
                   <tr>
                     <th>#</th>
-                    <th>Username</th>
-                    <th>Role</th>
-                    <th>Assigned Document</th>
+                    <th>Full Name</th>
                     <th>Status</th>
                     <th>Log Date</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr>
-                    <td>1</td>
-                    <td>Paiz</td>
-                    <td>Main Admin</td>
-                    <td>All</td>
-                    <td>Success</td>
-                    <td>00-00-0000</td>
-                  </tr>
-                  <tr>
-                    <td>2</td>
-                    <td>Simpz</td>
-                    <td>Sub Admin</td>
-                    <td>Barangay Clearance</td>
-                    <td>Failed</td>
-                    <td>00-00-0000</td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    
                   </tr>
                 </tbody>
               </table>

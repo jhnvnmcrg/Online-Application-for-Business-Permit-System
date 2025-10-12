@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { Eye, EyeOff } from "lucide-react";
 
-export default function KoronadalRegister() {
+function UserForgot() {
+  const [showPassword, setShowPassword] = useState(false);
+  const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
   const [formData, setFormData] = useState({
-    username: "",
-    password: "",
-    retypePassword: "",
     email: "",
   });
   const [agreeToPolicy, setAgreeToPolicy] = useState(false);
@@ -18,23 +20,14 @@ export default function KoronadalRegister() {
     }));
   };
 
-  const handleCreateAccount = (e) => {
+  const handleForgotAccount = (e) => {
     e.preventDefault();
-
-    if (formData.password !== formData.retypePassword) {
-      alert("Passwords do not match!");
-      return;
-    }
-
-    if (!agreeToPolicy) {
-      alert("Please agree to the Privacy Policy to continue.");
-      return;
-    }
-
-    console.log("Account creation attempted with:", formData);
-    alert("Account created successfully!");
   };
 
+  const handleCancel = () => {
+    console.log("Registration cancelled");
+    alert("Forgot cancelled. Returning to login page.");
+  };
   return (
     <>
       <div className="min-vh-100 position-relative overflow-hidden">
@@ -43,10 +36,12 @@ export default function KoronadalRegister() {
           <div className="card shadow-lg login-card">
             <div className="card-body p-4">
               <div className="text-center mb-4">
-                <div className="mx-auto mb-3 d-flex align-items-center justify-content-center rounded-circle border border-4 login-logo"></div>
-                <h4 className="fw-semibold text-dark mb-1">
-                  Create a new Account
-                </h4>
+                <div className="mx-auto mb-3 d-flex align-items-center justify-content-center rounded-circle border border-4 login-logo">
+                  <div className="logo-circle w-100 h-100">
+                    <div className="logo-inner w-50 h-50"></div>
+                  </div>
+                </div>
+                <h4 className="fw-semibold text-dark mb-1">Forgot Password</h4>
                 <p className="text-muted mb-4" style={{ fontSize: "14px" }}>
                   Online Business Permit & Licensing System
                 </p>
@@ -62,71 +57,69 @@ export default function KoronadalRegister() {
                     onChange={handleInputChange}
                     required
                   />
+                  
                 </div>
-                <div className="mb-3">
+                <div className="mb-3 position-relative">
                   <input
-                    type="text"
+                    type={showPassword ? "text" : "password"}
                     className="form-control"
-                    name="username"
-                    placeholder="Username"
-                    value={formData.username}
-                    onChange={handleInputChange}
+                    placeholder="New Password"
+                    value={password}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      setError("");
+                    }}
                     required
+                    disabled={isLoading}
+                    style={{ paddingRight: "40px" }}
                   />
-                </div>
-                <div className="mb-3">
-                  <input
-                    type="password"
-                    className="form-control"
-                    name="password"
-                    placeholder="Password"
-                    value={formData.password}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-                <div className="mb-3">
-                  <input
-                    type="password"
-                    className="form-control"
-                    name="retypePassword"
-                    placeholder="Retype Password"
-                    value={formData.retypePassword}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-
-                <div className="form-check mb-4">
-                  <input
-                    type="checkbox"
-                    className="form-check-input"
-                    id="agreePolicy"
-                    checked={agreeToPolicy}
-                    onChange={(e) => setAgreeToPolicy(e.target.checked)}
-                  />
-                  <label
-                    className="form-check-label"
-                    htmlFor="agreePolicy"
-                    style={{ fontSize: "14px" }}
+                  <button
+                    type="button"
+                    className="btn btn-link position-absolute end-0 top-50 translate-middle-y"
+                    onClick={() => setShowPassword(!showPassword)}
+                    disabled={isLoading}
+                    style={{
+                      border: "none",
+                      background: "none",
+                      padding: "0 10px",
+                      color: "#6c757d",
+                    }}
                   >
-                    I agree and accept to the{" "}
-                    <a
-                      href="#"
-                      className="text-decoration-none fw-bold"
-                      style={{ color: "#dc3545" }}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        alert("Privacy Policy would be displayed here.");
-                      }}
-                    >
-                      PRIVACY POLICY
-                    </a>
-                  </label>
+                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
+                </div>
+                <div className="mb-3 position-relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    className="form-control"
+                    placeholder="Confirm Password"
+                    value={password}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      setError("");
+                    }}
+                    required
+                    disabled={isLoading}
+                    style={{ paddingRight: "40px" }}
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-link position-absolute end-0 top-50 translate-middle-y"
+                    onClick={() => setShowPassword(!showPassword)}
+                    disabled={isLoading}
+                    style={{
+                      border: "none",
+                      background: "none",
+                      padding: "0 10px",
+                      color: "#6c757d",
+                    }}
+                  >
+                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
                 </div>
                 <div className="d-flex gap-3">
                   <Link
-                    to="/loginfinal/user"
+                    to="/oabps/user/login"
                     className="btn border flex-fill"
                     style={{
                       color: "#dc3545",
@@ -154,7 +147,7 @@ export default function KoronadalRegister() {
                       (e.target.style.backgroundColor = "#dc3545")
                     }
                   >
-                    CREATE ACCOUNT
+                    FORGOT PASSWORD
                   </button>
                 </div>
               </div>
@@ -165,3 +158,5 @@ export default function KoronadalRegister() {
     </>
   );
 }
+
+export default UserForgot;
