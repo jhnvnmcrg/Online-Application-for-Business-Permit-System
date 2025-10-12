@@ -1,5 +1,5 @@
 import MainSideBar from "../includes/MainSideBar";
-import { Plus, Trash, Pencil } from "lucide-react";
+import { Plus, Trash, Pencil, Eye, EyeOff } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -22,6 +22,7 @@ function MainAdmins() {
   const [password, setPassword] = useState("");
   const [status, setStatus] = useState("active");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   // Edit Admin Modal States
   const [showEditModal, setShowEditModal] = useState(false);
@@ -29,7 +30,9 @@ function MainAdmins() {
   const [editFullname, setEditFullname] = useState("");
   const [editEmail, setEditEmail] = useState("");
   const [editUsername, setEditUsername] = useState("");
+  const [editPassword, setEditPassword] = useState("");
   const [editStatus, setEditStatus] = useState("active");
+  const [showEditPassword, setShowEditPassword] = useState(false);
 
   // Delete Admin Modal States
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -81,6 +84,7 @@ function MainAdmins() {
     setAdminUsername("");
     setPassword("");
     setStatus("active");
+    setShowPassword(false);
     setShowAddModal(true);
   };
 
@@ -92,6 +96,7 @@ function MainAdmins() {
     setAdminUsername("");
     setPassword("");
     setStatus("active");
+    setShowPassword(false);
   };
 
   // Handle Add Admin Submit
@@ -132,7 +137,9 @@ function MainAdmins() {
     setEditFullname(admin.fullname);
     setEditEmail(admin.email);
     setEditUsername(admin.username);
+    setEditPassword("");
     setEditStatus(admin.status || "active");
+    setShowEditPassword(false);
     setShowEditModal(true);
   };
 
@@ -143,7 +150,9 @@ function MainAdmins() {
     setEditFullname("");
     setEditEmail("");
     setEditUsername("");
+    setEditPassword("");
     setEditStatus("active");
+    setShowEditPassword(false);
   };
 
   // Handle Edit Admin Submit
@@ -152,14 +161,21 @@ function MainAdmins() {
     setLoading(true);
 
     try {
+      const updateData = {
+        fullname: editFullname,
+        email: editEmail,
+        username: editUsername,
+        status: editStatus,
+      };
+
+      // Only include password if it's provided
+      if (editPassword && editPassword.trim() !== "") {
+        updateData.password = editPassword;
+      }
+
       const response = await axios.put(
         `https://oabs-f7by.onrender.com/api/admin/update/${editAdminId}`,
-        {
-          fullname: editFullname,
-          email: editEmail,
-          username: editUsername,
-          status: editStatus,
-        }
+        updateData
       );
 
       if (response.data.success) {
@@ -365,15 +381,28 @@ function MainAdmins() {
                       <label htmlFor="password" className="form-label">
                         Password
                       </label>
-                      <input
-                        type="password"
-                        className="form-control form-control-lg"
-                        id="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                        disabled={loading}
-                      />
+                      <div className="position-relative">
+                        <input
+                          type={showPassword ? "text" : "password"}
+                          className="form-control form-control-lg"
+                          id="password"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          required
+                          disabled={loading}
+                          style={{ paddingRight: "45px" }}
+                        />
+                        <button
+                          type="button"
+                          className="btn btn-link position-absolute"
+                          style={{ right: "5px", top: "50%", transform: "translateY(-50%)" }}
+                          onClick={() => setShowPassword(!showPassword)}
+                          disabled={loading}
+                          tabIndex="-1"
+                        >
+                          {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                        </button>
+                      </div>
                     </div>
 
                     
@@ -464,6 +493,37 @@ function MainAdmins() {
                         required
                         disabled={loading}
                       />
+                    </div>
+
+                    <div className="mb-3">
+                      <label htmlFor="editPassword" className="form-label">
+                        New Password
+                      </label>
+                      <div className="position-relative">
+                        <input
+                          type={showEditPassword ? "text" : "password"}
+                          className="form-control form-control-lg"
+                          id="editPassword"
+                          value={editPassword}
+                          onChange={(e) => setEditPassword(e.target.value)}
+                          
+                          disabled={loading}
+                          style={{ paddingRight: "45px" }}
+                        />
+                        <button
+                          type="button"
+                          className="btn btn-link position-absolute"
+                          style={{ right: "5px", top: "50%", transform: "translateY(-50%)" }}
+                          onClick={() => setShowEditPassword(!showEditPassword)}
+                          disabled={loading}
+                          tabIndex="-1"
+                        >
+                          {showEditPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                        </button>
+                      </div>
+                      <small className="text-muted">
+                        *Leave empty if you don't want to change the password
+                      </small>
                     </div>
 
                     <div className="mb-3">
