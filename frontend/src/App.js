@@ -10,7 +10,7 @@ import MainDocForms from './mainadminpage/MainDocForms'
 import MainRequests from './mainadminpage/MainRequests'
 import MainPayments from './mainadminpage/MainPayments'
 import MainTrasanctions from './mainadminpage/MainTrasanctions'
-import MainRoles from './mainadminpage/MainRoles'
+import MainAssign from './mainadminpage/MainAssign'
 import MainAdmins from './mainadminpage/MainAdmins'
 import MainUsers from './mainadminpage/MainUsers'
 import MainLogAudits from './mainadminpage/MainLogAudits'
@@ -54,7 +54,7 @@ function App() {
         <Route path='/oabps/main/requests' element={<MainRequests/>}></Route>
         <Route path='/oabps/main/payments' element={<MainPayments/>}></Route>
         <Route path='/oabps/main/transactions' element={<MainTrasanctions/>}></Route>
-        <Route path='/oabps/main/roles' element={<MainRoles/>}></Route>
+        <Route path='/oabps/main/assign' element={<MainAssign/>}></Route>
         <Route path='/oabps/main/admins' element={<MainAdmins/>}></Route>
         <Route path='/oabps/main/users' element={<MainUsers/>}></Route>
         <Route path='/oabps/main/logaudits' element={<MainLogAudits/>}></Route>

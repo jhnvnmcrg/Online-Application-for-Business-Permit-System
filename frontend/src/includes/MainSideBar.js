@@ -151,10 +151,10 @@ function MainSideBar({ children }) {
       path: "/oabps/main/transactions",
     },
     {
-      id: "roles",
-      label: "Roles",
+      id: "assign",
+      label: "Assign Roles",
       icon: User,
-      path: "/oabps/main/roles",
+      path: "/oabps/main/assign",
     },
     {
       id: "users",

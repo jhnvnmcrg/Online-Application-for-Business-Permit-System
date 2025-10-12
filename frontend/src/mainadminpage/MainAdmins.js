@@ -20,6 +20,7 @@ function MainAdmins() {
   const [email, setEmail] = useState("");
   const [adminUsername, setAdminUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [role, setRole] = useState("Processor");
   const [status, setStatus] = useState("active");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -31,6 +32,7 @@ function MainAdmins() {
   const [editEmail, setEditEmail] = useState("");
   const [editUsername, setEditUsername] = useState("");
   const [editPassword, setEditPassword] = useState("");
+  const [editRole, setEditRole] = useState("Processor");
   const [editStatus, setEditStatus] = useState("active");
   const [showEditPassword, setShowEditPassword] = useState(false);
 
@@ -83,6 +85,7 @@ function MainAdmins() {
     setEmail("");
     setAdminUsername("");
     setPassword("");
+    setRole("Processor");
     setStatus("active");
     setShowPassword(false);
     setShowAddModal(true);
@@ -95,6 +98,7 @@ function MainAdmins() {
     setEmail("");
     setAdminUsername("");
     setPassword("");
+    setRole("Processor");
     setStatus("active");
     setShowPassword(false);
   };
@@ -112,6 +116,7 @@ function MainAdmins() {
           email,
           username: adminUsername,
           password,
+          role,
           status,
         }
       );
@@ -138,6 +143,7 @@ function MainAdmins() {
     setEditEmail(admin.email);
     setEditUsername(admin.username);
     setEditPassword("");
+    setEditRole(admin.role || "Processor");
     setEditStatus(admin.status || "active");
     setShowEditPassword(false);
     setShowEditModal(true);
@@ -151,6 +157,7 @@ function MainAdmins() {
     setEditEmail("");
     setEditUsername("");
     setEditPassword("");
+    setEditRole("Processor");
     setEditStatus("active");
     setShowEditPassword(false);
   };
@@ -165,6 +172,7 @@ function MainAdmins() {
         fullname: editFullname,
         email: editEmail,
         username: editUsername,
+        role: editRole,
         status: editStatus,
       };
 
@@ -260,6 +268,7 @@ function MainAdmins() {
                     <th>Full Name</th>
                     <th>Email</th>
                     <th>Username</th>
+                    <th>Role</th>
                     <th>Status</th>
                     <th>Action</th>
                   </tr>
@@ -267,7 +276,7 @@ function MainAdmins() {
                 <tbody>
                   {admins.length === 0 ? (
                     <tr>
-                      <td colSpan="6" className="text-center text-muted">
+                      <td colSpan="7" className="text-center text-muted">
                         No admins found
                       </td>
                     </tr>
@@ -278,6 +287,17 @@ function MainAdmins() {
                         <td>{admin.fullname}</td>
                         <td>{admin.email}</td>
                         <td>{admin.username}</td>
+                        <td>
+                          <span
+                            className={`badge ${
+                              admin.role === "Superadmin"
+                                ? "bg-primary"
+                                : "bg-info"
+                            }`}
+                          >
+                            {admin.role || "Processor"}
+                          </span>
+                        </td>
                         <td>
                           <span
                             className={`badge ${
@@ -405,7 +425,23 @@ function MainAdmins() {
                       </div>
                     </div>
 
-                    
+                    <div className="mb-3">
+                      <label htmlFor="role" className="form-label">
+                        Role
+                      </label>
+                      <select
+                        className="form-select form-select-lg"
+                        id="role"
+                        value={role}
+                        onChange={(e) => setRole(e.target.value)}
+                        disabled={loading}
+                      >
+                        <option value="Processor">Processor</option>
+                        <option value="Superadmin">Superadmin</option>
+                      </select>
+                    </div>
+
+
                   </div>
                   <div className="modal-footer">
                     <button
@@ -506,7 +542,7 @@ function MainAdmins() {
                           id="editPassword"
                           value={editPassword}
                           onChange={(e) => setEditPassword(e.target.value)}
-                          
+
                           disabled={loading}
                           style={{ paddingRight: "45px" }}
                         />
@@ -524,6 +560,22 @@ function MainAdmins() {
                       <small className="text-muted">
                         *Leave empty if you don't want to change the password
                       </small>
+                    </div>
+
+                    <div className="mb-3">
+                      <label htmlFor="editRole" className="form-label">
+                        Role
+                      </label>
+                      <select
+                        className="form-select form-select-lg"
+                        id="editRole"
+                        value={editRole}
+                        onChange={(e) => setEditRole(e.target.value)}
+                        disabled={loading}
+                      >
+                        <option value="Processor">Processor</option>
+                        <option value="Superadmin">Superadmin</option>
+                      </select>
                     </div>
 
                     <div className="mb-3">

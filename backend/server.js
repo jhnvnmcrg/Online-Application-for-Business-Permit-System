@@ -33,7 +33,7 @@ const upload = multer({
 // Register main admin endpoint
 app.post("/api/main/register", async (req, res) => {
   try {
-    const { fullname, email, username, password, status } = req.body;
+    const { fullname, email, username, password, role, status } = req.body;
 
     // Validation
     if (!fullname || !email || !username || !password) {
@@ -91,6 +91,7 @@ app.post("/api/main/register", async (req, res) => {
           email,
           username,
           password: hashedPassword,
+          role: role || "Processor",
           status: status || "active",
         },
       ])
@@ -190,7 +191,7 @@ app.get("/api/admin/all", async (req, res) => {
   try {
     const { data, error } = await supabase
       .from("Admins")
-      .select("admin_id, fullname, email, username, status, created_at")
+      .select("admin_id, fullname, email, username, role, status, created_at")
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -218,7 +219,7 @@ app.get("/api/admin/all", async (req, res) => {
 app.put("/api/admin/update/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const { fullname, email, username, status, password } = req.body;
+    const { fullname, email, username, role, status, password } = req.body;
 
     // Validation
     if (!fullname || !email || !username) {
@@ -263,6 +264,7 @@ app.put("/api/admin/update/:id", async (req, res) => {
       fullname,
       email,
       username,
+      role: role || "Processor",
       status: status || "active",
     };
 
@@ -309,6 +311,7 @@ app.put("/api/admin/update/:id", async (req, res) => {
         fullname: data[0].fullname,
         email: data[0].email,
         username: data[0].username,
+        role: data[0].role,
         status: data[0].status,
       },
     });
@@ -1561,274 +1564,6 @@ app.delete("/api/option/delete/:id", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "An error occurred while deleting field option",
-    });
-  }
-});
-
-// Get all roles endpoint with joined data
-app.get("/api/role/all", async (req, res) => {
-  try {
-    const { data, error } = await supabase
-      .from("Assigned Roles")
-      .select(`
-        *,
-        Admins (
-          fullname,
-          username
-        ),
-        Document Categories:category_id (
-          category_name
-        )
-      `)
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      console.error("Supabase error:", error);
-      return res.status(500).json({
-        success: false,
-        message: "Failed to fetch roles",
-      });
-    }
-
-    // Transform data to include admin and category names
-    const transformedData = data.map((role) => ({
-      ...role,
-      admin_fullname: role.Admins?.fullname || "Unknown",
-      admin_username: role.Admins?.username || "Unknown",
-      category_name: role.category_id === null || !role.category_id
-        ? null
-        : (role["Document Categories"]?.category_name || null),
-    }));
-
-    res.status(200).json({
-      success: true,
-      roles: transformedData,
-    });
-  } catch (err) {
-    console.error("Fetch roles error:", err);
-    res.status(500).json({
-      success: false,
-      message: "An error occurred while fetching roles",
-    });
-  }
-});
-
-// Add role endpoint
-app.post("/api/role/add", async (req, res) => {
-  try {
-    const { category_id, admin_id, role_name } = req.body;
-
-    // Validation
-    if (!admin_id || !role_name) {
-      return res.status(400).json({
-        success: false,
-        error: "Admin and role name are required",
-      });
-    }
-
-    // Validate role name
-    const validRoles = ["Superadmin", "Processor"];
-    if (!validRoles.includes(role_name)) {
-      return res.status(400).json({
-        success: false,
-        error: "Invalid role name. Must be Superadmin or Processor",
-      });
-    }
-
-    // For Processor, category_id is required
-    if (role_name === "Processor" && !category_id) {
-      return res.status(400).json({
-        success: false,
-        error: "Category is required for Processor role",
-      });
-    }
-
-    // Check if Superadmin role already exists for this admin
-    if (role_name === "Superadmin") {
-      const { data: existingSuperadmin } = await supabase
-        .from("Assigned Roles")
-        .select("role_id")
-        .eq("admin_id", admin_id)
-        .eq("role_name", "Superadmin")
-        .single();
-
-      if (existingSuperadmin) {
-        return res.status(400).json({
-          success: false,
-          error: "This admin already has a Superadmin role",
-        });
-      }
-    } else {
-      // Check if role already exists for this admin and category (for Processor)
-      const { data: existingRole } = await supabase
-        .from("Assigned Roles")
-        .select("role_id")
-        .eq("admin_id", admin_id)
-        .eq("category_id", category_id)
-        .single();
-
-      if (existingRole) {
-        return res.status(400).json({
-          success: false,
-          error: "This admin already has a role for this category",
-        });
-      }
-    }
-
-    // Prepare insert data
-    const insertData = {
-      admin_id,
-      role_name,
-    };
-
-    // Only add category_id if role is Processor
-    if (role_name === "Processor") {
-      insertData.category_id = category_id;
-    }
-
-    // Insert role into database
-    const { data, error } = await supabase
-      .from("Assigned Roles")
-      .insert([insertData])
-      .select();
-
-    if (error) {
-      console.error("Supabase error:", error);
-      return res.status(500).json({
-        success: false,
-        error: "Failed to add role. Please try again.",
-      });
-    }
-
-    res.status(201).json({
-      success: true,
-      message: "Role added successfully",
-      role: data[0],
-    });
-  } catch (err) {
-    console.error("Add role error:", err);
-    res.status(500).json({
-      success: false,
-      error: "An error occurred while adding role",
-    });
-  }
-});
-
-// Update role endpoint
-app.put("/api/role/update/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { category_id, admin_id, role_name } = req.body;
-
-    // Validation
-    if (!category_id || !admin_id || !role_name) {
-      return res.status(400).json({
-        success: false,
-        error: "All fields are required",
-      });
-    }
-
-    // Validate role name
-    const validRoles = ["Superadmin", "Processor"];
-    if (!validRoles.includes(role_name)) {
-      return res.status(400).json({
-        success: false,
-        error: "Invalid role name. Must be Superadmin or Processor",
-      });
-    }
-
-    // Check if role already exists for this admin and category (excluding current role)
-    const { data: existingRole } = await supabase
-      .from("Assigned Roles")
-      .select("role_id")
-      .eq("admin_id", admin_id)
-      .eq("category_id", category_id)
-      .neq("role_id", id)
-      .single();
-
-    if (existingRole) {
-      return res.status(400).json({
-        success: false,
-        error: "This admin already has a role for this category",
-      });
-    }
-
-    // Update role in database
-    const { data, error } = await supabase
-      .from("Assigned Roles")
-      .update({
-        category_id,
-        admin_id,
-        role_name,
-      })
-      .eq("role_id", id)
-      .select();
-
-    if (error) {
-      console.error("Supabase error:", error);
-      return res.status(500).json({
-        success: false,
-        error: "Failed to update role. Please try again.",
-      });
-    }
-
-    if (!data || data.length === 0) {
-      return res.status(404).json({
-        success: false,
-        error: "Role not found",
-      });
-    }
-
-    res.status(200).json({
-      success: true,
-      message: "Role updated successfully",
-      role: data[0],
-    });
-  } catch (err) {
-    console.error("Update role error:", err);
-    res.status(500).json({
-      success: false,
-      error: "An error occurred while updating role",
-    });
-  }
-});
-
-// Delete role endpoint
-app.delete("/api/role/delete/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    // Delete role from database
-    const { data, error } = await supabase
-      .from("Assigned Roles")
-      .delete()
-      .eq("role_id", id)
-      .select();
-
-    if (error) {
-      console.error("Supabase error:", error);
-      return res.status(500).json({
-        success: false,
-        error: "Failed to delete role. Please try again.",
-      });
-    }
-
-    if (!data || data.length === 0) {
-      return res.status(404).json({
-        success: false,
-        error: "Role not found",
-      });
-    }
-
-    res.status(200).json({
-      success: true,
-      message: "Role deleted successfully",
-    });
-  } catch (err) {
-    console.error("Delete role error:", err);
-    res.status(500).json({
-      success: false,
-      error: "An error occurred while deleting role",
     });
   }
 });
