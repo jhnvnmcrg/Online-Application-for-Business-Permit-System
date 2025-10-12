@@ -1568,4 +1568,220 @@ app.delete("/api/option/delete/:id", async (req, res) => {
   }
 });
 
+// Get all assignments endpoint with joined data
+app.get("/api/assignment/all", async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from("Assigned Roles")
+      .select(`
+        *,
+        Admins (
+          fullname,
+          username
+        ),
+        DocumentCategories:category_id (
+          category_name
+        )
+      `)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Supabase error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to fetch assignments",
+      });
+    }
+
+    // Transform data to include admin and category names
+    const transformedData = data.map((assignment) => ({
+      ...assignment,
+      admin_fullname: assignment.Admins?.fullname || "Unknown",
+      admin_username: assignment.Admins?.username || "Unknown",
+      category_name: assignment.DocumentCategories?.category_name || "N/A",
+    }));
+
+    res.status(200).json({
+      success: true,
+      assignments: transformedData,
+    });
+  } catch (err) {
+    console.error("Fetch assignments error:", err);
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while fetching assignments",
+    });
+  }
+});
+
+// Add assignment endpoint
+app.post("/api/assignment/add", async (req, res) => {
+  try {
+    const { admin_id, category_id } = req.body;
+
+    // Validation
+    if (!admin_id || !category_id) {
+      return res.status(400).json({
+        success: false,
+        message: "Admin and category are required",
+      });
+    }
+
+    // Check if assignment already exists
+    const { data: existingAssignment } = await supabase
+      .from("Assigned Roles")
+      .select("*")
+      .eq("admin_id", admin_id)
+      .eq("category_id", category_id)
+      .single();
+
+    if (existingAssignment) {
+      return res.status(400).json({
+        success: false,
+        message: "This admin is already assigned to this category",
+      });
+    }
+
+    // Insert assignment into database
+    const { data, error } = await supabase
+      .from("Assigned Roles")
+      .insert([
+        {
+          admin_id,
+          category_id,
+        },
+      ])
+      .select();
+
+    if (error) {
+      console.error("Supabase error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to add assignment. Please try again.",
+      });
+    }
+
+    res.status(201).json({
+      success: true,
+      message: "Assignment added successfully",
+      assignment: data[0],
+    });
+  } catch (err) {
+    console.error("Add assignment error:", err);
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while adding assignment",
+    });
+  }
+});
+
+// Update assignment endpoint
+app.put("/api/assignment/update/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { admin_id, category_id } = req.body;
+
+    // Validation
+    if (!admin_id || !category_id) {
+      return res.status(400).json({
+        success: false,
+        message: "Admin and category are required",
+      });
+    }
+
+    // Check if assignment already exists (excluding current assignment)
+    const { data: existingAssignment } = await supabase
+      .from("Assigned Roles")
+      .select("*")
+      .eq("admin_id", admin_id)
+      .eq("category_id", category_id)
+      .neq("assignment_id", id)
+      .single();
+
+    if (existingAssignment) {
+      return res.status(400).json({
+        success: false,
+        message: "This admin is already assigned to this category",
+      });
+    }
+
+    // Update assignment in database
+    const { data, error } = await supabase
+      .from("Assigned Roles")
+      .update({
+        admin_id,
+        category_id,
+      })
+      .eq("assignment_id", id)
+      .select();
+
+    if (error) {
+      console.error("Supabase error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to update assignment. Please try again.",
+      });
+    }
+
+    if (!data || data.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Assignment not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Assignment updated successfully",
+      assignment: data[0],
+    });
+  } catch (err) {
+    console.error("Update assignment error:", err);
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while updating assignment",
+    });
+  }
+});
+
+// Delete assignment endpoint
+app.delete("/api/assignment/delete/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Delete assignment from database
+    const { data, error } = await supabase
+      .from("Assigned Roles")
+      .delete()
+      .eq("assignment_id", id)
+      .select();
+
+    if (error) {
+      console.error("Supabase error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to delete assignment. Please try again.",
+      });
+    }
+
+    if (!data || data.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Assignment not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Assignment deleted successfully",
+    });
+  } catch (err) {
+    console.error("Delete assignment error:", err);
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while deleting assignment",
+    });
+  }
+});
+
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
