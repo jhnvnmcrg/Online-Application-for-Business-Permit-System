@@ -185,6 +185,166 @@ app.post("/api/main/login", async (req, res) => {
   }
 });
 
+// Get all admins endpoint
+app.get("/api/admin/all", async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from("Admins")
+      .select("admin_id, fullname, email, username, status, created_at")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Supabase error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to fetch admins",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      admins: data,
+    });
+  } catch (err) {
+    console.error("Fetch admins error:", err);
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while fetching admins",
+    });
+  }
+});
+
+// Update admin endpoint
+app.put("/api/admin/update/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { fullname, email, username, status } = req.body;
+
+    // Validation
+    if (!fullname || !email || !username) {
+      return res.status(400).json({
+        success: false,
+        error: "All fields are required",
+      });
+    }
+
+    // Check if username already exists (excluding current admin)
+    const { data: existingUsername } = await supabase
+      .from("Admins")
+      .select("admin_id")
+      .eq("username", username)
+      .neq("admin_id", id)
+      .single();
+
+    if (existingUsername) {
+      return res.status(400).json({
+        success: false,
+        error: "Username already exists",
+      });
+    }
+
+    // Check if email already exists (excluding current admin)
+    const { data: existingEmail } = await supabase
+      .from("Admins")
+      .select("admin_id")
+      .eq("email", email)
+      .neq("admin_id", id)
+      .single();
+
+    if (existingEmail) {
+      return res.status(400).json({
+        success: false,
+        error: "Email already exists",
+      });
+    }
+
+    // Update admin in database
+    const { data, error } = await supabase
+      .from("Admins")
+      .update({
+        fullname,
+        email,
+        username,
+        status: status || "active",
+      })
+      .eq("admin_id", id)
+      .select();
+
+    if (error) {
+      console.error("Supabase error:", error);
+      return res.status(500).json({
+        success: false,
+        error: "Failed to update admin. Please try again.",
+      });
+    }
+
+    if (!data || data.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: "Admin not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Admin updated successfully",
+      admin: {
+        admin_id: data[0].admin_id,
+        fullname: data[0].fullname,
+        email: data[0].email,
+        username: data[0].username,
+        status: data[0].status,
+      },
+    });
+  } catch (err) {
+    console.error("Update admin error:", err);
+    res.status(500).json({
+      success: false,
+      error: "An error occurred while updating admin",
+    });
+  }
+});
+
+// Delete admin endpoint
+app.delete("/api/admin/delete/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Delete admin from database
+    const { data, error } = await supabase
+      .from("Admins")
+      .delete()
+      .eq("admin_id", id)
+      .select();
+
+    if (error) {
+      console.error("Supabase error:", error);
+      return res.status(500).json({
+        success: false,
+        error: "Failed to delete admin. Please try again.",
+      });
+    }
+
+    if (!data || data.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: "Admin not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Admin deleted successfully",
+    });
+  } catch (err) {
+    console.error("Delete admin error:", err);
+    res.status(500).json({
+      success: false,
+      error: "An error occurred while deleting admin",
+    });
+  }
+});
+
 // Register user endpoint
 app.post("/api/user/register", async (req, res) => {
   try {

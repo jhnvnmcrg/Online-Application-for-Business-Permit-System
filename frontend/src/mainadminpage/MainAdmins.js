@@ -23,6 +23,22 @@ function MainAdmins() {
   const [status, setStatus] = useState("active");
   const [loading, setLoading] = useState(false);
 
+  // Edit Admin Modal States
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editAdminId, setEditAdminId] = useState(null);
+  const [editFullname, setEditFullname] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editUsername, setEditUsername] = useState("");
+  const [editStatus, setEditStatus] = useState("active");
+
+  // Delete Admin Modal States
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteAdminId, setDeleteAdminId] = useState(null);
+  const [deleteAdminName, setDeleteAdminName] = useState("");
+
+  // Admins List State
+  const [admins, setAdmins] = useState([]);
+
   useEffect(() => {
     // Get user data from localStorage
     const userData = localStorage.getItem("user");
@@ -41,7 +57,22 @@ function MainAdmins() {
       console.error("Error parsing user data:", error);
       navigate("/oabps/main/login");
     }
+
+    // Fetch admins list
+    fetchAdmins();
   }, [navigate]);
+
+  // Fetch all admins
+  const fetchAdmins = async () => {
+    try {
+      const response = await axios.get("https://oabs-f7by.onrender.com/api/admin/all");
+      if (response.data.success) {
+        setAdmins(response.data.admins);
+      }
+    } catch (error) {
+      console.error("Error fetching admins:", error);
+    }
+  };
 
   // Handle Add Admin Modal Open
   const handleAddModalOpen = () => {
@@ -83,13 +114,102 @@ function MainAdmins() {
       if (response.data.success) {
         alert("Admin added successfully!");
         handleAddModalClose();
-        // TODO: Refresh admins list here
+        fetchAdmins(); // Refresh admins list
       } else {
         alert(response.data.message || "Failed to add admin");
       }
     } catch (error) {
       console.error("Error adding admin:", error);
       alert(error.response?.data?.error || "Error adding admin");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle Edit Admin Modal Open
+  const handleEditModalOpen = (admin) => {
+    setEditAdminId(admin.admin_id);
+    setEditFullname(admin.fullname);
+    setEditEmail(admin.email);
+    setEditUsername(admin.username);
+    setEditStatus(admin.status || "active");
+    setShowEditModal(true);
+  };
+
+  // Handle Edit Admin Modal Close
+  const handleEditModalClose = () => {
+    setShowEditModal(false);
+    setEditAdminId(null);
+    setEditFullname("");
+    setEditEmail("");
+    setEditUsername("");
+    setEditStatus("active");
+  };
+
+  // Handle Edit Admin Submit
+  const handleEditAdmin = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const response = await axios.put(
+        `https://oabs-f7by.onrender.com/api/admin/update/${editAdminId}`,
+        {
+          fullname: editFullname,
+          email: editEmail,
+          username: editUsername,
+          status: editStatus,
+        }
+      );
+
+      if (response.data.success) {
+        alert("Admin updated successfully!");
+        handleEditModalClose();
+        fetchAdmins(); // Refresh admins list
+      } else {
+        alert(response.data.message || "Failed to update admin");
+      }
+    } catch (error) {
+      console.error("Error updating admin:", error);
+      alert(error.response?.data?.error || "Error updating admin");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle Delete Admin Modal Open
+  const handleDeleteModalOpen = (admin) => {
+    setDeleteAdminId(admin.admin_id);
+    setDeleteAdminName(admin.fullname);
+    setShowDeleteModal(true);
+  };
+
+  // Handle Delete Admin Modal Close
+  const handleDeleteModalClose = () => {
+    setShowDeleteModal(false);
+    setDeleteAdminId(null);
+    setDeleteAdminName("");
+  };
+
+  // Handle Delete Admin Submit
+  const handleDeleteAdmin = async () => {
+    setLoading(true);
+
+    try {
+      const response = await axios.delete(
+        `https://oabs-f7by.onrender.com/api/admin/delete/${deleteAdminId}`
+      );
+
+      if (response.data.success) {
+        alert("Admin deleted successfully!");
+        handleDeleteModalClose();
+        fetchAdmins(); // Refresh admins list
+      } else {
+        alert(response.data.message || "Failed to delete admin");
+      }
+    } catch (error) {
+      console.error("Error deleting admin:", error);
+      alert(error.response?.data?.error || "Error deleting admin");
     } finally {
       setLoading(false);
     }
@@ -129,21 +249,47 @@ function MainAdmins() {
                   </tr>
                 </thead>
                 <tbody>
-                  <tr>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td>
-                      <button className="btn btn-sm">
-                        <Pencil className="text-primary" />
-                      </button>
-                      <button className="btn btn-sm">
-                        <Trash className="text-danger" />
-                      </button>
-                    </td>
-                  </tr>
+                  {admins.length === 0 ? (
+                    <tr>
+                      <td colSpan="6" className="text-center text-muted">
+                        No admins found
+                      </td>
+                    </tr>
+                  ) : (
+                    admins.map((admin, index) => (
+                      <tr key={admin.admin_id}>
+                        <td>{index + 1}</td>
+                        <td>{admin.fullname}</td>
+                        <td>{admin.email}</td>
+                        <td>{admin.username}</td>
+                        <td>
+                          <span
+                            className={`badge ${
+                              admin.status === "active"
+                                ? "bg-success"
+                                : "bg-secondary"
+                            }`}
+                          >
+                            {admin.status || "active"}
+                          </span>
+                        </td>
+                        <td>
+                          <button
+                            className="btn btn-sm"
+                            onClick={() => handleEditModalOpen(admin)}
+                          >
+                            <Pencil className="text-primary" />
+                          </button>
+                          <button
+                            className="btn btn-sm"
+                            onClick={() => handleDeleteModalOpen(admin)}
+                          >
+                            <Trash className="text-danger" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
@@ -250,6 +396,160 @@ function MainAdmins() {
                     </button>
                   </div>
                 </form>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Edit Admin Modal */}
+        {showEditModal && (
+          <div
+            className="modal show d-block"
+            tabIndex="-1"
+            style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+          >
+            <div className="modal-dialog modal-dialog-centered">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title">Edit Admin</h5>
+                  <button
+                    type="button"
+                    className="btn-close"
+                    onClick={handleEditModalClose}
+                    disabled={loading}
+                  ></button>
+                </div>
+                <form onSubmit={handleEditAdmin}>
+                  <div className="modal-body">
+                    <div className="mb-3">
+                      <label htmlFor="editFullname" className="form-label">
+                        Full Name
+                      </label>
+                      <input
+                        type="text"
+                        className="form-control form-control-lg"
+                        id="editFullname"
+                        value={editFullname}
+                        onChange={(e) => setEditFullname(e.target.value)}
+                        required
+                        disabled={loading}
+                      />
+                    </div>
+
+                    <div className="mb-3">
+                      <label htmlFor="editEmail" className="form-label">
+                        Email
+                      </label>
+                      <input
+                        type="email"
+                        className="form-control form-control-lg"
+                        id="editEmail"
+                        value={editEmail}
+                        onChange={(e) => setEditEmail(e.target.value)}
+                        required
+                        disabled={loading}
+                      />
+                    </div>
+
+                    <div className="mb-3">
+                      <label htmlFor="editUsername" className="form-label">
+                        Username
+                      </label>
+                      <input
+                        type="text"
+                        className="form-control form-control-lg"
+                        id="editUsername"
+                        value={editUsername}
+                        onChange={(e) => setEditUsername(e.target.value)}
+                        required
+                        disabled={loading}
+                      />
+                    </div>
+
+                    <div className="mb-3">
+                      <label htmlFor="editStatus" className="form-label">
+                        Status
+                      </label>
+                      <select
+                        className="form-select form-select-lg"
+                        id="editStatus"
+                        value={editStatus}
+                        onChange={(e) => setEditStatus(e.target.value)}
+                        disabled={loading}
+                      >
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="modal-footer">
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={handleEditModalClose}
+                      disabled={loading}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="btn btn-primary"
+                      disabled={loading}
+                    >
+                      {loading ? "Updating..." : "Update Admin"}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Delete Admin Modal */}
+        {showDeleteModal && (
+          <div
+            className="modal show d-block"
+            tabIndex="-1"
+            style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+          >
+            <div className="modal-dialog modal-dialog-centered">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title">Delete Admin</h5>
+                  <button
+                    type="button"
+                    className="btn-close"
+                    onClick={handleDeleteModalClose}
+                    disabled={loading}
+                  ></button>
+                </div>
+                <div className="modal-body">
+                  <p>
+                    Are you sure you want to delete admin{" "}
+                    <strong>{deleteAdminName}</strong>?
+                  </p>
+                  <p className="text-danger">
+                    This action cannot be undone.
+                  </p>
+                </div>
+                <div className="modal-footer">
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={handleDeleteModalClose}
+                    disabled={loading}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-danger"
+                    onClick={handleDeleteAdmin}
+                    disabled={loading}
+                  >
+                    {loading ? "Deleting..." : "Delete Admin"}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
