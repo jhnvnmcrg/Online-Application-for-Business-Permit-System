@@ -1569,7 +1569,7 @@ app.delete("/api/option/delete/:id", async (req, res) => {
 app.get("/api/role/all", async (req, res) => {
   try {
     const { data, error } = await supabase
-      .from("Roles")
+      .from("Assigned Roles")
       .select(`
         *,
         Admins (
@@ -1617,10 +1617,10 @@ app.post("/api/role/add", async (req, res) => {
     const { category_id, admin_id, role_name } = req.body;
 
     // Validation
-    if (!category_id || !admin_id || !role_name) {
+    if (!admin_id || !role_name) {
       return res.status(400).json({
         success: false,
-        error: "All fields are required",
+        error: "Admin and role name are required",
       });
     }
 
@@ -1633,12 +1633,23 @@ app.post("/api/role/add", async (req, res) => {
       });
     }
 
+    // For Processor, category_id is required
+    if (role_name === "Processor" && !category_id) {
+      return res.status(400).json({
+        success: false,
+        error: "Category is required for Processor role",
+      });
+    }
+
+    // For Superadmin, use "all" as category_id
+    const finalCategoryId = role_name === "Superadmin" ? "all" : category_id;
+
     // Check if role already exists for this admin and category
     const { data: existingRole } = await supabase
-      .from("Roles")
+      .from("Assigned Roles")
       .select("role_id")
       .eq("admin_id", admin_id)
-      .eq("category_id", category_id)
+      .eq("category_id", finalCategoryId)
       .single();
 
     if (existingRole) {
@@ -1650,10 +1661,10 @@ app.post("/api/role/add", async (req, res) => {
 
     // Insert role into database
     const { data, error } = await supabase
-      .from("Roles")
+      .from("Assigned Roles")
       .insert([
         {
-          category_id,
+          category_id: finalCategoryId,
           admin_id,
           role_name,
         },
@@ -1707,7 +1718,7 @@ app.put("/api/role/update/:id", async (req, res) => {
 
     // Check if role already exists for this admin and category (excluding current role)
     const { data: existingRole } = await supabase
-      .from("Roles")
+      .from("Assigned Roles")
       .select("role_id")
       .eq("admin_id", admin_id)
       .eq("category_id", category_id)
@@ -1723,7 +1734,7 @@ app.put("/api/role/update/:id", async (req, res) => {
 
     // Update role in database
     const { data, error } = await supabase
-      .from("Roles")
+      .from("Assigned Roles")
       .update({
         category_id,
         admin_id,
@@ -1768,7 +1779,7 @@ app.delete("/api/role/delete/:id", async (req, res) => {
 
     // Delete role from database
     const { data, error } = await supabase
-      .from("Roles")
+      .from("Assigned Roles")
       .delete()
       .eq("role_id", id)
       .select();

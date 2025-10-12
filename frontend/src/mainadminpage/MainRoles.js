@@ -87,18 +87,28 @@ function MainRoles() {
 
   // Handle Add Role Modal Open
   const handleAddModalOpen = () => {
-    setCategoryId("");
-    setAdminId("");
     setRoleName("");
+    setAdminId("");
+    setCategoryId("");
     setShowAddModal(true);
   };
 
   // Handle Add Role Modal Close
   const handleAddModalClose = () => {
     setShowAddModal(false);
-    setCategoryId("");
-    setAdminId("");
     setRoleName("");
+    setAdminId("");
+    setCategoryId("");
+  };
+
+  // Handle role name change - reset category if Superadmin
+  const handleRoleNameChange = (value) => {
+    setRoleName(value);
+    if (value === "Superadmin") {
+      setCategoryId("all");
+    } else {
+      setCategoryId("");
+    }
   };
 
   // Handle Add Role Submit
@@ -225,26 +235,20 @@ function MainRoles() {
                 <form onSubmit={handleAddRole}>
                   <div className="modal-body">
                     <div className="mb-3">
-                      <label htmlFor="categoryId" className="form-label">
-                        Document Category
+                      <label htmlFor="roleName" className="form-label">
+                        Role Name
                       </label>
                       <select
                         className="form-select form-select-lg"
-                        id="categoryId"
-                        value={categoryId}
-                        onChange={(e) => setCategoryId(e.target.value)}
+                        id="roleName"
+                        value={roleName}
+                        onChange={(e) => handleRoleNameChange(e.target.value)}
                         required
                         disabled={loading}
                       >
-                        <option value="">Select Category</option>
-                        {categories.map((category) => (
-                          <option
-                            key={category.category_id}
-                            value={category.category_id}
-                          >
-                            {category.category_name}
-                          </option>
-                        ))}
+                        <option value="">Select Role</option>
+                        <option value="Superadmin">Superadmin</option>
+                        <option value="Processor">Processor</option>
                       </select>
                     </div>
 
@@ -269,23 +273,37 @@ function MainRoles() {
                       </select>
                     </div>
 
-                    <div className="mb-3">
-                      <label htmlFor="roleName" className="form-label">
-                        Role Name
-                      </label>
-                      <select
-                        className="form-select form-select-lg"
-                        id="roleName"
-                        value={roleName}
-                        onChange={(e) => setRoleName(e.target.value)}
-                        required
-                        disabled={loading}
-                      >
-                        <option value="">Select Role</option>
-                        <option value="Superadmin">Superadmin</option>
-                        <option value="Processor">Processor</option>
-                      </select>
-                    </div>
+                    {roleName === "Processor" && (
+                      <div className="mb-3">
+                        <label htmlFor="categoryId" className="form-label">
+                          Document Category
+                        </label>
+                        <select
+                          className="form-select form-select-lg"
+                          id="categoryId"
+                          value={categoryId}
+                          onChange={(e) => setCategoryId(e.target.value)}
+                          required
+                          disabled={loading}
+                        >
+                          <option value="">Select Category</option>
+                          {categories.map((category) => (
+                            <option
+                              key={category.category_id}
+                              value={category.category_id}
+                            >
+                              {category.category_name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
+                    {roleName === "Superadmin" && (
+                      <div className="mb-3">
+                        
+                      </div>
+                    )}
                   </div>
                   <div className="modal-footer">
                     <button
