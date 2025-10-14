@@ -519,6 +519,81 @@ app.post("/api/user/login", async (req, res) => {
   }
 });
 
+// Login processor endpoint
+app.post("/api/processor/login", async (req, res) => {
+  try {
+    const { username, password } = req.body;
+
+    // Validation
+    if (!username || !password) {
+      return res.status(400).json({
+        success: false,
+        error: "Username/Email and password are required",
+      });
+    }
+
+    // Find processor by username or email and verify role is Processor
+    const { data: user, error } = await supabase
+      .from("Admins")
+      .select("*")
+      .or(`username.eq.${username},email.eq.${username}`)
+      .eq("role", "Processor")
+      .single();
+
+    if (error || !user) {
+      return res.status(401).json({
+        success: false,
+        error: "Invalid username/email or password, or you are not a processor",
+      });
+    }
+
+    // Check if account is active
+    if (user.status !== "active") {
+      return res.status(401).json({
+        success: false,
+        error: "Your account is inactive. Please contact the administrator.",
+        admin_id: user.admin_id,
+      });
+    }
+
+    // Compare password
+    const passwordMatch = await bcrypt.compare(password, user.password);
+
+    if (!passwordMatch) {
+      return res.status(401).json({
+        success: false,
+        error: "Invalid username/email or password",
+        admin_id: user.admin_id, // Include admin_id for audit logging
+      });
+    }
+
+    // Generate a simple token (you can use JWT for better security)
+    const token = Buffer.from(`${user.id}:${Date.now()}`).toString("base64");
+
+    // Return user data (exclude password)
+    res.status(200).json({
+      success: true,
+      message: "Login successful",
+      token: token,
+      user: {
+        admin_id: user.admin_id,
+        fullname: user.fullname,
+        email: user.email,
+        username: user.username,
+        role: user.role,
+        status: user.status,
+        created_at: user.created_at,
+      },
+    });
+  } catch (err) {
+    console.error("Processor login error:", err);
+    res.status(500).json({
+      success: false,
+      error: "An error occurred during login",
+    });
+  }
+});
+
 // Add category endpoint
 app.post("/api/category/add", async (req, res) => {
   try {

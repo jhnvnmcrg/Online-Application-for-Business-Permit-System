@@ -4,9 +4,74 @@ import axios from "axios";
 import { Eye, EyeOff } from "lucide-react";
 
 function ProcessorLogin() {
+  const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setError("");
+
+    if (!username || !password) {
+      setError("Please enter both username/email and password");
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const response = await axios.post(
+        "https://oabs-f7by.onrender.com/api/processor/login",
+        {
+          username: username,
+          password: password,
+        }
+      );
+
+      if (response.data.success) {
+        // Store user data in localStorage
+        localStorage.setItem("processor", JSON.stringify(response.data.user));
+        localStorage.setItem("processorToken", response.data.token);
+
+        // Log successful login audit
+        try {
+          await axios.post("https://oabs-f7by.onrender.com/api/audit/login", {
+            admin_id: response.data.user.admin_id,
+            status: "Success",
+          });
+        } catch (auditError) {
+          console.error("Failed to log audit:", auditError);
+          // Continue with login even if audit fails
+        }
+
+        // Redirect to processor dashboard
+        navigate("/oabps/processor/dashboard");
+      }
+    } catch (err) {
+      // Log failed login audit
+      if (err.response?.data?.admin_id) {
+        try {
+          await axios.post("https://oabs-f7by.onrender.com/api/audit/login", {
+            admin_id: err.response.data.admin_id,
+            status: "Failed",
+          });
+        } catch (auditError) {
+          console.error("Failed to log audit:", auditError);
+        }
+      }
+
+      if (err.response?.data?.error) {
+        setError(err.response.data.error);
+      } else {
+        setError("Login failed. Please try again.");
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <>
@@ -34,12 +99,17 @@ function ProcessorLogin() {
                 </div>
               )}
 
-              <form>
+              <form onSubmit={handleLogin}>
                 <div className="mb-3">
                   <input
                     type="text"
                     className="form-control"
                     placeholder="Username or Email"
+                    value={username}
+                    onChange={(e) => {
+                      setUsername(e.target.value);
+                      setError("");
+                    }}
                     required
                     disabled={isLoading}
                   />
@@ -49,6 +119,11 @@ function ProcessorLogin() {
                     type={showPassword ? "text" : "password"}
                     className="form-control"
                     placeholder="Password"
+                    value={password}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      setError("");
+                    }}
                     required
                     disabled={isLoading}
                     style={{ paddingRight: "40px" }}
