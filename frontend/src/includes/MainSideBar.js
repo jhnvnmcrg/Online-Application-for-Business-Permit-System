@@ -180,26 +180,7 @@ function MainSideBar({ children }) {
       label: "Login Audits",
       icon: History,
       path: "/oabps/main/logaudits",
-    },
-    {
-      id: "others",
-      label: "Others",
-      icon: FolderOpen,
-      path: "/others",
-      children: [
-        {
-          id: "other1",
-          label: "other1",
-          path: "",
-        },
-        {
-          id: "other2",
-          label: "other2",
-          path: "",
-        },
-        { id: "other3", label: "other3", path: "" },
-      ],
-    },
+    }
   ];
 
   const SidebarItem = ({ item }) => {

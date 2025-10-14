@@ -86,13 +86,21 @@ function MainLogAudits() {
 
           <div className="bg-light p-4 border-bottom text-center mb-4 shadow-sm">
             {/* Search and Filter Row */}
-            <div className="row mb-4">
-              <div className="col-md-3 d-flex align-items-center">
+            <div className="row mb-4 d-flex justify-content-between">
+              <div className="col-md-6 d-flex align-items-center">
                 <h4 className="mb-0">Login Audit</h4>
               </div>
-              <div className="col-md-3">
+              <div className="col-md-6 d-flex">
+                
+                <input
+                  type="text"
+                  className="form-control form-control-lg mx-1"
+                  placeholder="Search by name..."
+                  value={searchName}
+                  onChange={(e) => setSearchName(e.target.value)}
+                />
                 <select
-                  className="form-select form-select-lg"
+                  className="form-select form-select-lg mx-1"
                   value={searchStatus}
                   onChange={(e) => setSearchStatus(e.target.value)}
                 >
@@ -100,16 +108,6 @@ function MainLogAudits() {
                   <option value="Success">Success</option>
                   <option value="Failed">Failed</option>
                 </select>
-              </div>
-              <div className="col-md-3"></div>
-              <div className="col-md-3">
-                <input
-                  type="text"
-                  className="form-control form-control-lg"
-                  placeholder="Search by name..."
-                  value={searchName}
-                  onChange={(e) => setSearchName(e.target.value)}
-                />
               </div>
             </div>
 
