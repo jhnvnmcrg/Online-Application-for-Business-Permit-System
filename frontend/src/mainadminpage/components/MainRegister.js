@@ -90,7 +90,7 @@ function MainRegister() {
       <div className="min-vh-100 position-relative overflow-hidden">
         <div className="position-absolute top-0 start-0 w-100 h-100 bg-dark bg-opacity-25"></div>
         <div className="position-relative d-flex flex-column align-items-center justify-content-center min-vh-100 px-4 login-container">
-          <h4 className="fw-semibold text-dark mb-1">MAIN ADMIN</h4>
+          
           <div className="card shadow-lg login-card">
             <div className="card-body p-4">
               <div className="text-center mb-4">

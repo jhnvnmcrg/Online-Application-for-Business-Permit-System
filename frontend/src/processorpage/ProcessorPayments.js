@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
-import MainSideBar from "../includes/MainSideBar";
+import ProcessorSideBar from "../includes/ProcessorSideBar";
 import { Plus, Trash, Pencil } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-function MainPayments() {
+function ProcessorPayments() {
   const [searchName, setSearchName] = useState("");
-  
+
   const navigate = useNavigate();
   const [username, setUsername] = useState("User");
 
@@ -15,7 +15,7 @@ function MainPayments() {
 
     if (!userData) {
       // If no user data, redirect to login
-      navigate("/oabps/main/login");
+      navigate("/oabps/processor/login");
       return;
     }
 
@@ -25,12 +25,12 @@ function MainPayments() {
       setUsername(user.username || user.fullname || "User");
     } catch (error) {
       console.error("Error parsing user data:", error);
-      navigate("/oabps/main/login");
+      navigate("/oabps/processor/login");
     }
   }, [navigate]);
   return (
     <>
-      <MainSideBar>
+      <ProcessorSideBar>
         <div className="container-fluid p-4">
           <h2 className="display-5 fw-bold text-dark mb-2">
             Welcome, {username}!
@@ -112,9 +112,9 @@ function MainPayments() {
             </div>
           </div>
         </div>
-      </MainSideBar>
+      </ProcessorSideBar>
     </>
-  );
+  )
 }
 
-export default MainPayments;
+export default ProcessorPayments

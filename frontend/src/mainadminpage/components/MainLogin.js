@@ -52,7 +52,7 @@ function MainLogin() {
       <div className="min-vh-100 position-relative overflow-hidden">
         <div className="position-absolute top-0 start-0 w-100 h-100 bg-dark bg-opacity-25"></div>
         <div className="position-relative d-flex flex-column align-items-center justify-content-center min-vh-100 px-4 login-container">
-          <h4 className="fw-semibold text-dark mb-1">MAIN ADMIN</h4>
+          <h4 className="fw-semibold text-dark mb-1">SUPERADMIN</h4>
           <div className="card shadow-lg login-card">
             <div className="card-body p-4">
               <div className="text-center mb-4">
@@ -117,7 +117,22 @@ function MainLogin() {
                     {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                   </button>
                 </div>
-                
+                <div className="d-flex justify-content-between mb-4">
+                  <Link
+                    to="/oabps/main/register"
+                    className="text-decoration-none"
+                    style={{ color: "#dc3545" }}
+                  >
+                    Create a new account
+                  </Link>
+                  <Link
+                    to="/oabps/main/forgot"
+                    className="text-decoration-none"
+                    style={{ color: "#dc3545" }}
+                  >
+                    Forgot Password?
+                  </Link>
+                </div>
                 
                 <button
                   type="submit"

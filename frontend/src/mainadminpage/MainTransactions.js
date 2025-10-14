@@ -1,11 +1,16 @@
-import { useState, useEffect } from "react";
 import MainSideBar from "../includes/MainSideBar";
-import { Plus, Trash, Pencil } from "lucide-react";
+import { Plus, Trash, Pencil, Eye } from "lucide-react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
-function MainPayments() {
+function MainTransactions() {
   const [searchName, setSearchName] = useState("");
-  
+
+  const [searchTags, setSearchTags] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("");
+
+  const categories = ["Barangay Clearance", "Occupancy Permit"];
+
   const navigate = useNavigate();
   const [username, setUsername] = useState("User");
 
@@ -41,7 +46,7 @@ function MainPayments() {
             {/* Search and Filter Row */}
             <div className="row mb-4">
               <div className="col-md-4 d-flex">
-                <h4 className="mb-0">Payment</h4>
+                <h4 className="mb-0">Transactions</h4>
               </div>
               <div className="col-md-4"></div>
               <div className="col-md-4">
@@ -75,35 +80,29 @@ function MainPayments() {
                 <tbody>
                   <tr>
                     <td>1</td>
-                    <td>0000-0000</td>
-                    <td>Gcash</td>
-                    <td>666</td>
-                    <td>00-0000</td>
-                    <td>00-00-0000</td>
-                    <td>Paid</td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
                     <td>
                       <button className="btn btn-sm">
-                        <Pencil className="text-primary" />
-                      </button>
-                      <button className="btn btn-sm">
-                        <Trash className="text-danger" />
+                        <Eye className="text-warning" />
                       </button>
                     </td>
                   </tr>
                   <tr>
                     <td>2</td>
-                    <td>0000-0000</td>
-                    <td>Cashier</td>
-                    <td>999</td>
-                    <td>00-0000</td>
-                    <td>00-00-0000</td>
-                    <td>Pending</td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
                     <td>
                       <button className="btn btn-sm">
-                        <Pencil className="text-primary" />
-                      </button>
-                      <button className="btn btn-sm">
-                        <Trash className="text-danger" />
+                        <Eye className="text-warning" />
                       </button>
                     </td>
                   </tr>
@@ -117,4 +116,4 @@ function MainPayments() {
   );
 }
 
-export default MainPayments;
+export default MainTransactions;

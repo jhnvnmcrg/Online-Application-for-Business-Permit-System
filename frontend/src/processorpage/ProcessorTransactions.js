@@ -1,11 +1,11 @@
+import ProcessorSideBar from "../includes/ProcessorSideBar";
+import { Plus, Trash, Pencil, Eye } from "lucide-react";
 import { useState, useEffect } from "react";
-import MainSideBar from "../includes/MainSideBar";
-import { Plus, Trash, Pencil } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-function MainPayments() {
+function ProcessorTransactions() {
   const [searchName, setSearchName] = useState("");
-  
+
   const navigate = useNavigate();
   const [username, setUsername] = useState("User");
 
@@ -15,7 +15,7 @@ function MainPayments() {
 
     if (!userData) {
       // If no user data, redirect to login
-      navigate("/oabps/main/login");
+      navigate("/oabps/processor/login");
       return;
     }
 
@@ -25,12 +25,12 @@ function MainPayments() {
       setUsername(user.username || user.fullname || "User");
     } catch (error) {
       console.error("Error parsing user data:", error);
-      navigate("/oabps/main/login");
+      navigate("/oabps/processor/login");
     }
   }, [navigate]);
   return (
     <>
-      <MainSideBar>
+      <ProcessorSideBar>
         <div className="container-fluid p-4">
           <h2 className="display-5 fw-bold text-dark mb-2">
             Welcome, {username}!
@@ -41,7 +41,7 @@ function MainPayments() {
             {/* Search and Filter Row */}
             <div className="row mb-4">
               <div className="col-md-4 d-flex">
-                <h4 className="mb-0">Payment</h4>
+                <h4 className="mb-0">Transactions</h4>
               </div>
               <div className="col-md-4"></div>
               <div className="col-md-4">
@@ -75,35 +75,29 @@ function MainPayments() {
                 <tbody>
                   <tr>
                     <td>1</td>
-                    <td>0000-0000</td>
-                    <td>Gcash</td>
-                    <td>666</td>
-                    <td>00-0000</td>
-                    <td>00-00-0000</td>
-                    <td>Paid</td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
                     <td>
                       <button className="btn btn-sm">
-                        <Pencil className="text-primary" />
-                      </button>
-                      <button className="btn btn-sm">
-                        <Trash className="text-danger" />
+                        <Eye className="text-warning" />
                       </button>
                     </td>
                   </tr>
                   <tr>
                     <td>2</td>
-                    <td>0000-0000</td>
-                    <td>Cashier</td>
-                    <td>999</td>
-                    <td>00-0000</td>
-                    <td>00-00-0000</td>
-                    <td>Pending</td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
                     <td>
                       <button className="btn btn-sm">
-                        <Pencil className="text-primary" />
-                      </button>
-                      <button className="btn btn-sm">
-                        <Trash className="text-danger" />
+                        <Eye className="text-warning" />
                       </button>
                     </td>
                   </tr>
@@ -112,9 +106,9 @@ function MainPayments() {
             </div>
           </div>
         </div>
-      </MainSideBar>
+      </ProcessorSideBar>
     </>
   );
 }
 
-export default MainPayments;
+export default ProcessorTransactions;

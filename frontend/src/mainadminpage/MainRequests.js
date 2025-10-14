@@ -4,20 +4,19 @@ import { useNavigate } from "react-router-dom";
 import MainSideBar from "../includes/MainSideBar";
 
 function MainRequests() {
-   
-    const [searchName, setSearchName] = useState("");
-      const [searchTags, setSearchTags] = useState("");
-      const [selectedCategory, setSelectedCategory] = useState("");
-    
-      const categories = ["Barangay Clearance", "Occupancy Permit"];
+  const [searchName, setSearchName] = useState("");
+  const [searchTags, setSearchTags] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("");
 
-      const navigate = useNavigate();
+  const categories = ["Barangay Clearance", "Occupancy Permit"];
+
+  const navigate = useNavigate();
   const [username, setUsername] = useState("User");
 
   useEffect(() => {
     // Get user data from localStorage
     const userData = localStorage.getItem("user");
-    
+
     if (!userData) {
       // If no user data, redirect to login
       navigate("/oabps/main/login");
@@ -37,7 +36,9 @@ function MainRequests() {
     <>
       <MainSideBar>
         <div className="container-fluid p-4">
-            <h2 className="display-5 fw-bold text-dark mb-2">Welcome, {username}!</h2>
+          <h2 className="display-5 fw-bold text-dark mb-2">
+            Welcome, {username}!
+          </h2>
           {/* Header */}
 
           <div className="bg-light p-4 border-bottom text-center mb-4 shadow-sm">
@@ -117,7 +118,7 @@ function MainRequests() {
         </div>
       </MainSideBar>
     </>
-  )
+  );
 }
 
-export default MainRequests
+export default MainRequests;
