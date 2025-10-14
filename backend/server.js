@@ -1785,6 +1785,48 @@ app.delete("/api/assignment/delete/:id", async (req, res) => {
   }
 });
 
+// Get all login audits endpoint with joined data
+app.get("/api/audit/all", async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from("Login Audits")
+      .select(`
+        *,
+        Admins (
+          fullname,
+          username
+        )
+      `)
+      .order("login_datetime", { ascending: false });
+
+    if (error) {
+      console.error("Supabase error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to fetch audits",
+      });
+    }
+
+    // Transform data to include admin details
+    const transformedData = data.map((audit) => ({
+      ...audit,
+      admin_fullname: audit.Admins?.fullname || "Unknown",
+      admin_username: audit.Admins?.username || "Unknown",
+    }));
+
+    res.status(200).json({
+      success: true,
+      audits: transformedData,
+    });
+  } catch (err) {
+    console.error("Fetch audits error:", err);
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while fetching audits",
+    });
+  }
+});
+
 // Add login audit endpoint
 app.post("/api/audit/login", async (req, res) => {
   try {
