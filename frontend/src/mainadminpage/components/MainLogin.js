@@ -32,17 +32,40 @@ function MainLogin() {
         // Store user data in localStorage
         localStorage.setItem("user", JSON.stringify(response.data.user));
         localStorage.setItem("token", response.data.token);
-        
+
+        // Log successful login audit
+        try {
+          await axios.post("https://oabs-f7by.onrender.com/api/audit/login", {
+            admin_id: response.data.user.admin_id,
+            status: "Success",
+          });
+        } catch (auditError) {
+          console.error("Failed to log audit:", auditError);
+          // Continue with login even if audit fails
+        }
+
         // Redirect to dashboard
         navigate("/oabps/main/dashboard");
       }
     } catch (err) {
+      // Log failed login audit
+      if (err.response?.data?.admin_id) {
+        try {
+          await axios.post("https://oabs-f7by.onrender.com/api/audit/login", {
+            admin_id: err.response.data.admin_id,
+            status: "Failed",
+          });
+        } catch (auditError) {
+          console.error("Failed to log audit:", auditError);
+        }
+      }
+
       if (err.response?.data?.error) {
         setError(err.response.data.error);
       } else {
         setError("Login failed. Please try again.");
       }
-      
+
     } finally {
       setIsLoading(false);
     }

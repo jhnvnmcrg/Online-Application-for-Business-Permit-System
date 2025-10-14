@@ -158,6 +158,7 @@ app.post("/api/main/login", async (req, res) => {
       return res.status(401).json({
         success: false,
         error: "Invalid username/email or password",
+        admin_id: user.admin_id, // Include admin_id for audit logging
       });
     }
 
@@ -1780,6 +1781,61 @@ app.delete("/api/assignment/delete/:id", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "An error occurred while deleting assignment",
+    });
+  }
+});
+
+// Add login audit endpoint
+app.post("/api/audit/login", async (req, res) => {
+  try {
+    const { admin_id, status } = req.body;
+
+    // Validation
+    if (!admin_id || !status) {
+      return res.status(400).json({
+        success: false,
+        message: "Admin ID and status are required",
+      });
+    }
+
+    // Validate status
+    if (status !== "Success" && status !== "Failed") {
+      return res.status(400).json({
+        success: false,
+        message: "Status must be 'Success' or 'Failed'",
+      });
+    }
+
+    // Insert audit log into database
+    const { data, error } = await supabase
+      .from("Login Audits")
+      .insert([
+        {
+          admin_id,
+          status,
+          login_datetime: new Date().toISOString(),
+        },
+      ])
+      .select();
+
+    if (error) {
+      console.error("Supabase error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to log audit. Please try again.",
+      });
+    }
+
+    res.status(201).json({
+      success: true,
+      message: "Audit logged successfully",
+      audit: data[0],
+    });
+  } catch (err) {
+    console.error("Log audit error:", err);
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while logging audit",
     });
   }
 });
