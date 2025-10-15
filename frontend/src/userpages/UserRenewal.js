@@ -1,25 +1,22 @@
 import React, { useState } from 'react';
 import UserSideBAr from '../includes/UserSideBar';
 
-function Renewal() {   
-
+function UserRenewal() {
     const [accountNumber, setAccountNumber] = useState('');
-      const [businessPlate, setBusinessPlate] = useState('');
-    
-      const handleSearch = () => {
-        if (!accountNumber.trim() || !businessPlate.trim()) {
-          alert('Please fill in both Account Number and Business Plate fields.');
-          return;
-        }
-        alert(`Searching for Account Number: ${accountNumber}, Business Plate: ${businessPlate}`);
-      };
-    
-      const handleCancel = () => {
-        setAccountNumber('');
-        setBusinessPlate('');
-      };
-
-
+          const [businessPlate, setBusinessPlate] = useState('');
+        
+          const handleSearch = () => {
+            if (!accountNumber.trim() || !businessPlate.trim()) {
+              alert('Please fill in both Account Number and Business Plate fields.');
+              return;
+            }
+            alert(`Searching for Account Number: ${accountNumber}, Business Plate: ${businessPlate}`);
+          };
+        
+          const handleCancel = () => {
+            setAccountNumber('');
+            setBusinessPlate('');
+          };
   return (
     <>
         <UserSideBAr>
@@ -85,4 +82,4 @@ function Renewal() {
   )
 }
 
-export default Renewal
+export default UserRenewal

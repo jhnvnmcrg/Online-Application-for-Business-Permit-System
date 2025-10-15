@@ -22,13 +22,19 @@ import ProcessorForgot from './processorpage/components/ProcessorForgot'
 import ProcessorDashboard from './processorpage/ProcessorDashboard'
 import ProcessorDocuments from './processorpage/ProcessorDocuments'
 import ProcessorRequests from './processorpage/ProcessorRequests'
-import ProcessPayment from './processorpage/ProcessorPayments'
+import ProcessorPayments from './processorpage/ProcessorPayments'
 import ProcessorTransactions from './processorpage/ProcessorTransactions'
-
 
 import UserRegister from './userpages/components/UserRegister'
 import UserLogin from './userpages/components/UserLogin'
 import UserForgot from './userpages/components/UserForgot'
+
+import UserDashboard from './userpages/UserDashboard'
+import UserChecklist from './userpages/UserChecklist'
+import UserRenewal from './userpages/UserRenewal'
+import UserTransaction from './userpages/UserTransaction'
+import UserForms from './userpages/UserForms'
+import UserDownloadables from './userpages/UserDownloadables'
 
 // --------------------------------------------------------
 
@@ -38,16 +44,6 @@ import Tracking from './pages/Tracking'
 import ContactUs from './pages/ContactUs'
 import About from './pages/About'
 
-import TestCode from './userpages/TestCode'
-import Dashboard from './userpages/DashboardUser'
-import Checklist from './userpages/ApplicationChecklist'
-import NewApplication from './userpages/NewApplication'
-import Renewal from './userpages/Renewal'
-import Transaction from './userpages/Transaction'
-import Downloadables from './userpages/Downloadables'
-import Forms from './userpages/Forms'
-import BrgyClearance from './userpages/documentz/BrgyClearance'
-import ProcessorPayments from './processorpage/ProcessorPayments'
 
 
 function App() {
@@ -85,6 +81,13 @@ function App() {
         <Route path='/oabps/user/login' element={<UserLogin/>}></Route>
         <Route path='/oabps/user/forgot' element={<UserForgot/>}></Route>
 
+        <Route path='/oabps/user/dashboard' element={<UserDashboard/>}></Route>
+        <Route path='/oabps/user/checklist' element={<UserChecklist/>}></Route>
+        <Route path='/oabps/user/renewal' element={<UserRenewal/>}></Route>
+        <Route path='/oabps/user/transaction' element={<UserTransaction/>}></Route>
+        <Route path='/oabps/user/forms' element={<UserForms/>}></Route>
+        <Route path='/oabps/user/downloadables' element={<UserDownloadables/>}></Route>
+
         {/* ----------------------------------------------------------- */}
 
 
@@ -95,17 +98,10 @@ function App() {
         <Route path='/contactus' element={<ContactUs/>}></Route>
         <Route path='/about' element={<About/>}></Route>
         
-        <Route path='/testcode' element={<TestCode/>}></Route>
-        <Route path='/dasboard' element={<Dashboard/>}></Route>
-        <Route path='/business/new-application/checklist' element={<Checklist/>}></Route>
-        <Route path='/business/new-application/new' element={<NewApplication/>}></Route>
-        <Route path='/business/renewal' element={<Renewal/>}></Route>
-        <Route path='/transactions/my-transactions' element={<Transaction/>}></Route>
-        <Route path='/documents/downloadables' element={<Downloadables/>}></Route>
-        <Route path='/documents/forms' element={<Forms/>}></Route>
+      
 
 
-        <Route path='/requirements/brgyclearance' element={<BrgyClearance />}></Route>
+
         
       
       </Routes>

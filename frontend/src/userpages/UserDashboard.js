@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState, useEffect } from "react";
 import UserSideBAr from "../includes/UserSideBar";
 import {
   ChevronDown,
@@ -8,21 +8,44 @@ import {
   CreditCard,
   Download,
 } from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
-function DashboardUser() {
+function UserDashboard() {
+  const navigate = useNavigate();
+  const [username, setUsername] = useState("User");
+
+  useEffect(() => {
+    // Get user data from localStorage
+    const userData = localStorage.getItem("user");
+
+    if (!userData) {
+      // If no user data, redirect to login
+      navigate("/oabps/user/login");
+      return;
+    }
+
+    try {
+      const user = JSON.parse(userData);
+      // Set username from user data
+      setUsername(user.username || user.fullname || "User");
+    } catch (error) {
+      console.error("Error parsing user data:", error);
+      navigate("/oabps/user/login");
+    }
+  }, [navigate]);
+
   return (
     <>
       <UserSideBAr>
         <div className="mb-4">
-          <h2 className="display-5 fw-bold text-dark mb-2">Welcome, USER!</h2>
+          <h2 className="display-5 fw-bold text-dark mb-2">Welcome, {username}!</h2>
           <p className="text-muted">Select your transaction</p>
         </div>
 
         <div className="row g-4 mb-4">
           <div className="col-lg-4">
             <Link
-              to="/business/new-application/checklist"
+              to="/oabps/user/checklist"
               className="text-decoration-none"
             >
               <div className="dashboard-card card bg-danger text-white h-100">
@@ -42,7 +65,7 @@ function DashboardUser() {
           </div>
           <div className="col-lg-4">
             <Link
-              to="/transactions/my-transactions"
+              to="/oabps/user/transaction"
               className="text-decoration-none"
             >
               <div className="dashboard-card card bg-danger text-white h-100">
@@ -151,7 +174,7 @@ function DashboardUser() {
         </div>
       </UserSideBAr>
     </>
-  );
+  )
 }
 
-export default DashboardUser;
+export default UserDashboard

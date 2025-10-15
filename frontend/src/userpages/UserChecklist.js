@@ -1,15 +1,16 @@
 import React, { useState } from "react";
 import UserSideBAr from "../includes/UserSideBar";
 import { Link, useLocation } from "react-router-dom";
-function ApplicationChecklist() {
-  const handleProceed = () => {
+
+function UserChecklist() {
+    const handleProceed = () => {
     alert("Proceeding with application...");
   };
 
   const handleCancel = () => {
     alert("Application cancelled");
   };
-
+    
   return (
     <>
       <UserSideBAr>
@@ -177,7 +178,7 @@ function ApplicationChecklist() {
         </div>
       </UserSideBAr>
     </>
-  );
+  )
 }
 
-export default ApplicationChecklist;
+export default UserChecklist

@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   ChevronDown,
   ChevronRight,
@@ -10,19 +10,44 @@ import {
   Menu,
   FileDown,
   House,
+  LogOut,
 } from "lucide-react";
- // Import the external CSS file
+// Import the external CSS file
 
 function UserSidebar({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [expandedMenus, setExpandedMenus] = useState({});
+  const [username, setUsername] = useState("User");
   const location = useLocation();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Get user data from localStorage
+    const userData = localStorage.getItem("user");
+
+    if (userData) {
+      try {
+        const user = JSON.parse(userData);
+        setUsername(user.username || user.fullname || "User");
+      } catch (error) {
+        console.error("Error parsing user data:", error);
+      }
+    }
+  }, []);
 
   const toggleMenu = (menuKey) => {
     setExpandedMenus((prev) => ({
       ...prev,
       [menuKey]: !prev[menuKey],
     }));
+  };
+
+  const handleLogout = () => {
+    // Clear localStorage
+    localStorage.removeItem("user");
+    localStorage.removeItem("token");
+    // Redirect to login
+    navigate("/oabps/user/login");
   };
 
   // Check if current path matches any menu item
@@ -34,8 +59,8 @@ function UserSidebar({ children }) {
   const isBusinessServicesActive = () => {
     return (
       location.pathname.includes("/business/") ||
-      location.pathname === "/business/new-application/checklist" ||
-      location.pathname === "/business/renewal"
+      location.pathname === "/oabps/user/checklist" ||
+      location.pathname === "/oabps/user/renewal"
     );
   };
 
@@ -50,14 +75,14 @@ function UserSidebar({ children }) {
         {/* Sidebar Header */}
         <div className="p-3 border-bottom">
           <div className="d-flex align-items-center">
-            <Link to="/dasboard" className="text-decoration-none">
+            <Link to="/oabps/user/dashboard" className="text-decoration-none">
               <div className="logo-circle me-3">
                 <div className="logo-inner"></div>
               </div>
             </Link>
 
             {sidebarOpen && (
-              <Link to="/dasboard" className="text-decoration-none">
+              <Link to="/oabps/user/dashboard" className="text-decoration-none">
                 <h5 className="mb-0 fw-bold text-dark">Online BPLS</h5>
               </Link>
             )}
@@ -68,9 +93,9 @@ function UserSidebar({ children }) {
         <div className="p-2 flex-grow-1">
           {/* Dashboard Link */}
           <Link
-            to="/dasboard"
+            to="/oabps/user/dashboard"
             className={`sidebar-submenu-item btn w-100 d-flex align-items-center justify-content-between p-3 text-start text-decoration-none ${
-              isActiveItem("/dasboard") ? "active" : ""
+              isActiveItem("/oabps/user/dashboard") ? "active" : ""
             }`}
           >
             <div className="d-flex align-items-center">
@@ -104,17 +129,19 @@ function UserSidebar({ children }) {
             {sidebarOpen && expandedMenus["businessServices"] && (
               <div className="ms-4 mt-1">
                 <Link
-                  to="/business/new-application/checklist"
+                  to="/oabps/user/checklist"
                   className={`sidebar-submenu-item btn w-100 text-start p-2 small text-decoration-none ${
-                    isActiveItem("/business/new-application/checklist") ? "active" : ""
+                    isActiveItem("/oabps/user/checklist")
+                      ? "active"
+                      : ""
                   }`}
                 >
                   New Application
                 </Link>
                 <Link
-                  to="/business/renewal"
+                  to="/oabps/user/renewal"
                   className={`sidebar-submenu-item btn w-100 text-start p-2 small text-decoration-none ${
-                    isActiveItem("/business/renewal") ? "active" : ""
+                    isActiveItem("/oabps/user/renewal") ? "active" : ""
                   }`}
                 >
                   Renewal Services
@@ -125,9 +152,9 @@ function UserSidebar({ children }) {
 
           {/* Transactions Link */}
           <Link
-            to="/transactions/my-transactions"
+            to="/oabps/user/transaction"
             className={`sidebar-submenu-item btn w-100 d-flex align-items-center justify-content-between p-3 text-start text-decoration-none ${
-              isActiveItem("/transactions/my-transactions") ? "active" : ""
+              isActiveItem("/oabps/user/transaction") ? "active" : ""
             }`}
           >
             <div className="d-flex align-items-center">
@@ -140,9 +167,9 @@ function UserSidebar({ children }) {
 
           {/* Application Forms Link */}
           <Link
-            to="/documents/forms"
+            to="/oabps/user/forms"
             className={`sidebar-submenu-item btn w-100 d-flex align-items-center justify-content-between p-3 text-start text-decoration-none ${
-              isActiveItem("/documents/forms") ? "active" : ""
+              isActiveItem("/oabps/user/forms") ? "active" : ""
             }`}
           >
             <div className="d-flex align-items-center">
@@ -155,9 +182,9 @@ function UserSidebar({ children }) {
 
           {/* Downloadables Link */}
           <Link
-            to="/documents/downloadables"
+            to="/oabps/user/downloadables"
             className={`sidebar-submenu-item btn w-100 d-flex align-items-center justify-content-between p-3 text-start text-decoration-none ${
-              isActiveItem("/documents/downloadables") ? "active" : ""
+              isActiveItem("/oabps/user/downloadables") ? "active" : ""
             }`}
           >
             <div className="d-flex align-items-center">
@@ -188,7 +215,7 @@ function UserSidebar({ children }) {
                 <Menu size={20} />
               </button>
               <Link
-                to="/dasboard"
+                to="/oabps/user/dashboard"
                 className="d-flex align-items-center text-decoration-none"
               >
                 <div className="logo-circle me-3">
@@ -197,14 +224,19 @@ function UserSidebar({ children }) {
                 <h4 className="navbar-brand mb-0 text-white">Online BPLS</h4>
               </Link>
             </div>
-            <div className="d-flex align-items-center me-4">
-              <Link 
-                to="/loginfinal/user" 
-                className="btn btn-outline-light"
-                aria-label="User profile"
+            <div className="d-flex align-items-center gap-3 me-4">
+              <div className="d-flex align-items-center text-white">
+                <User size={20} className="me-2" />
+                <span className="fw-medium">{username}</span>
+              </div>
+              <button
+                onClick={handleLogout}
+                className="btn btn-outline-light d-flex align-items-center"
+                aria-label="Logout"
               >
-                <User size={20} />
-              </Link>
+                <LogOut size={20} className="me-2" />
+                <span>Logout</span>
+              </button>
             </div>
           </div>
         </nav>

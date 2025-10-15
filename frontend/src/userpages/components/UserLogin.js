@@ -34,7 +34,7 @@ function UserLogin() {
         localStorage.setItem("token", response.data.token);
 
         // Redirect to dashboard
-        navigate("/dashboard");
+        navigate("/oabps/user/dashboard");
       }
     } catch (err) {
       if (err.response?.data?.error) {

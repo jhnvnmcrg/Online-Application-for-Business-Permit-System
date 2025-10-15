@@ -1,11 +1,7 @@
 import React, { useState } from 'react';
 import UserSideBAr from '../includes/UserSideBar';
 
-function Forms() {   
-
-    
-
-
+function UserDownloadables() {
   return (
     <>
         <UserSideBAr>
@@ -17,4 +13,4 @@ function Forms() {
   )
 }
 
-export default Forms
+export default UserDownloadables

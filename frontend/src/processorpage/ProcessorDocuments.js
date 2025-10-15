@@ -98,6 +98,11 @@ function ProcessorDocuments() {
           category_name: assignment.DocumentCategories?.category_name || "Unknown"
         }));
         setCategories(uniqueCategories);
+
+        // Auto-set category if only one is assigned
+        if (uniqueCategories.length === 1) {
+          setCategoryId(uniqueCategories[0].category_id);
+        }
       }
     } catch (err) {
       console.error("Error fetching assigned categories:", err);
@@ -126,7 +131,7 @@ function ProcessorDocuments() {
 
   const handleCloseModal = () => {
     setShowModal(false);
-    setCategoryId("");
+    // Don't reset categoryId - it's auto-set from assigned category
     setDocumentFile(null);
     setDescription("");
     setError("");
@@ -182,7 +187,10 @@ function ProcessorDocuments() {
   const handleCloseEditModal = () => {
     setShowEditModal(false);
     setEditingDocument(null);
-    setCategoryId("");
+    // Reset categoryId to the auto-set value from assigned category
+    if (categories.length === 1) {
+      setCategoryId(categories[0].category_id);
+    }
     setDescription("");
     setDocumentFile(null);
     setError("");
@@ -287,7 +295,7 @@ function ProcessorDocuments() {
                   <thead className="table-light">
                     <tr>
                       <th>#</th>
-                      <th>Category Name</th>
+                      
                       <th>Document Name</th>
                       <th>Description</th>
                       <th>Date Added</th>
@@ -305,7 +313,7 @@ function ProcessorDocuments() {
                       filteredDocuments.map((doc, index) => (
                         <tr key={doc.document_id}>
                           <td>{index + 1}</td>
-                          <td>{doc.DocumentCategories?.category_name || "N/A"}</td>
+
                           <td>{doc.document_name}</td>
                           <td>{doc.description}</td>
                           <td>{new Date(doc.created_at).toLocaleDateString()}</td>
@@ -361,27 +369,21 @@ function ProcessorDocuments() {
                       </div>
                     )}
                     <div className="mb-3">
-                      <label htmlFor="categoryId" className="form-label">
-                        Category Name
-                      </label>
-                      <select
-                        className="form-select"
+                      
+                      <input
+                        type="text"
+                        className="form-control"
+                        id="categoryName"
+                        value={categories.find(cat => cat.category_id === categoryId)?.category_name || "Not Assigned"}
+                        disabled
+                        hidden
+                        readOnly
+                      />
+                      <input
+                        type="hidden"
                         id="categoryId"
                         value={categoryId}
-                        onChange={(e) => setCategoryId(e.target.value)}
-                        required
-                        disabled={loading}
-                      >
-                        <option value="">Search Category</option>
-                        {categories.map((category) => (
-                          <option
-                            key={category.category_id}
-                            value={category.category_id}
-                          >
-                            {category.category_name}
-                          </option>
-                        ))}
-                      </select>
+                      />
                     </div>
                     <div className="mb-3">
                       <label htmlFor="documentFile" className="form-label">
@@ -471,27 +473,21 @@ function ProcessorDocuments() {
                       </div>
                     )}
                     <div className="mb-3">
-                      <label htmlFor="editCategoryId" className="form-label">
-                        Category Name
-                      </label>
-                      <select
-                        className="form-select"
+                      
+                      <input
+                        type="text"
+                        className="form-control"
+                        id="editCategoryName"
+                        value={categories.find(cat => cat.category_id === categoryId)?.category_name || "Not Assigned"}
+                        disabled
+                        readOnly
+                        hidden
+                      />
+                      <input
+                        type="hidden"
                         id="editCategoryId"
                         value={categoryId}
-                        onChange={(e) => setCategoryId(e.target.value)}
-                        required
-                        disabled={loading}
-                      >
-                        <option value="">Select Category</option>
-                        {categories.map((category) => (
-                          <option
-                            key={category.category_id}
-                            value={category.category_id}
-                          >
-                            {category.category_name}
-                          </option>
-                        ))}
-                      </select>
+                      />
                     </div>
                     <div className="mb-3">
                       <label htmlFor="editDocumentFile" className="form-label">
