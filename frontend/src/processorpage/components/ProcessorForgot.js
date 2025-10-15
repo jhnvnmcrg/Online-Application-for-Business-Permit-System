@@ -1,33 +1,68 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
 import { Eye, EyeOff } from "lucide-react";
 
 function ProcessorForgot() {
+  const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
-        const [password, setPassword] = useState("");
-        const [isLoading, setIsLoading] = useState(false);
-        const [error, setError] = useState("");
-        const [formData, setFormData] = useState({
-          email: "",
-        });
-        const [agreeToPolicy, setAgreeToPolicy] = useState(false);
-      
-        const handleInputChange = (e) => {
-          const { name, value } = e.target;
-          setFormData((prev) => ({
-            ...prev,
-            [name]: value,
-          }));
-        };
-      
-        const handleForgotAccount = (e) => {
-          e.preventDefault();
-        };
-      
-        const handleCancel = () => {
-          console.log("Registration cancelled");
-          alert("Forgot cancelled. Returning to login page.");
-        };
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [username, setUsername] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+    setError("");
+    setSuccess("");
+
+    // Validation
+    if (!username || !newPassword || !confirmPassword) {
+      setError("All fields are required");
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setError("Password must be at least 6 characters long");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const response = await axios.post(
+        "https://oabs-f7by.onrender.com/api/processor/forgot-password",
+        {
+          username: username,
+          newPassword: newPassword,
+        }
+      );
+
+      if (response.data.success) {
+        setSuccess("Password reset successfully! Redirecting to login...");
+        setTimeout(() => {
+          navigate("/oabps/processor/login");
+        }, 2000);
+      }
+    } catch (err) {
+      if (err.response?.data?.error) {
+        setError(err.response.data.error);
+      } else {
+        setError("Failed to reset password. Please try again.");
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <>
       <div className="min-vh-100 position-relative overflow-hidden">
@@ -41,82 +76,114 @@ function ProcessorForgot() {
                     <div className="logo-inner w-50 h-50"></div>
                   </div>
                 </div>
-                <h4 className="fw-semibold text-dark mb-1">Forgot Password</h4>
+                <h4 className="fw-semibold text-dark mb-1">Reset Password</h4>
                 <p className="text-muted mb-4" style={{ fontSize: "14px" }}>
                   Online Business Permit & Licensing System
                 </p>
               </div>
-              <div>
+
+              {error && (
+                <div className="alert alert-danger" role="alert">
+                  {error}
+                </div>
+              )}
+
+              {success && (
+                <div className="alert alert-success" role="alert">
+                  {success}
+                </div>
+              )}
+
+              <form onSubmit={handleResetPassword}>
                 <div className="mb-3">
-                  <input
-                    type="email"
-                    className="form-control"
-                    name="email"
-                    placeholder="Email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    required
-                  />
                   
-                </div>
-                <div className="mb-3 position-relative">
                   <input
-                    type={showPassword ? "text" : "password"}
+                    type="text"
                     className="form-control"
-                    placeholder="New Password"
-                    value={password}
+                    placeholder="Enter your username or email"
+                    value={username}
                     onChange={(e) => {
-                      setPassword(e.target.value);
+                      setUsername(e.target.value);
                       setError("");
                     }}
                     required
                     disabled={isLoading}
-                    style={{ paddingRight: "40px" }}
                   />
-                  <button
-                    type="button"
-                    className="btn btn-link position-absolute end-0 top-50 translate-middle-y"
-                    onClick={() => setShowPassword(!showPassword)}
-                    disabled={isLoading}
-                    style={{
-                      border: "none",
-                      background: "none",
-                      padding: "0 10px",
-                      color: "#6c757d",
-                    }}
-                  >
-                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                  </button>
                 </div>
-                <div className="mb-3 position-relative">
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    className="form-control"
-                    placeholder="Confirm Password"
-                    value={password}
-                    onChange={(e) => {
-                      setPassword(e.target.value);
-                      setError("");
-                    }}
-                    required
-                    disabled={isLoading}
-                    style={{ paddingRight: "40px" }}
-                  />
-                  <button
-                    type="button"
-                    className="btn btn-link position-absolute end-0 top-50 translate-middle-y"
-                    onClick={() => setShowPassword(!showPassword)}
-                    disabled={isLoading}
-                    style={{
-                      border: "none",
-                      background: "none",
-                      padding: "0 10px",
-                      color: "#6c757d",
-                    }}
-                  >
-                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                  </button>
+
+                <div className="mb-3">
+                  
+                  <div className="position-relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      className="form-control"
+                      placeholder="Enter new password"
+                      value={newPassword}
+                      onChange={(e) => {
+                        setNewPassword(e.target.value);
+                        setError("");
+                      }}
+                      required
+                      disabled={isLoading}
+                      style={{ paddingRight: "40px" }}
+                    />
+                    <button
+                      type="button"
+                      className="btn btn-link position-absolute end-0 top-50 translate-middle-y"
+                      onClick={() => setShowPassword(!showPassword)}
+                      disabled={isLoading}
+                      style={{
+                        border: "none",
+                        background: "none",
+                        padding: "0 10px",
+                        color: "#6c757d",
+                      }}
+                    >
+                      {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                    </button>
+                  </div>
+                
                 </div>
+
+                <div className="mb-3">
+                  
+                  <div className="position-relative">
+                    <input
+                      type={showConfirmPassword ? "text" : "password"}
+                      className="form-control"
+                      placeholder="Re-enter new password"
+                      value={confirmPassword}
+                      onChange={(e) => {
+                        setConfirmPassword(e.target.value);
+                        setError("");
+                      }}
+                      required
+                      disabled={isLoading}
+                      style={{ paddingRight: "40px" }}
+                    />
+                    <button
+                      type="button"
+                      className="btn btn-link position-absolute end-0 top-50 translate-middle-y"
+                      onClick={() =>
+                        setShowConfirmPassword(!showConfirmPassword)
+                      }
+                      disabled={isLoading}
+                      style={{
+                        border: "none",
+                        background: "none",
+                        padding: "0 10px",
+                        color: "#6c757d",
+                      }}
+                    >
+                      {showConfirmPassword ? (
+                        <EyeOff size={20} />
+                      ) : (
+                        <Eye size={20} />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
                 <div className="d-flex gap-3">
                   <Link
                     to="/oabps/processor/login"
@@ -146,17 +213,18 @@ function ProcessorForgot() {
                     onMouseOut={(e) =>
                       (e.target.style.backgroundColor = "#dc3545")
                     }
+                    disabled={isLoading}
                   >
-                    FORGOT PASSWORD
+                    {isLoading ? "RESETTING..." : "RESET PASSWORD"}
                   </button>
                 </div>
-              </div>
+              </form>
             </div>
           </div>
         </div>
       </div>
     </>
-  )
+  );
 }
 
-export default ProcessorForgot
+export default ProcessorForgot;

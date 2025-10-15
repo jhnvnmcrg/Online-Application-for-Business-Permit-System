@@ -187,6 +187,72 @@ app.post("/api/main/login", async (req, res) => {
   }
 });
 
+// Main admin (Superadmin) forgot password endpoint
+app.post("/api/main/forgot-password", async (req, res) => {
+  try {
+    const { username, newPassword } = req.body;
+
+    // Validation
+    if (!username || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        error: "Username/Email and new password are required",
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        error: "Password must be at least 6 characters long",
+      });
+    }
+
+    // Find admin by username or email (any admin can reset, not limited to Superadmin)
+    const { data: user, error } = await supabase
+      .from("Admins")
+      .select("*")
+      .or(`username.eq.${username},email.eq.${username}`)
+      .single();
+
+    if (error || !user) {
+      return res.status(404).json({
+        success: false,
+        error: "Admin account not found with this username/email",
+      });
+    }
+
+    // Hash new password
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+
+    // Update password in database
+    const { error: updateError } = await supabase
+      .from("Admins")
+      .update({ password: hashedPassword })
+      .eq("admin_id", user.admin_id)
+      .select();
+
+    if (updateError) {
+      console.error("Supabase error:", updateError);
+      return res.status(500).json({
+        success: false,
+        error: "Failed to reset password. Please try again.",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Password reset successfully",
+    });
+  } catch (err) {
+    console.error("Main admin forgot password error:", err);
+    res.status(500).json({
+      success: false,
+      error: "An error occurred during password reset",
+    });
+  }
+});
+
 // Get all admins endpoint
 app.get("/api/admin/all", async (req, res) => {
   try {
@@ -519,6 +585,72 @@ app.post("/api/user/login", async (req, res) => {
   }
 });
 
+// Owner (User) forgot password endpoint
+app.post("/api/user/forgot-password", async (req, res) => {
+  try {
+    const { username, newPassword } = req.body;
+
+    // Validation
+    if (!username || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        error: "Username/Email and new password are required",
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        error: "Password must be at least 6 characters long",
+      });
+    }
+
+    // Find owner by username or email
+    const { data: user, error } = await supabase
+      .from("Owners")
+      .select("*")
+      .or(`username.eq.${username},email.eq.${username}`)
+      .single();
+
+    if (error || !user) {
+      return res.status(404).json({
+        success: false,
+        error: "Owner account not found with this username/email",
+      });
+    }
+
+    // Hash new password
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+
+    // Update password in database
+    const { error: updateError } = await supabase
+      .from("Owners")
+      .update({ password: hashedPassword })
+      .eq("owner_id", user.owner_id)
+      .select();
+
+    if (updateError) {
+      console.error("Supabase error:", updateError);
+      return res.status(500).json({
+        success: false,
+        error: "Failed to reset password. Please try again.",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Password reset successfully",
+    });
+  } catch (err) {
+    console.error("Owner forgot password error:", err);
+    res.status(500).json({
+      success: false,
+      error: "An error occurred during password reset",
+    });
+  }
+});
+
 // Login processor endpoint
 app.post("/api/processor/login", async (req, res) => {
   try {
@@ -590,6 +722,73 @@ app.post("/api/processor/login", async (req, res) => {
     res.status(500).json({
       success: false,
       error: "An error occurred during login",
+    });
+  }
+});
+
+// Processor forgot password endpoint
+app.post("/api/processor/forgot-password", async (req, res) => {
+  try {
+    const { username, newPassword } = req.body;
+
+    // Validation
+    if (!username || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        error: "Username/Email and new password are required",
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        error: "Password must be at least 6 characters long",
+      });
+    }
+
+    // Find processor by username or email and verify role is Processor
+    const { data: user, error } = await supabase
+      .from("Admins")
+      .select("*")
+      .or(`username.eq.${username},email.eq.${username}`)
+      .eq("role", "Processor")
+      .single();
+
+    if (error || !user) {
+      return res.status(404).json({
+        success: false,
+        error: "Processor account not found with this username/email",
+      });
+    }
+
+    // Hash new password
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+
+    // Update password in database
+    const { data: updateData, error: updateError } = await supabase
+      .from("Admins")
+      .update({ password: hashedPassword })
+      .eq("admin_id", user.admin_id)
+      .select();
+
+    if (updateError) {
+      console.error("Supabase error:", updateError);
+      return res.status(500).json({
+        success: false,
+        error: "Failed to reset password. Please try again.",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Password reset successfully",
+    });
+  } catch (err) {
+    console.error("Processor forgot password error:", err);
+    res.status(500).json({
+      success: false,
+      error: "An error occurred during password reset",
     });
   }
 });

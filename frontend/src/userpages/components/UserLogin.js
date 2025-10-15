@@ -32,9 +32,9 @@ function UserLogin() {
         // Store user data in localStorage
         localStorage.setItem("user", JSON.stringify(response.data.user));
         localStorage.setItem("token", response.data.token);
-        
+
         // Redirect to dashboard
-        navigate("/dasboard");
+        navigate("/dashboard");
       }
     } catch (err) {
       if (err.response?.data?.error) {

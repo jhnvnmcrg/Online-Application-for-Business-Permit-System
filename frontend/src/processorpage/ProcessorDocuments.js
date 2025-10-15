@@ -27,7 +27,7 @@ function ProcessorDocuments() {
 
   useEffect(() => {
     // Get user data from localStorage
-    const userData = localStorage.getItem("user");
+    const userData = localStorage.getItem("processor");
 
     if (!userData) {
       // If no user data, redirect to login

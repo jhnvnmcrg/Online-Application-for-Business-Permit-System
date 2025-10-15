@@ -140,22 +140,7 @@ function MainLogin() {
                     {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                   </button>
                 </div>
-                <div className="d-flex justify-content-between mb-4">
-                  <Link
-                    to="/oabps/main/register"
-                    className="text-decoration-none"
-                    style={{ color: "#dc3545" }}
-                  >
-                    Create a new account
-                  </Link>
-                  <Link
-                    to="/oabps/main/forgot"
-                    className="text-decoration-none"
-                    style={{ color: "#dc3545" }}
-                  >
-                    Forgot Password?
-                  </Link>
-                </div>
+                
                 
                 <button
                   type="submit"

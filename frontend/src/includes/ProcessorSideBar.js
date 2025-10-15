@@ -93,11 +93,11 @@ function ProcessorSideBar({ children }) {
 
   const handleLogout = () => {
     // Clear localStorage
-    localStorage.removeItem("user");
-    localStorage.removeItem("token");
+    localStorage.removeItem("processor");
+    localStorage.removeItem("processorToken");
 
     // Redirect to login page
-    navigate("/oabps/main/login");
+    navigate("/oabps/processor/login");
   };
 
   const handleSettings = () => {
