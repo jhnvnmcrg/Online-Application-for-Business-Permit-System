@@ -2156,4 +2156,108 @@ app.post("/api/audit/login", async (req, res) => {
   }
 });
 
+// Get assigned categories for a processor
+app.get("/api/processor/assigned-categories/:adminId", async (req, res) => {
+  try {
+    const { adminId } = req.params;
+
+    // Validation
+    if (!adminId) {
+      return res.status(400).json({
+        success: false,
+        message: "Admin ID is required",
+      });
+    }
+
+    // Get all assignments for this processor with category details
+    const { data, error } = await supabase
+      .from("Assigned Roles")
+      .select(`
+        *,
+        DocumentCategories:category_id (
+          category_id,
+          category_name,
+          description
+        )
+      `)
+      .eq("admin_id", adminId);
+
+    if (error) {
+      console.error("Supabase error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to fetch assigned categories",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      assignments: data,
+    });
+  } catch (err) {
+    console.error("Fetch assigned categories error:", err);
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while fetching assigned categories",
+    });
+  }
+});
+
+// Get documents uploaded by a specific processor
+app.get("/api/processor/documents/:adminId", async (req, res) => {
+  try {
+    const { adminId } = req.params;
+
+    // Validation
+    if (!adminId) {
+      return res.status(400).json({
+        success: false,
+        message: "Admin ID is required",
+      });
+    }
+
+    // Get all documents created by this processor with category details
+    const { data, error } = await supabase
+      .from("Documents")
+      .select(`
+        *,
+        DocumentCategories:category_id (
+          category_id,
+          category_name
+        ),
+        Admins:created_by (
+          username,
+          fullname
+        )
+      `)
+      .eq("created_by", adminId)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Supabase error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to fetch documents",
+      });
+    }
+
+    // Transform data to include category and admin details
+    const transformedData = data.map((doc) => ({
+      ...doc,
+      created_by_name: doc.Admins?.username || doc.Admins?.fullname || "Unknown",
+    }));
+
+    res.status(200).json({
+      success: true,
+      documents: transformedData,
+    });
+  } catch (err) {
+    console.error("Fetch processor documents error:", err);
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while fetching documents",
+    });
+  }
+});
+
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

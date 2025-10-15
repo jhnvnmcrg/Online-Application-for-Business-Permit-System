@@ -19,6 +19,7 @@ function ProcessorDocuments() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [editingDocument, setEditingDocument] = useState(null);
+  const [assignedCategories, setAssignedCategories] = useState([]);
 
   const navigate = useNavigate();
   const [username, setUsername] = useState("User");
@@ -45,11 +46,16 @@ function ProcessorDocuments() {
       console.error("Error parsing user data:", error);
       navigate("/oabps/processor/login");
     }
-
-    // Fetch categories and documents
-    fetchCategories();
-    fetchDocuments();
   }, [navigate]);
+
+  // Fetch data when adminId is available
+  useEffect(() => {
+    if (adminId) {
+      fetchAssignedCategories();
+      fetchDocuments();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [adminId]);
 
   // Search and filter effect
   useEffect(() => {
@@ -77,22 +83,34 @@ function ProcessorDocuments() {
     setFilteredDocuments(filtered);
   }, [searchName, searchTags, selectedCategory, documents]);
 
-  const fetchCategories = async () => {
+  const fetchAssignedCategories = async () => {
     try {
+      if (!adminId) return;
+
       const response = await axios.get(
-        "https://oabs-f7by.onrender.com/api/category/all"
+        `https://oabs-f7by.onrender.com/api/processor/assigned-categories/${adminId}`
       );
       if (response.data.success) {
-        setCategories(response.data.categories);
+        setAssignedCategories(response.data.assignments);
+        // Extract unique categories from assignments
+        const uniqueCategories = response.data.assignments.map(assignment => ({
+          category_id: assignment.category_id,
+          category_name: assignment.DocumentCategories?.category_name || "Unknown"
+        }));
+        setCategories(uniqueCategories);
       }
     } catch (err) {
-      console.error("Error fetching categories:", err);
+      console.error("Error fetching assigned categories:", err);
     }
   };
 
   const fetchDocuments = async () => {
     try {
-      const response = await axios.get("https://oabs-f7by.onrender.com/api/document/all");
+      if (!adminId) return;
+
+      const response = await axios.get(
+        `https://oabs-f7by.onrender.com/api/processor/documents/${adminId}`
+      );
       if (response.data.success) {
         setDocuments(response.data.documents);
         setFilteredDocuments(response.data.documents);
@@ -261,39 +279,7 @@ function ProcessorDocuments() {
             <hr className="my-0" />
             <div className="bg-light p-4 border-bottom text-center mb-4 shadow-sm">
               {/* Search and Filter Row */}
-              <div className="row mb-4">
-                <div className="col-md-6">
-                  <label className="form-label text-muted">
-                    Search by Category
-                  </label>
-                  <select
-                    className="form-select"
-                    value={selectedCategory}
-                    onChange={(e) => setSelectedCategory(e.target.value)}
-                  >
-                    <option value="">Select Category</option>
-                    {categories.map((category) => (
-                      <option key={category.category_id} value={category.category_id}>
-                        {category.category_name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="col-md-6">
-                  <label className="form-label text-muted">
-                    Search
-                  </label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    placeholder="Search..."
-                    value={searchName}
-                    onChange={(e) => setSearchName(e.target.value)}
-                  />
-                </div>
-                
-                
-              </div>
+              
 
               {/* Table */}
               <div className="table-responsive">
@@ -305,14 +291,13 @@ function ProcessorDocuments() {
                       <th>Document Name</th>
                       <th>Description</th>
                       <th>Date Added</th>
-                      <th>Created By</th>
                       <th>Action</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredDocuments.length === 0 ? (
                       <tr>
-                        <td colSpan="7" className="text-center">
+                        <td colSpan="6" className="text-center">
                           No documents found
                         </td>
                       </tr>
@@ -320,14 +305,10 @@ function ProcessorDocuments() {
                       filteredDocuments.map((doc, index) => (
                         <tr key={doc.document_id}>
                           <td>{index + 1}</td>
-                          <td>
-                            {categories.find((cat) => cat.category_id === doc.category_id)
-                              ?.category_name || "N/A"}
-                          </td>
+                          <td>{doc.DocumentCategories?.category_name || "N/A"}</td>
                           <td>{doc.document_name}</td>
                           <td>{doc.description}</td>
                           <td>{new Date(doc.created_at).toLocaleDateString()}</td>
-                          <td>{doc.created_by_name || "Unknown"}</td>
                           <td>
                             <button
                               className="btn btn-sm"
