@@ -2751,7 +2751,7 @@ app.put("/api/request/update-status/:requestId", async (req, res) => {
     }
 
     // Validate status
-    const validStatuses = ["Pending", "Processing", "Approved", "Rejected", "Released"];
+    const validStatuses = ["Pending", "Processing", "Approved", "Rejected", "Released", "Cancelled"];
     if (!validStatuses.includes(status)) {
       return res.status(400).json({
         success: false,
@@ -2854,6 +2854,90 @@ app.get("/api/request/history/:requestId", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "An error occurred while fetching request history",
+    });
+  }
+});
+
+// Cancel request (Owner only - can only cancel Pending requests)
+app.put("/api/request/cancel/:requestId", async (req, res) => {
+  try {
+    const { requestId } = req.params;
+    const { ownerId } = req.body;
+
+    // Validation
+    if (!requestId || !ownerId) {
+      return res.status(400).json({
+        success: false,
+        message: "Request ID and Owner ID are required",
+      });
+    }
+
+    // Get current request to verify ownership and status
+    const { data: currentRequest, error: fetchError } = await supabase
+      .from("Requests")
+      .select("*")
+      .eq("request_id", requestId)
+      .single();
+
+    if (fetchError || !currentRequest) {
+      return res.status(404).json({
+        success: false,
+        message: "Request not found",
+      });
+    }
+
+    // Verify ownership
+    if (currentRequest.owner_id !== parseInt(ownerId)) {
+      return res.status(403).json({
+        success: false,
+        message: "You are not authorized to cancel this request",
+      });
+    }
+
+    // Only allow cancellation if status is Pending
+    if (currentRequest.status !== "Pending") {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot cancel request with status "${currentRequest.status}". Only pending requests can be cancelled.`,
+      });
+    }
+
+    // Update request status to Cancelled
+    const { data, error } = await supabase
+      .from("Requests")
+      .update({ status: "Cancelled" })
+      .eq("request_id", requestId)
+      .select();
+
+    if (error) {
+      console.error("Supabase error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to cancel request",
+      });
+    }
+
+    // Log status change to Request History
+    await supabase.from("Request History").insert([
+      {
+        request_id: requestId,
+        previous_status: currentRequest.status,
+        new_status: "Cancelled",
+        changed_by: null, // Owner cancelled, not admin
+        remarks: "Cancelled by owner",
+      },
+    ]);
+
+    res.status(200).json({
+      success: true,
+      message: "Request cancelled successfully",
+      request: data[0],
+    });
+  } catch (err) {
+    console.error("Cancel request error:", err);
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while cancelling request",
     });
   }
 });

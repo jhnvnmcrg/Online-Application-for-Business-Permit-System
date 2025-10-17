@@ -407,7 +407,7 @@ function UserChecklist() {
                   <tr key={category.category_id}>
                     <td className="fw-bold">{category.category_name}</td>
                     <td className="text-muted">{category.description}</td>
-                    <td className="text-center">
+                    <td className="text-center align-middle">
                       <button
                         className="btn btn-sm btn-primary"
                         onClick={() =>
@@ -515,36 +515,49 @@ function UserChecklist() {
               </div>
             )}
 
-            <div className="d-flex justify-content-end gap-3 mt-4">
-              <button
-                type="button"
-                className="btn btn-secondary px-4"
-                onClick={handleStartOver}
-                disabled={loading}
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="btn btn-success px-4"
-                disabled={loading}
-              >
-                {loading ? (
-                  <>
-                    <span
-                      className="spinner-border spinner-border-sm me-2"
-                      role="status"
-                    ></span>
-                    Submitting...
-                  </>
-                ) : (
-                  <>
-                    <Upload size={16} className="me-2" />
-                    Submit Request
-                  </>
-                )}
-              </button>
-            </div>
+            {/* Show message if no form fields exist */}
+            {formFields.length === 0 && (
+              <div className="alert alert-warning text-center">
+                <p className="mb-0">
+                  No form fields have been configured for this category yet.
+                  Please contact the administrator.
+                </p>
+              </div>
+            )}
+
+            {/* Only show buttons if there are form fields */}
+            {formFields.length > 0 && (
+              <div className="d-flex justify-content-end gap-3 mt-4">
+                <button
+                  type="button"
+                  className="btn btn-secondary px-4"
+                  onClick={handleStartOver}
+                  disabled={loading}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-success px-4"
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <>
+                      <span
+                        className="spinner-border spinner-border-sm me-2"
+                        role="status"
+                      ></span>
+                      Submitting...
+                    </>
+                  ) : (
+                    <>
+                      <Upload size={16} className="me-2" />
+                      Submit Request
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
           </form>
         </div>
       </div>
