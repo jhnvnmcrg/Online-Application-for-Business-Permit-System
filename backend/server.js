@@ -3079,4 +3079,415 @@ app.put("/api/request/cancel/:requestId", async (req, res) => {
   }
 });
 
+// ============================================
+// PAYMENT MANAGEMENT ENDPOINTS
+// ============================================
+
+// Add payment requirement to a request (Admin only)
+app.post("/api/payment/add", async (req, res) => {
+  try {
+    const {
+      requestId,
+      amount,
+      paymentType,
+      description,
+      receiverName,
+      receiverNumber,
+      receiverAccount,
+      paymentMethod,
+      createdBy,
+    } = req.body;
+
+    // Validation
+    if (!requestId || !amount || !createdBy) {
+      return res.status(400).json({
+        success: false,
+        message: "Request ID, amount, and admin ID are required",
+      });
+    }
+
+    // Verify request exists
+    const { data: request, error: requestError } = await supabase
+      .from("Requests")
+      .select("*")
+      .eq("request_id", requestId)
+      .single();
+
+    if (requestError || !request) {
+      return res.status(404).json({
+        success: false,
+        message: "Request not found",
+      });
+    }
+
+    // Insert payment
+    const { data, error } = await supabase
+      .from("Payments")
+      .insert([
+        {
+          request_id: requestId,
+          amount: parseFloat(amount),
+          payment_type: paymentType || "Permit Fee",
+          description: description || null,
+          receiver_name: receiverName || null,
+          receiver_number: receiverNumber || null,
+          receiver_account: receiverAccount || null,
+          payment_method: paymentMethod || null,
+          created_by: createdBy,
+          status: "Pending",
+        },
+      ])
+      .select();
+
+    if (error) {
+      console.error("Supabase error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to add payment requirement",
+      });
+    }
+
+    res.status(201).json({
+      success: true,
+      message: "Payment requirement added successfully",
+      payment: data[0],
+    });
+  } catch (err) {
+    console.error("Add payment error:", err);
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while adding payment",
+    });
+  }
+});
+
+// Get all payments for a request
+app.get("/api/payment/request/:requestId", async (req, res) => {
+  try {
+    const { requestId } = req.params;
+
+    const { data, error } = await supabase
+      .from("Payments")
+      .select(`
+        *,
+        CreatedBy:created_by (
+          admin_id,
+          fullname,
+          username
+        ),
+        VerifiedBy:verified_by (
+          admin_id,
+          fullname,
+          username
+        )
+      `)
+      .eq("request_id", requestId)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Supabase error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to fetch payments",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      payments: data,
+    });
+  } catch (err) {
+    console.error("Fetch payments error:", err);
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while fetching payments",
+    });
+  }
+});
+
+// Get all payments (Admin view)
+app.get("/api/payment/all", async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from("Payments")
+      .select(`
+        *,
+        Requests:request_id (
+          request_id,
+          tracking_code,
+          status,
+          Owners:owner_id (
+            owner_id,
+            fullname,
+            username
+          ),
+          DocumentCategories:category_id (
+            category_name
+          )
+        ),
+        CreatedBy:created_by (
+          fullname,
+          username
+        )
+      `)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Supabase error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to fetch payments",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      payments: data,
+    });
+  } catch (err) {
+    console.error("Fetch all payments error:", err);
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while fetching payments",
+    });
+  }
+});
+
+// Submit payment proof (Owner)
+app.put("/api/payment/submit-proof/:paymentId", upload.single("proofPayment"), async (req, res) => {
+  try {
+    const { paymentId } = req.params;
+    const { senderNumber, referenceNumber, paymentDate } = req.body;
+    const file = req.file;
+
+    // Validation
+    if (!paymentId || !senderNumber || !referenceNumber || !file) {
+      return res.status(400).json({
+        success: false,
+        message: "All fields and proof of payment are required",
+      });
+    }
+
+    // Get current payment
+    const { data: payment, error: fetchError } = await supabase
+      .from("Payments")
+      .select("*")
+      .eq("payment_id", paymentId)
+      .single();
+
+    if (fetchError || !payment) {
+      return res.status(404).json({
+        success: false,
+        message: "Payment not found",
+      });
+    }
+
+    // Only allow submission if status is Pending or Rejected
+    if (payment.status !== "Pending" && payment.status !== "Rejected") {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot submit proof for payment with status "${payment.status}"`,
+      });
+    }
+
+    // Upload proof of payment to Supabase Storage
+    const fileExt = file.originalname.split(".").pop();
+    const fileName = `${Date.now()}-${Math.round(Math.random() * 1e9)}.${fileExt}`;
+    const filePath = `payment-proofs/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("documents")
+      .upload(filePath, file.buffer, {
+        contentType: file.mimetype,
+        upsert: false,
+      });
+
+    if (uploadError) {
+      console.error("Supabase storage error:", uploadError);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to upload payment proof",
+      });
+    }
+
+    // Get public URL
+    const { data: publicUrlData } = supabase.storage
+      .from("documents")
+      .getPublicUrl(filePath);
+
+    // Update payment
+    const { data, error } = await supabase
+      .from("Payments")
+      .update({
+        sender_number: senderNumber,
+        reference_number: referenceNumber,
+        proof_payment: publicUrlData.publicUrl,
+        payment_date: paymentDate || new Date().toISOString(),
+        status: "Submitted",
+      })
+      .eq("payment_id", paymentId)
+      .select();
+
+    if (error) {
+      console.error("Supabase error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to submit payment proof",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Payment proof submitted successfully",
+      payment: data[0],
+    });
+  } catch (err) {
+    console.error("Submit payment proof error:", err);
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while submitting payment proof",
+    });
+  }
+});
+
+// Verify payment (Admin)
+app.put("/api/payment/verify/:paymentId", async (req, res) => {
+  try {
+    const { paymentId } = req.params;
+    const { status, verifiedBy, remarks } = req.body;
+
+    // Validation
+    if (!paymentId || !status || !verifiedBy) {
+      return res.status(400).json({
+        success: false,
+        message: "Payment ID, status, and admin ID are required",
+      });
+    }
+
+    // Validate status
+    if (status !== "Verified" && status !== "Rejected") {
+      return res.status(400).json({
+        success: false,
+        message: "Status must be 'Verified' or 'Rejected'",
+      });
+    }
+
+    // Update payment
+    const { data, error } = await supabase
+      .from("Payments")
+      .update({
+        status: status,
+        verified_by: verifiedBy,
+        remarks: remarks || null,
+      })
+      .eq("payment_id", paymentId)
+      .select();
+
+    if (error) {
+      console.error("Supabase error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to verify payment",
+      });
+    }
+
+    if (!data || data.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Payment not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Payment verification completed",
+      payment: data[0],
+    });
+  } catch (err) {
+    console.error("Verify payment error:", err);
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while verifying payment",
+    });
+  }
+});
+
+// Delete payment (Admin only)
+app.delete("/api/payment/delete/:paymentId", async (req, res) => {
+  try {
+    const { paymentId } = req.params;
+
+    const { data, error } = await supabase
+      .from("Payments")
+      .delete()
+      .eq("payment_id", paymentId)
+      .select();
+
+    if (error) {
+      console.error("Supabase error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to delete payment",
+      });
+    }
+
+    if (!data || data.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Payment not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Payment deleted successfully",
+    });
+  } catch (err) {
+    console.error("Delete payment error:", err);
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while deleting payment",
+    });
+  }
+});
+
+// Get payment history
+app.get("/api/payment/history/:paymentId", async (req, res) => {
+  try {
+    const { paymentId } = req.params;
+
+    const { data, error } = await supabase
+      .from("Payment History")
+      .select(`
+        *,
+        Admins:changed_by (
+          admin_id,
+          fullname,
+          username
+        )
+      `)
+      .eq("payment_id", paymentId)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Supabase error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to fetch payment history",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      history: data,
+    });
+  } catch (err) {
+    console.error("Fetch payment history error:", err);
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while fetching payment history",
+    });
+  }
+});
+
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

@@ -10,6 +10,7 @@ import {
   Menu,
   FileDown,
   House,
+  History,
   LogOut,
 } from "lucide-react";
 // Import the external CSS file
@@ -158,9 +159,24 @@ function UserSidebar({ children }) {
             }`}
           >
             <div className="d-flex align-items-center">
-              <CreditCard size={20} />
+              <History size={20} />
               {sidebarOpen && (
                 <span className="ms-3 fw-medium">Transactions</span>
+              )}
+            </div>
+          </Link>
+
+          {/* Payments Link */}
+          <Link
+            to="/oabps/user/payments"
+            className={`sidebar-submenu-item btn w-100 d-flex align-items-center justify-content-between p-3 text-start text-decoration-none ${
+              isActiveItem("/oabps/user/payments") ? "active" : ""
+            }`}
+          >
+            <div className="d-flex align-items-center">
+              <CreditCard size={20} />
+              {sidebarOpen && (
+                <span className="ms-3 fw-medium">Payments</span>
               )}
             </div>
           </Link>

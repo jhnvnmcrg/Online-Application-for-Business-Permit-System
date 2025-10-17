@@ -673,63 +673,7 @@ function UserTransaction() {
                     </table>
                   </div>
 
-                  {/* Footer Info and Pagination */}
-                  <div className="row mt-3">
-                    <div className="col-md-6">
-                      <p className="text-muted small">
-                        Showing {indexOfFirstEntry + 1} to{" "}
-                        {Math.min(indexOfLastEntry, filteredRequests.length)} of{" "}
-                        {filteredRequests.length} entries
-                      </p>
-                    </div>
-                    <div className="col-md-6">
-                      <nav aria-label="Page navigation">
-                        <ul className="pagination pagination-sm justify-content-end mb-0">
-                          <li
-                            className={`page-item ${
-                              currentPage === 1 ? "disabled" : ""
-                            }`}
-                          >
-                            <button
-                              className="page-link"
-                              onClick={() => paginate(currentPage - 1)}
-                              disabled={currentPage === 1}
-                            >
-                              Previous
-                            </button>
-                          </li>
-                          {[...Array(totalPages)].map((_, i) => (
-                            <li
-                              key={i + 1}
-                              className={`page-item ${
-                                currentPage === i + 1 ? "active" : ""
-                              }`}
-                            >
-                              <button
-                                className="page-link"
-                                onClick={() => paginate(i + 1)}
-                              >
-                                {i + 1}
-                              </button>
-                            </li>
-                          ))}
-                          <li
-                            className={`page-item ${
-                              currentPage === totalPages ? "disabled" : ""
-                            }`}
-                          >
-                            <button
-                              className="page-link"
-                              onClick={() => paginate(currentPage + 1)}
-                              disabled={currentPage === totalPages}
-                            >
-                              Next
-                            </button>
-                          </li>
-                        </ul>
-                      </nav>
-                    </div>
-                  </div>
+                  
                 </div>
               </div>
             </div>

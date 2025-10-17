@@ -33,10 +33,12 @@ import UserDashboard from './userpages/UserDashboard'
 import UserChecklist from './userpages/UserChecklist'
 import UserRenewal from './userpages/UserRenewal'
 import UserTransaction from './userpages/UserTransaction'
+import UserPayments from './userpages/UserPayments'
 import UserForms from './userpages/UserForms'
 import UserDownloadables from './userpages/UserDownloadables'
 
 // --------------------------------------------------------
+
 
 import Home from './pages/Home'
 import Requirements from './pages/Requirements'
@@ -85,6 +87,7 @@ function App() {
         <Route path='/oabps/user/checklist' element={<UserChecklist/>}></Route>
         <Route path='/oabps/user/renewal' element={<UserRenewal/>}></Route>
         <Route path='/oabps/user/transaction' element={<UserTransaction/>}></Route>
+        <Route path='/oabps/user/payments' element={<UserPayments/>}></Route>
         <Route path='/oabps/user/forms' element={<UserForms/>}></Route>
         <Route path='/oabps/user/downloadables' element={<UserDownloadables/>}></Route>
 
@@ -100,7 +103,7 @@ function App() {
         
       
 
-
+        
 
         
       
