@@ -2382,14 +2382,29 @@ app.post("/api/request/submit", upload.any(), async (req, res) => {
       });
     }
 
-    // Generate tracking code using database function
-    // First, insert the request without tracking_code (trigger will generate it)
+    // Generate tracking code in Node.js (format: OABP-YYYY-XXXXX)
+    const year = new Date().getFullYear();
+
+    // Get the count of existing requests to generate sequential number
+    const { count, error: countError } = await supabase
+      .from("Requests")
+      .select("*", { count: "exact", head: true });
+
+    if (countError) {
+      console.error("Count error:", countError);
+    }
+
+    const sequentialNumber = ((count || 0) + 1).toString().padStart(5, "0");
+    const trackingCode = `OABP-${year}-${sequentialNumber}`;
+
+    // Insert the request with the generated tracking code
     const { data: requestData, error: requestError } = await supabase
       .from("Requests")
       .insert([
         {
           owner_id: ownerId,
           category_id: categoryId,
+          tracking_code: trackingCode,
           status: "Pending",
         },
       ])
@@ -2404,7 +2419,6 @@ app.post("/api/request/submit", upload.any(), async (req, res) => {
     }
 
     const requestId = requestData[0].request_id;
-    const trackingCode = requestData[0].tracking_code;
 
     // Process file uploads if any
     const fileUploadPromises = [];

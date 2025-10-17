@@ -220,7 +220,6 @@ function UserChecklist() {
     setFormData({});
     setFileFields({});
     setError("");
-    setSuccess("");
     setStep(1);
     setTrackingCode("");
     setValidationErrors({});
