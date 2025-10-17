@@ -2858,6 +2858,143 @@ app.get("/api/request/history/:requestId", async (req, res) => {
   }
 });
 
+// Update request (Owner only - can only update Pending requests)
+app.put("/api/request/update/:requestId", upload.any(), async (req, res) => {
+  try {
+    const { requestId } = req.params;
+    const { formData } = req.body;
+    const files = req.files;
+
+    // Validation
+    if (!requestId || !formData) {
+      return res.status(400).json({
+        success: false,
+        message: "Request ID and form data are required",
+      });
+    }
+
+    // Parse formData
+    let parsedFormData;
+    try {
+      parsedFormData = typeof formData === "string" ? JSON.parse(formData) : formData;
+    } catch (parseError) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid form data format",
+      });
+    }
+
+    // Get current request
+    const { data: currentRequest, error: fetchError } = await supabase
+      .from("Requests")
+      .select("*")
+      .eq("request_id", requestId)
+      .single();
+
+    if (fetchError || !currentRequest) {
+      return res.status(404).json({
+        success: false,
+        message: "Request not found",
+      });
+    }
+
+    // Only allow updates if status is Pending
+    if (currentRequest.status !== "Pending") {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot update request with status "${currentRequest.status}". Only pending requests can be updated.`,
+      });
+    }
+
+    // Process file uploads if any
+    const fileFieldMap = {};
+
+    if (files && files.length > 0) {
+      for (const file of files) {
+        const fieldName = file.fieldname;
+        const fileExt = file.originalname.split(".").pop();
+        const fileName = `${Date.now()}-${Math.round(Math.random() * 1e9)}.${fileExt}`;
+        const filePath = `request-files/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from("documents")
+          .upload(filePath, file.buffer, {
+            contentType: file.mimetype,
+            upsert: false,
+          });
+
+        if (uploadError) {
+          console.error("File upload error:", uploadError);
+          return res.status(500).json({
+            success: false,
+            message: "Failed to upload files. Please try again.",
+          });
+        }
+
+        const { data: publicUrlData } = supabase.storage
+          .from("documents")
+          .getPublicUrl(filePath);
+
+        fileFieldMap[fieldName] = publicUrlData.publicUrl;
+      }
+    }
+
+    // Delete existing form data for this request
+    await supabase
+      .from("Request Form Data")
+      .delete()
+      .eq("request_id", requestId);
+
+    // Insert updated form data
+    const formDataInserts = [];
+    const categoryId = currentRequest.category_id;
+
+    for (const [fieldName, fieldValue] of Object.entries(parsedFormData)) {
+      const { data: formField } = await supabase
+        .from("Document Forms")
+        .select("form_id")
+        .eq("category_id", categoryId)
+        .eq("field_name", fieldName)
+        .single();
+
+      if (formField) {
+        const value = fileFieldMap[fieldName] || fieldValue;
+
+        formDataInserts.push({
+          request_id: requestId,
+          form_id: formField.form_id,
+          field_value: typeof value === "object" ? JSON.stringify(value) : String(value),
+        });
+      }
+    }
+
+    if (formDataInserts.length > 0) {
+      const { error: formDataError } = await supabase
+        .from("Request Form Data")
+        .insert(formDataInserts);
+
+      if (formDataError) {
+        console.error("Supabase form data error:", formDataError);
+        return res.status(500).json({
+          success: false,
+          message: "Failed to update form data. Please try again.",
+        });
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Request updated successfully",
+    });
+  } catch (err) {
+    console.error("Update request error:", err);
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while updating request",
+    });
+  }
+});
+
 // Cancel request (Owner only - can only cancel Pending requests)
 app.put("/api/request/cancel/:requestId", async (req, res) => {
   try {
