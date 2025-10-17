@@ -68,7 +68,7 @@ function Home() {
                       <div className="col-6 mt-2">
                         <Link
                           className="btn btn-outline-primary rounded-pill"
-                          to="/loginfinal/user"
+                          to="/oabps/user/login"
                         >
                           Apply for New Application
                         </Link>
