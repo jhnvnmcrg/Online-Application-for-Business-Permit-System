@@ -2260,4 +2260,588 @@ app.get("/api/processor/documents/:adminId", async (req, res) => {
   }
 });
 
+// ============================================
+// REQUEST MANAGEMENT ENDPOINTS
+// ============================================
+
+// Get form fields by category ID with groups and options
+app.get("/api/request/form-fields/:categoryId", async (req, res) => {
+  try {
+    const { categoryId } = req.params;
+
+    // Validation
+    if (!categoryId) {
+      return res.status(400).json({
+        success: false,
+        message: "Category ID is required",
+      });
+    }
+
+    // Get all form fields for this category
+    const { data: formFields, error: formError } = await supabase
+      .from("Document Forms")
+      .select("*")
+      .eq("category_id", categoryId)
+      .order("field_order", { ascending: true });
+
+    if (formError) {
+      console.error("Supabase error:", formError);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to fetch form fields",
+      });
+    }
+
+    // Get all groups for this category
+    const { data: groups, error: groupError } = await supabase
+      .from("Form Field Groups")
+      .select("*")
+      .eq("category_id", categoryId)
+      .order("group_order", { ascending: true });
+
+    if (groupError) {
+      console.error("Supabase error:", groupError);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to fetch field groups",
+      });
+    }
+
+    // Get all options for fields in this category
+    const formIds = formFields.map((field) => field.form_id);
+    let options = [];
+
+    if (formIds.length > 0) {
+      const { data: optionsData, error: optionsError } = await supabase
+        .from("Form Field Options")
+        .select("*")
+        .in("form_id", formIds)
+        .order("option_order", { ascending: true });
+
+      if (optionsError) {
+        console.error("Supabase error:", optionsError);
+        return res.status(500).json({
+          success: false,
+          message: "Failed to fetch field options",
+        });
+      }
+      options = optionsData;
+    }
+
+    // Group options by form_id for easy lookup
+    const optionsByFormId = {};
+    options.forEach((option) => {
+      if (!optionsByFormId[option.form_id]) {
+        optionsByFormId[option.form_id] = [];
+      }
+      optionsByFormId[option.form_id].push(option);
+    });
+
+    // Attach options to form fields
+    const fieldsWithOptions = formFields.map((field) => ({
+      ...field,
+      options: optionsByFormId[field.form_id] || [],
+    }));
+
+    res.status(200).json({
+      success: true,
+      formFields: fieldsWithOptions,
+      groups: groups,
+    });
+  } catch (err) {
+    console.error("Fetch form fields error:", err);
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while fetching form fields",
+    });
+  }
+});
+
+// Submit a new request with form data
+app.post("/api/request/submit", upload.any(), async (req, res) => {
+  try {
+    const { ownerId, categoryId, formData } = req.body;
+    const files = req.files; // Array of uploaded files
+
+    // Validation
+    if (!ownerId || !categoryId || !formData) {
+      return res.status(400).json({
+        success: false,
+        message: "Owner ID, Category ID, and form data are required",
+      });
+    }
+
+    // Parse formData if it's a string
+    let parsedFormData;
+    try {
+      parsedFormData = typeof formData === "string" ? JSON.parse(formData) : formData;
+    } catch (parseError) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid form data format",
+      });
+    }
+
+    // Generate tracking code using database function
+    // First, insert the request without tracking_code (trigger will generate it)
+    const { data: requestData, error: requestError } = await supabase
+      .from("Requests")
+      .insert([
+        {
+          owner_id: ownerId,
+          category_id: categoryId,
+          status: "Pending",
+        },
+      ])
+      .select();
+
+    if (requestError) {
+      console.error("Supabase request error:", requestError);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to create request. Please try again.",
+      });
+    }
+
+    const requestId = requestData[0].request_id;
+    const trackingCode = requestData[0].tracking_code;
+
+    // Process file uploads if any
+    const fileUploadPromises = [];
+    const fileFieldMap = {}; // Map field names to uploaded file URLs
+
+    if (files && files.length > 0) {
+      for (const file of files) {
+        const fieldName = file.fieldname;
+
+        // Generate unique filename
+        const fileExt = file.originalname.split(".").pop();
+        const fileName = `${Date.now()}-${Math.round(Math.random() * 1e9)}.${fileExt}`;
+        const filePath = `request-files/${fileName}`;
+
+        // Upload file to Supabase Storage
+        const uploadPromise = supabase.storage
+          .from("documents")
+          .upload(filePath, file.buffer, {
+            contentType: file.mimetype,
+            upsert: false,
+          })
+          .then(({ data, error }) => {
+            if (error) {
+              console.error("File upload error:", error);
+              throw error;
+            }
+
+            // Get public URL
+            const { data: publicUrlData } = supabase.storage
+              .from("documents")
+              .getPublicUrl(filePath);
+
+            fileFieldMap[fieldName] = publicUrlData.publicUrl;
+          });
+
+        fileUploadPromises.push(uploadPromise);
+      }
+
+      // Wait for all file uploads to complete
+      try {
+        await Promise.all(fileUploadPromises);
+      } catch (uploadError) {
+        console.error("File upload error:", uploadError);
+        // Rollback: Delete the request
+        await supabase.from("Requests").delete().eq("request_id", requestId);
+        return res.status(500).json({
+          success: false,
+          message: "Failed to upload files. Please try again.",
+        });
+      }
+    }
+
+    // Insert form field data into Request Form Data table
+    const formDataInserts = [];
+
+    for (const [fieldName, fieldValue] of Object.entries(parsedFormData)) {
+      // Get form_id from field name (we need to query Document Forms)
+      const { data: formField } = await supabase
+        .from("Document Forms")
+        .select("form_id")
+        .eq("category_id", categoryId)
+        .eq("field_name", fieldName)
+        .single();
+
+      if (formField) {
+        // Check if this is a file field and use uploaded URL
+        const value = fileFieldMap[fieldName] || fieldValue;
+
+        formDataInserts.push({
+          request_id: requestId,
+          form_id: formField.form_id,
+          field_value: typeof value === "object" ? JSON.stringify(value) : String(value),
+        });
+      }
+    }
+
+    // Bulk insert form data
+    if (formDataInserts.length > 0) {
+      const { error: formDataError } = await supabase
+        .from("Request Form Data")
+        .insert(formDataInserts);
+
+      if (formDataError) {
+        console.error("Supabase form data error:", formDataError);
+        // Rollback: Delete the request and uploaded files
+        await supabase.from("Requests").delete().eq("request_id", requestId);
+
+        // Delete uploaded files
+        for (const fileUrl of Object.values(fileFieldMap)) {
+          const filePath = fileUrl.split("/request-files/")[1];
+          if (filePath) {
+            await supabase.storage.from("documents").remove([`request-files/${filePath}`]);
+          }
+        }
+
+        return res.status(500).json({
+          success: false,
+          message: "Failed to save form data. Please try again.",
+        });
+      }
+    }
+
+    res.status(201).json({
+      success: true,
+      message: "Request submitted successfully",
+      request: {
+        request_id: requestId,
+        tracking_code: trackingCode,
+        status: "Pending",
+      },
+    });
+  } catch (err) {
+    console.error("Submit request error:", err);
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while submitting request",
+    });
+  }
+});
+
+// Get all requests for a specific owner
+app.get("/api/request/owner/:ownerId", async (req, res) => {
+  try {
+    const { ownerId } = req.params;
+
+    // Validation
+    if (!ownerId) {
+      return res.status(400).json({
+        success: false,
+        message: "Owner ID is required",
+      });
+    }
+
+    // Get all requests for this owner with category details
+    const { data, error } = await supabase
+      .from("Requests")
+      .select(`
+        *,
+        DocumentCategories:category_id (
+          category_id,
+          category_name,
+          description
+        ),
+        Admins:processed_by (
+          admin_id,
+          fullname,
+          username
+        )
+      `)
+      .eq("owner_id", ownerId)
+      .order("date_requested", { ascending: false });
+
+    if (error) {
+      console.error("Supabase error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to fetch requests",
+      });
+    }
+
+    // Transform data
+    const transformedData = data.map((request) => ({
+      ...request,
+      category_name: request.DocumentCategories?.category_name || "N/A",
+      processor_name: request.Admins?.fullname || request.Admins?.username || "Not Assigned",
+    }));
+
+    res.status(200).json({
+      success: true,
+      requests: transformedData,
+    });
+  } catch (err) {
+    console.error("Fetch owner requests error:", err);
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while fetching requests",
+    });
+  }
+});
+
+// Get request details with form data
+app.get("/api/request/details/:requestId", async (req, res) => {
+  try {
+    const { requestId } = req.params;
+
+    // Validation
+    if (!requestId) {
+      return res.status(400).json({
+        success: false,
+        message: "Request ID is required",
+      });
+    }
+
+    // Get request details
+    const { data: request, error: requestError } = await supabase
+      .from("Requests")
+      .select(`
+        *,
+        DocumentCategories:category_id (
+          category_id,
+          category_name,
+          description
+        ),
+        Admins:processed_by (
+          admin_id,
+          fullname,
+          username
+        ),
+        Owners:owner_id (
+          owner_id,
+          fullname,
+          email,
+          username
+        )
+      `)
+      .eq("request_id", requestId)
+      .single();
+
+    if (requestError || !request) {
+      return res.status(404).json({
+        success: false,
+        message: "Request not found",
+      });
+    }
+
+    // Get form data for this request with field details
+    const { data: formData, error: formDataError } = await supabase
+      .from("Request Form Data")
+      .select(`
+        *,
+        DocumentForms:form_id (
+          form_id,
+          field_name,
+          field_type,
+          is_required,
+          field_order,
+          group_id
+        )
+      `)
+      .eq("request_id", requestId)
+      .order("DocumentForms(field_order)", { ascending: true });
+
+    if (formDataError) {
+      console.error("Supabase error:", formDataError);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to fetch form data",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      request: request,
+      formData: formData,
+    });
+  } catch (err) {
+    console.error("Fetch request details error:", err);
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while fetching request details",
+    });
+  }
+});
+
+// Get all requests (for admin/processor)
+app.get("/api/request/all", async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from("Requests")
+      .select(`
+        *,
+        DocumentCategories:category_id (
+          category_id,
+          category_name
+        ),
+        Owners:owner_id (
+          owner_id,
+          fullname,
+          username
+        ),
+        Admins:processed_by (
+          admin_id,
+          fullname,
+          username
+        )
+      `)
+      .order("date_requested", { ascending: false });
+
+    if (error) {
+      console.error("Supabase error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to fetch requests",
+      });
+    }
+
+    // Transform data
+    const transformedData = data.map((request) => ({
+      ...request,
+      category_name: request.DocumentCategories?.category_name || "N/A",
+      owner_name: request.Owners?.fullname || request.Owners?.username || "Unknown",
+      processor_name: request.Admins?.fullname || request.Admins?.username || "Not Assigned",
+    }));
+
+    res.status(200).json({
+      success: true,
+      requests: transformedData,
+    });
+  } catch (err) {
+    console.error("Fetch all requests error:", err);
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while fetching requests",
+    });
+  }
+});
+
+// Update request status
+app.put("/api/request/update-status/:requestId", async (req, res) => {
+  try {
+    const { requestId } = req.params;
+    const { status, processedBy, dateRelease, remarks } = req.body;
+
+    // Validation
+    if (!requestId || !status) {
+      return res.status(400).json({
+        success: false,
+        message: "Request ID and status are required",
+      });
+    }
+
+    // Validate status
+    const validStatuses = ["Pending", "Processing", "Approved", "Rejected", "Released"];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid status value",
+      });
+    }
+
+    // Get current request to track status change
+    const { data: currentRequest } = await supabase
+      .from("Requests")
+      .select("status")
+      .eq("request_id", requestId)
+      .single();
+
+    // Update request
+    const updateData = { status };
+    if (processedBy) updateData.processed_by = processedBy;
+    if (dateRelease) updateData.date_release = dateRelease;
+
+    const { data, error } = await supabase
+      .from("Requests")
+      .update(updateData)
+      .eq("request_id", requestId)
+      .select();
+
+    if (error) {
+      console.error("Supabase error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to update request status",
+      });
+    }
+
+    if (!data || data.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Request not found",
+      });
+    }
+
+    // Log status change to Request History
+    if (currentRequest) {
+      await supabase.from("Request History").insert([
+        {
+          request_id: requestId,
+          previous_status: currentRequest.status,
+          new_status: status,
+          changed_by: processedBy || null,
+          remarks: remarks || null,
+        },
+      ]);
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Request status updated successfully",
+      request: data[0],
+    });
+  } catch (err) {
+    console.error("Update request status error:", err);
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while updating request status",
+    });
+  }
+});
+
+// Get request history
+app.get("/api/request/history/:requestId", async (req, res) => {
+  try {
+    const { requestId } = req.params;
+
+    const { data, error } = await supabase
+      .from("Request History")
+      .select(`
+        *,
+        Admins:changed_by (
+          admin_id,
+          fullname,
+          username
+        )
+      `)
+      .eq("request_id", requestId)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Supabase error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to fetch request history",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      history: data,
+    });
+  } catch (err) {
+    console.error("Fetch request history error:", err);
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while fetching request history",
+    });
+  }
+});
+
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
