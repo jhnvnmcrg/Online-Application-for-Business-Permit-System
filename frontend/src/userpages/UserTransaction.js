@@ -614,7 +614,7 @@ function UserTransaction() {
                           <th>TRACKING CODE</th>
                           <th>CATEGORY</th>
                           <th>DATE REQUESTED</th>
-                          <th>DATE RELEASE</th>
+                          
                           <th>STATUS</th>
                           <th>REMARKS</th>
                           <th>ACTION</th>
@@ -656,7 +656,7 @@ function UserTransaction() {
                               </td>
                               <td>{request.category_name || "N/A"}</td>
                               <td>{formatDate(request.date_requested)}</td>
-                              <td>{formatDate(request.date_release)}</td>
+                              
                               <td>{getStatusBadge(request.status)}</td>
                               <td>
                                 {request.remarks ? (

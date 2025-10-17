@@ -3229,6 +3229,10 @@ app.get("/api/payment/all", async (req, res) => {
         CreatedBy:created_by (
           fullname,
           username
+        ),
+        VerifiedBy:verified_by (
+          fullname,
+          username
         )
       `)
       .order("created_at", { ascending: false });
