@@ -56,7 +56,7 @@ function MainRequests() {
   // const API_URL = "http://localhost:3000";
 
   // Get logged-in admin
-  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const user = JSON.parse(localStorage.getItem("main") || "{}");
   const adminId = user.admin_id;
 
   useEffect(() => {
