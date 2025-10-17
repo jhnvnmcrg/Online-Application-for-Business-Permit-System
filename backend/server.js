@@ -2737,10 +2737,11 @@ app.get("/api/request/all", async (req, res) => {
 });
 
 // Update request status
-app.put("/api/request/update-status/:requestId", async (req, res) => {
+app.put("/api/request/update-status/:requestId", upload.single("attachmentFile"), async (req, res) => {
   try {
     const { requestId } = req.params;
-    const { status, processedBy, dateRelease, remarks } = req.body;
+    const { status, processedBy, remarks, attachmentRemarks } = req.body;
+    const file = req.file;
 
     // Validation
     if (!requestId || !status) {
@@ -2759,6 +2760,14 @@ app.put("/api/request/update-status/:requestId", async (req, res) => {
       });
     }
 
+    // If status is Released, file is required
+    if (status === "Released" && !file) {
+      return res.status(400).json({
+        success: false,
+        message: "File attachment is required when releasing a request",
+      });
+    }
+
     // Get current request to track status change
     const { data: currentRequest } = await supabase
       .from("Requests")
@@ -2769,8 +2778,12 @@ app.put("/api/request/update-status/:requestId", async (req, res) => {
     // Update request
     const updateData = { status };
     if (processedBy) updateData.processed_by = processedBy;
-    if (dateRelease) updateData.date_release = dateRelease;
     if (remarks !== undefined) updateData.remarks = remarks;
+
+    // Auto-set date_release when status is Released
+    if (status === "Released") {
+      updateData.date_release = new Date().toISOString();
+    }
 
     const { data, error } = await supabase
       .from("Requests")
@@ -2791,6 +2804,54 @@ app.put("/api/request/update-status/:requestId", async (req, res) => {
         success: false,
         message: "Request not found",
       });
+    }
+
+    // Handle file upload if status is Released and file provided
+    if (status === "Released" && file) {
+      // Generate unique filename
+      const timestamp = Date.now();
+      const randomString = Math.random().toString(36).substring(2, 15);
+      const fileExtension = file.originalname.split(".").pop();
+      const fileName = `${timestamp}-${randomString}.${fileExtension}`;
+
+      // Upload to Supabase Storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from("documents")
+        .upload(`request-attachments/${fileName}`, file.buffer, {
+          contentType: file.mimetype,
+          upsert: false,
+        });
+
+      if (uploadError) {
+        console.error("File upload error:", uploadError);
+        return res.status(500).json({
+          success: false,
+          message: "Failed to upload attachment file",
+        });
+      }
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from("documents")
+        .getPublicUrl(`request-attachments/${fileName}`);
+
+      // Insert attachment record
+      const { error: attachmentError } = await supabase
+        .from("Request Attachments")
+        .insert([
+          {
+            request_id: requestId,
+            file_name: file.originalname,
+            file_path: urlData.publicUrl,
+            uploaded_by: processedBy || null,
+            remarks: attachmentRemarks || null,
+          },
+        ]);
+
+      if (attachmentError) {
+        console.error("Attachment insert error:", attachmentError);
+        // Don't fail the whole request, just log the error
+      }
     }
 
     // Log status change to Request History
@@ -2816,6 +2877,45 @@ app.put("/api/request/update-status/:requestId", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "An error occurred while updating request status",
+    });
+  }
+});
+
+// Get request attachments
+app.get("/api/request/attachments/:requestId", async (req, res) => {
+  try {
+    const { requestId } = req.params;
+
+    const { data, error } = await supabase
+      .from("Request Attachments")
+      .select(`
+        *,
+        Admins:uploaded_by (
+          admin_id,
+          fullname,
+          username
+        )
+      `)
+      .eq("request_id", requestId)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Supabase error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to fetch request attachments",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      attachments: data,
+    });
+  } catch (err) {
+    console.error("Fetch request attachments error:", err);
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while fetching request attachments",
     });
   }
 });

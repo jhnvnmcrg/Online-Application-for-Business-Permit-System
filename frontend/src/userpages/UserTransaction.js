@@ -12,6 +12,7 @@ import {
   AlertTriangle,
   Ban,
   RefreshCw,
+  Download,
 } from "lucide-react";
 
 function UserTransaction() {
@@ -122,6 +123,15 @@ function UserTransaction() {
             details.formFields = formFieldsResponse.data.formFields;
             details.groups = formFieldsResponse.data.groups;
           }
+        }
+
+        // Fetch attachments for this request
+        const attachmentsResponse = await axios.get(
+          `${API_URL}/api/request/attachments/${requestId}`
+        );
+
+        if (attachmentsResponse.data.success) {
+          details.attachments = attachmentsResponse.data.attachments;
         }
 
         setRequestDetails(details);
@@ -832,6 +842,50 @@ function UserTransaction() {
                                 ))}
                               </tbody>
                             </table>
+                          </div>
+                        </div>
+                      )}
+
+                    {/* Released Documents (Attachments) */}
+                    {requestDetails.attachments &&
+                      requestDetails.attachments.length > 0 && (
+                        <div className="mb-4">
+                          <h6 className="text-success border-bottom pb-2">
+                            Released Documents
+                          </h6>
+                          <div className="alert alert-success">
+                            <strong>Your documents are ready!</strong> Download them below.
+                          </div>
+                          <div className="list-group">
+                            {requestDetails.attachments.map((attachment) => (
+                              <div
+                                key={attachment.attachment_id}
+                                className="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
+                              >
+                                <div className="flex-grow-1">
+                                  <h6 className="mb-1">{attachment.file_name}</h6>
+                                  {attachment.remarks && (
+                                    <p className="mb-1 small text-muted">
+                                      {attachment.remarks}
+                                    </p>
+                                  )}
+                                  <small className="text-muted">
+                                    Uploaded by: {attachment.Admins?.fullname || "Admin"} on{" "}
+                                    {formatDate(attachment.created_at)}
+                                  </small>
+                                </div>
+                                <a
+                                  href={attachment.file_path}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="btn btn-success btn-sm d-flex align-items-center gap-1 ms-3"
+                                  download
+                                >
+                                  <Download size={16} />
+                                  Download
+                                </a>
+                              </div>
+                            ))}
                           </div>
                         </div>
                       )}

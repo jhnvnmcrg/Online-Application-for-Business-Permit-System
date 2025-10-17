@@ -15,6 +15,7 @@ import {
   Edit,
   AlertCircle,
   User,
+  Upload,
 } from "lucide-react";
 
 function MainRequests() {
@@ -40,6 +41,9 @@ function MainRequests() {
   const [dateRelease, setDateRelease] = useState("");
   const [statusRemarks, setStatusRemarks] = useState("");
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [attachmentFile, setAttachmentFile] = useState(null);
+  const [attachmentRemarks, setAttachmentRemarks] = useState("");
+  const [showPaymentOption, setShowPaymentOption] = useState(false);
 
   // Payment modal states
   const [paymentAmount, setPaymentAmount] = useState("");
@@ -146,17 +150,31 @@ function MainRequests() {
 
   const handleUpdateStatus = async (e) => {
     e.preventDefault();
+
+    // Validate file if status is Released
+    if (newStatus === "Released" && !attachmentFile) {
+      setError("Please upload the document file for release");
+      return;
+    }
+
     try {
       setUpdatingStatus(true);
       setError("");
 
+      const formData = new FormData();
+      formData.append("status", newStatus);
+      formData.append("processedBy", adminId);
+      if (statusRemarks) formData.append("remarks", statusRemarks);
+      if (attachmentRemarks) formData.append("attachmentRemarks", attachmentRemarks);
+      if (attachmentFile) formData.append("attachmentFile", attachmentFile);
+
       const response = await axios.put(
         `${API_URL}/api/request/update-status/${selectedRequest.request_id}`,
+        formData,
         {
-          status: newStatus,
-          processedBy: adminId,
-          dateRelease: dateRelease || null,
-          remarks: statusRemarks || null,
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
         }
       );
 
@@ -166,7 +184,15 @@ function MainRequests() {
         setNewStatus("");
         setDateRelease("");
         setStatusRemarks("");
-        alert("Request status updated successfully");
+        setAttachmentFile(null);
+        setAttachmentRemarks("");
+
+        // If Approved and payment option checked, open payment modal
+        if (newStatus === "Approved" && showPaymentOption) {
+          setShowPaymentModal(true);
+        } else {
+          alert("Request status updated successfully");
+        }
       } else {
         setError(response.data.message || "Failed to update status");
       }
@@ -628,6 +654,13 @@ function MainRequests() {
                 ></button>
               </div>
               <div className="modal-body">
+                {error && (
+                  <div className="alert alert-danger d-flex align-items-center gap-2 mb-3">
+                    <AlertCircle size={20} />
+                    {error}
+                  </div>
+                )}
+
                 <form onSubmit={handleUpdateStatus}>
                   <div className="mb-3">
                     <label className="form-label">
@@ -654,26 +687,73 @@ function MainRequests() {
                     </select>
                   </div>
 
-                  {newStatus === "Released" && (
+                  {/* Show Add Payment Option for Approved status */}
+                  {newStatus === "Approved" && (
                     <div className="mb-3">
-                      <label className="form-label">Release Date</label>
-                      <input
-                        type="date"
-                        className="form-control"
-                        value={dateRelease}
-                        onChange={(e) => setDateRelease(e.target.value)}
-                      />
+                      <div className="alert alert-success">
+                        <div className="form-check">
+                          <input
+                            className="form-check-input"
+                            type="checkbox"
+                            id="paymentOptionCheck"
+                            checked={showPaymentOption}
+                            onChange={(e) => setShowPaymentOption(e.target.checked)}
+                          />
+                          <label className="form-check-label" htmlFor="paymentOptionCheck">
+                            <strong>Add Payment Requirement (Optional)</strong>
+                            <p className="mb-0 small">
+                              Check this to immediately add payment details after updating status
+                            </p>
+                          </label>
+                        </div>
+                      </div>
                     </div>
                   )}
 
+                  {/* Show File Upload for Released status */}
+                  {newStatus === "Released" && (
+                    <>
+                      <div className="alert alert-info mb-3">
+                        <strong>Note:</strong> Release date will be set automatically. Please upload the processed document.
+                      </div>
+
+                      <div className="mb-3">
+                        <label className="form-label">
+                          Upload Document <span className="text-danger">*</span>
+                        </label>
+                        <input
+                          type="file"
+                          className="form-control"
+                          onChange={(e) => setAttachmentFile(e.target.files[0])}
+                          required
+                          accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.zip"
+                        />
+                        <small className="text-muted">
+                          Accepted formats: PDF, DOC, DOCX, JPG, PNG, ZIP (Max 10MB)
+                        </small>
+                      </div>
+
+                      <div className="mb-3">
+                        <label className="form-label">Attachment Remarks (Optional)</label>
+                        <textarea
+                          className="form-control"
+                          rows={2}
+                          value={attachmentRemarks}
+                          onChange={(e) => setAttachmentRemarks(e.target.value)}
+                          placeholder="Add notes about the uploaded document..."
+                        />
+                      </div>
+                    </>
+                  )}
+
                   <div className="mb-3">
-                    <label className="form-label">Remarks (Optional)</label>
+                    <label className="form-label">Status Remarks (Optional)</label>
                     <textarea
                       className="form-control"
                       rows={3}
                       value={statusRemarks}
                       onChange={(e) => setStatusRemarks(e.target.value)}
-                      placeholder="Add any notes or remarks..."
+                      placeholder="Add any notes or remarks about the status change..."
                     />
                   </div>
 
