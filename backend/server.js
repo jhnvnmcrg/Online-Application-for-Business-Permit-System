@@ -2770,6 +2770,7 @@ app.put("/api/request/update-status/:requestId", async (req, res) => {
     const updateData = { status };
     if (processedBy) updateData.processed_by = processedBy;
     if (dateRelease) updateData.date_release = dateRelease;
+    if (remarks !== undefined) updateData.remarks = remarks;
 
     const { data, error } = await supabase
       .from("Requests")

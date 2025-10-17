@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS "Requests" (
     date_release TIMESTAMP WITH TIME ZONE,
     status VARCHAR(20) DEFAULT 'Pending' CHECK (status IN ('Pending', 'Processing', 'Approved', 'Rejected', 'Released')),
     processed_by INTEGER REFERENCES "Admins"(admin_id) ON DELETE SET NULL,
+    remarks TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 

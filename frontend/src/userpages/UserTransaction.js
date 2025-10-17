@@ -616,13 +616,14 @@ function UserTransaction() {
                           <th>DATE REQUESTED</th>
                           <th>DATE RELEASE</th>
                           <th>STATUS</th>
+                          <th>REMARKS</th>
                           <th>ACTION</th>
                         </tr>
                       </thead>
                       <tbody>
                         {loading ? (
                           <tr>
-                            <td colSpan="7" className="text-center py-4">
+                            <td colSpan="8" className="text-center py-4">
                               <div
                                 className="spinner-border text-primary"
                                 role="status"
@@ -636,7 +637,7 @@ function UserTransaction() {
                         ) : currentEntries.length === 0 ? (
                           <tr>
                             <td
-                              colSpan="7"
+                              colSpan="8"
                               className="text-center text-muted py-4"
                             >
                               {searchTerm || statusFilter !== "All"
@@ -657,6 +658,17 @@ function UserTransaction() {
                               <td>{formatDate(request.date_requested)}</td>
                               <td>{formatDate(request.date_release)}</td>
                               <td>{getStatusBadge(request.status)}</td>
+                              <td>
+                                {request.remarks ? (
+                                  <span className="text-muted small">
+                                    {request.remarks.length > 50
+                                      ? `${request.remarks.substring(0, 50)}...`
+                                      : request.remarks}
+                                  </span>
+                                ) : (
+                                  <span className="text-muted small">-</span>
+                                )}
+                              </td>
                               <td>
                                 <button
                                   className="btn btn-warning btn-sm px-3 d-flex align-items-center gap-1"
@@ -769,6 +781,12 @@ function UserTransaction() {
                           </label>
                           <p className="mb-0">
                             {selectedRequest?.processor_name || "Not yet assigned"}
+                          </p>
+                        </div>
+                        <div className="col-12 mb-3">
+                          <label className="text-muted small">Remarks</label>
+                          <p className="mb-0">
+                            {selectedRequest?.remarks || "-"}
                           </p>
                         </div>
                       </div>

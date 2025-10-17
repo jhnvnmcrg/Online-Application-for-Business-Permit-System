@@ -30,7 +30,7 @@ function MainLogin() {
 
       if (response.data.success) {
         // Store user data in localStorage
-        localStorage.setItem("user", JSON.stringify(response.data.user));
+        localStorage.setItem("main", JSON.stringify(response.data.user));
         localStorage.setItem("token", response.data.token);
 
         // Log successful login audit
