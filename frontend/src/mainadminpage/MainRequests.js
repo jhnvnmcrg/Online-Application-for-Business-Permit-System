@@ -16,6 +16,7 @@ import {
   AlertCircle,
   User,
   Upload,
+  Trash2,
 } from "lucide-react";
 
 function MainRequests() {
@@ -44,6 +45,7 @@ function MainRequests() {
   const [attachmentFile, setAttachmentFile] = useState(null);
   const [attachmentRemarks, setAttachmentRemarks] = useState("");
   const [showPaymentOption, setShowPaymentOption] = useState(false);
+  const [hasExistingPayment, setHasExistingPayment] = useState(false);
 
   // Payment modal states
   const [paymentAmount, setPaymentAmount] = useState("");
@@ -56,6 +58,9 @@ function MainRequests() {
   const [addingPayment, setAddingPayment] = useState(false);
   const [existingPayment, setExistingPayment] = useState(null);
   const [isUpdatingPayment, setIsUpdatingPayment] = useState(false);
+  const [removingPayment, setRemovingPayment] = useState(false);
+  const [paymentHistory, setPaymentHistory] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
 
   const navigate = useNavigate();
   const API_URL = "https://oabs-f7by.onrender.com";
@@ -148,9 +153,24 @@ function MainRequests() {
     await fetchRequestDetails(request.request_id);
   };
 
-  const handleOpenStatusModal = (request) => {
+  const handleOpenStatusModal = async (request) => {
     setSelectedRequest(request);
     setNewStatus(request.status);
+
+    // Check if payment already exists for this request
+    try {
+      const response = await axios.get(`${API_URL}/api/payment/request/${request.request_id}`);
+
+      if (response.data.success && response.data.payments.length > 0) {
+        setHasExistingPayment(true);
+      } else {
+        setHasExistingPayment(false);
+      }
+    } catch (err) {
+      console.error("Check payment error:", err);
+      setHasExistingPayment(false);
+    }
+
     setShowStatusModal(true);
   };
 
@@ -195,7 +215,8 @@ function MainRequests() {
 
         // If Approved and payment option checked, open payment modal
         if (newStatus === "Approved" && showPaymentOption) {
-          setShowPaymentModal(true);
+          // Call handleOpenPaymentModal to fetch and load payment data
+          await handleOpenPaymentModal(selectedRequest);
         } else {
           alert("Request status updated successfully");
         }
@@ -209,6 +230,24 @@ function MainRequests() {
       );
     } finally {
       setUpdatingStatus(false);
+    }
+  };
+
+  const fetchPaymentHistory = async (paymentId) => {
+    try {
+      setLoadingHistory(true);
+      const response = await axios.get(`${API_URL}/api/payment/history/${paymentId}`);
+
+      if (response.data.success) {
+        setPaymentHistory(response.data.history || []);
+      } else {
+        setPaymentHistory([]);
+      }
+    } catch (err) {
+      console.error("Fetch payment history error:", err);
+      setPaymentHistory([]);
+    } finally {
+      setLoadingHistory(false);
     }
   };
 
@@ -231,6 +270,9 @@ function MainRequests() {
         setReceiverNumber(payment.receiver_number || "");
         setReceiverAccount(payment.receiver_account || "");
         setPaymentMethod(payment.payment_method || "GCash");
+
+        // Fetch payment history
+        await fetchPaymentHistory(payment.payment_id);
       } else {
         // No payment exists, reset form
         setExistingPayment(null);
@@ -242,12 +284,14 @@ function MainRequests() {
         setReceiverNumber("");
         setReceiverAccount("");
         setPaymentMethod("GCash");
+        setPaymentHistory([]);
       }
     } catch (err) {
       console.error("Fetch payment error:", err);
       // If error, assume no payment exists
       setExistingPayment(null);
       setIsUpdatingPayment(false);
+      setPaymentHistory([]);
     }
 
     setShowPaymentModal(true);
@@ -273,6 +317,7 @@ function MainRequests() {
             receiverNumber,
             receiverAccount,
             paymentMethod,
+            updatedBy: adminId,
           }
         );
       } else {
@@ -321,6 +366,48 @@ function MainRequests() {
       );
     } finally {
       setAddingPayment(false);
+    }
+  };
+
+  const handleRemovePayment = async () => {
+    if (!window.confirm("Are you sure you want to remove this payment requirement? This action cannot be undone.")) {
+      return;
+    }
+
+    try {
+      setRemovingPayment(true);
+      setError("");
+
+      const response = await axios.delete(
+        `${API_URL}/api/payment/delete/${existingPayment.payment_id}`,
+        {
+          data: { deletedBy: adminId }
+        }
+      );
+
+      if (response.data.success) {
+        setShowPaymentModal(false);
+        // Reset form
+        setPaymentAmount("");
+        setPaymentType("Permit Fee");
+        setPaymentDescription("");
+        setReceiverName("");
+        setReceiverNumber("");
+        setReceiverAccount("");
+        setPaymentMethod("GCash");
+        setExistingPayment(null);
+        setIsUpdatingPayment(false);
+        alert("Payment requirement removed successfully");
+      } else {
+        setError(response.data.message || "Failed to remove payment");
+      }
+    } catch (err) {
+      console.error("Remove payment error:", err);
+      setError(
+        err.response?.data?.message || "An error occurred while removing payment"
+      );
+    } finally {
+      setRemovingPayment(false);
     }
   };
 
@@ -757,8 +844,8 @@ function MainRequests() {
                     </select>
                   </div>
 
-                  {/* Show Add Payment Option for Approved status */}
-                  {newStatus === "Approved" && (
+                  {/* Show Add/Update Payment Option for Approved status */}
+                  {newStatus === "Approved" && !hasExistingPayment && (
                     <div className="mb-3">
                       <div className="alert alert-success">
                         <div className="form-check">
@@ -773,6 +860,29 @@ function MainRequests() {
                             <strong>Add Payment Requirement (Optional)</strong>
                             <p className="mb-0 small">
                               Check this to immediately add payment details after updating status
+                            </p>
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Show Update Payment Option when payment already exists */}
+                  {newStatus === "Approved" && hasExistingPayment && (
+                    <div className="mb-3">
+                      <div className="alert alert-info">
+                        <div className="form-check">
+                          <input
+                            className="form-check-input"
+                            type="checkbox"
+                            id="paymentOptionCheck"
+                            checked={showPaymentOption}
+                            onChange={(e) => setShowPaymentOption(e.target.checked)}
+                          />
+                          <label className="form-check-label" htmlFor="paymentOptionCheck">
+                            <strong>Update Payment Requirement (Optional)</strong>
+                            <p className="mb-0 small">
+                              A payment requirement already exists. Check this to update payment details after updating status
                             </p>
                           </label>
                         </div>
@@ -994,32 +1104,131 @@ function MainRequests() {
                     </div>
                   </div>
 
-                  <div className="d-flex justify-content-end gap-2 mt-3">
-                    <button
-                      type="button"
-                      className="btn btn-secondary"
-                      onClick={closeModals}
-                      disabled={addingPayment}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      className="btn btn-success"
-                      disabled={addingPayment}
-                    >
-                      {addingPayment ? (
-                        <>
-                          <span
-                            className="spinner-border spinner-border-sm me-2"
-                            role="status"
-                          ></span>
-                          {isUpdatingPayment ? "Updating..." : "Adding..."}
-                        </>
+                  {/* Payment History Section - Only show when updating */}
+                  {isUpdatingPayment && (
+                    <>
+                      <hr className="my-4" />
+                      <h6 className="mb-3">Payment History</h6>
+
+                      {loadingHistory ? (
+                        <div className="text-center py-3">
+                          <div className="spinner-border spinner-border-sm text-primary" role="status">
+                            <span className="visually-hidden">Loading history...</span>
+                          </div>
+                        </div>
+                      ) : paymentHistory.length > 0 ? (
+                        <div className="table-responsive">
+                          <table className="table table-sm table-bordered">
+                            <thead className="table-light">
+                              <tr>
+                                <th>Date</th>
+                                <th>Previous Status</th>
+                                <th>New Status</th>
+                                <th>Changed By</th>
+                                <th>Remarks</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {paymentHistory.map((history) => (
+                                <tr key={history.history_id}>
+                                  <td className="small">
+                                    {new Date(history.created_at).toLocaleString("en-US", {
+                                      month: "short",
+                                      day: "2-digit",
+                                      year: "numeric",
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    })}
+                                  </td>
+                                  <td>
+                                    {history.previous_status ? (
+                                      <span className="badge bg-secondary">{history.previous_status}</span>
+                                    ) : (
+                                      <span className="text-muted">-</span>
+                                    )}
+                                  </td>
+                                  <td>
+                                    <span className={`badge bg-${
+                                      history.new_status === "Pending" ? "warning" :
+                                      history.new_status === "Paid" ? "success" :
+                                      history.new_status === "Verified" ? "primary" :
+                                      history.new_status === "Deleted" ? "danger" :
+                                      "secondary"
+                                    }`}>
+                                      {history.new_status}
+                                    </span>
+                                  </td>
+                                  <td className="small">
+                                    {history.Admins?.fullname || "System"}
+                                  </td>
+                                  <td className="small">{history.remarks || "-"}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
                       ) : (
-                        isUpdatingPayment ? "Update Payment" : "Add Payment"
+                        <p className="text-muted small mb-0">No history available</p>
                       )}
-                    </button>
+                    </>
+                  )}
+
+                  <div className="d-flex justify-content-between gap-2 mt-3">
+                    {/* Left side - Remove Payment button (only show when updating) */}
+                    <div>
+                      {isUpdatingPayment && (
+                        <button
+                          type="button"
+                          className="btn btn-danger"
+                          onClick={handleRemovePayment}
+                          disabled={addingPayment || removingPayment}
+                        >
+                          {removingPayment ? (
+                            <>
+                              <span
+                                className="spinner-border spinner-border-sm me-2"
+                                role="status"
+                              ></span>
+                              Removing...
+                            </>
+                          ) : (
+                            <>
+                              <Trash2 size={16} className="me-1" />
+                              Remove Payment
+                            </>
+                          )}
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Right side - Cancel and Save buttons */}
+                    <div className="d-flex gap-2">
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
+                        onClick={closeModals}
+                        disabled={addingPayment || removingPayment}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="btn btn-success"
+                        disabled={addingPayment || removingPayment}
+                      >
+                        {addingPayment ? (
+                          <>
+                            <span
+                              className="spinner-border spinner-border-sm me-2"
+                              role="status"
+                            ></span>
+                            {isUpdatingPayment ? "Updating..." : "Adding..."}
+                          </>
+                        ) : (
+                          isUpdatingPayment ? "Update Payment" : "Add Payment"
+                        )}
+                      </button>
+                    </div>
                   </div>
                 </form>
               </div>

@@ -3248,6 +3248,19 @@ app.post("/api/payment/add", async (req, res) => {
       });
     }
 
+    // Create history entry for payment creation
+    await supabase
+      .from("Payment History")
+      .insert([
+        {
+          payment_id: data[0].payment_id,
+          previous_status: null,
+          new_status: "Pending",
+          changed_by: createdBy,
+          remarks: "Payment requirement created",
+        },
+      ]);
+
     res.status(201).json({
       success: true,
       message: "Payment requirement added successfully",
@@ -3529,6 +3542,7 @@ app.put("/api/payment/update/:paymentId", async (req, res) => {
       receiverNumber,
       receiverAccount,
       paymentMethod,
+      updatedBy,
     } = req.body;
 
     // Validation
@@ -3538,6 +3552,13 @@ app.put("/api/payment/update/:paymentId", async (req, res) => {
         message: "Payment ID and amount are required",
       });
     }
+
+    // Get current payment data for history
+    const { data: currentPayment } = await supabase
+      .from("Payments")
+      .select("*")
+      .eq("payment_id", paymentId)
+      .single();
 
     // Update payment
     const { data, error } = await supabase
@@ -3569,6 +3590,19 @@ app.put("/api/payment/update/:paymentId", async (req, res) => {
       });
     }
 
+    // Create history entry for payment update
+    await supabase
+      .from("Payment History")
+      .insert([
+        {
+          payment_id: paymentId,
+          previous_status: currentPayment?.status,
+          new_status: currentPayment?.status,
+          changed_by: updatedBy || null,
+          remarks: `Payment details updated (Amount: ${currentPayment?.amount} → ${amount})`,
+        },
+      ]);
+
     res.status(200).json({
       success: true,
       message: "Payment requirement updated successfully",
@@ -3587,6 +3621,34 @@ app.put("/api/payment/update/:paymentId", async (req, res) => {
 app.delete("/api/payment/delete/:paymentId", async (req, res) => {
   try {
     const { paymentId } = req.params;
+    const { deletedBy } = req.body;
+
+    // Get current payment data for history before deleting
+    const { data: currentPayment } = await supabase
+      .from("Payments")
+      .select("*")
+      .eq("payment_id", paymentId)
+      .single();
+
+    if (!currentPayment) {
+      return res.status(404).json({
+        success: false,
+        message: "Payment not found",
+      });
+    }
+
+    // Create history entry before deletion (CASCADE will delete it otherwise)
+    await supabase
+      .from("Payment History")
+      .insert([
+        {
+          payment_id: paymentId,
+          previous_status: currentPayment?.status,
+          new_status: "Deleted",
+          changed_by: deletedBy || null,
+          remarks: "Payment requirement removed",
+        },
+      ]);
 
     const { data, error } = await supabase
       .from("Payments")
@@ -3599,13 +3661,6 @@ app.delete("/api/payment/delete/:paymentId", async (req, res) => {
       return res.status(500).json({
         success: false,
         message: "Failed to delete payment",
-      });
-    }
-
-    if (!data || data.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "Payment not found",
       });
     }
 
