@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm uninstall nodemailer)"
+      "Bash(npm uninstall nodemailer)",
+      "Bash(npm install nodemailer)"
     ],
     "deny": [],
     "ask": []
