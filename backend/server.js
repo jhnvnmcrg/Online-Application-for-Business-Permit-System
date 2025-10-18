@@ -3967,4 +3967,157 @@ app.get("/api/dashboard/user/recent-activity/:ownerId", async (req, res) => {
   }
 });
 
+// Get request status timeline/history
+app.get("/api/request/timeline/:requestId", async (req, res) => {
+  try {
+    const { requestId } = req.params;
+
+    // Get the request details
+    const { data: request, error: requestError } = await supabase
+      .from("Requests")
+      .select("*")
+      .eq("request_id", requestId)
+      .single();
+
+    if (requestError || !request) {
+      return res.status(404).json({
+        success: false,
+        message: "Request not found",
+      });
+    }
+
+    // Build timeline based on request status and dates
+    const timeline = [];
+
+    // Step 1: Submitted (always present)
+    timeline.push({
+      step: 1,
+      status: "Submitted",
+      label: "Request Submitted",
+      description: "Your application has been received",
+      date: request.created_at,
+      completed: true,
+      current: request.status === "Pending",
+      icon: "FileText",
+    });
+
+    // Step 2: Under Review
+    const isUnderReview = ["Processing", "Approved", "Rejected", "Released"].includes(request.status);
+    timeline.push({
+      step: 2,
+      status: "Processing",
+      label: "Under Review",
+      description: "Application is being reviewed by our team",
+      date: request.updated_at && isUnderReview ? request.updated_at : null,
+      completed: isUnderReview,
+      current: request.status === "Processing",
+      icon: "Clock",
+    });
+
+    // Step 3: Decision Made (Approved or Rejected)
+    if (request.status === "Rejected") {
+      timeline.push({
+        step: 3,
+        status: "Rejected",
+        label: "Application Rejected",
+        description: request.remarks || "Your application was not approved",
+        date: request.updated_at,
+        completed: true,
+        current: true,
+        icon: "XCircle",
+        isRejected: true,
+      });
+    } else {
+      const isApproved = ["Approved", "Released"].includes(request.status);
+      timeline.push({
+        step: 3,
+        status: "Approved",
+        label: "Application Approved",
+        description: "Your application has been approved",
+        date: request.updated_at && isApproved ? request.updated_at : null,
+        completed: isApproved,
+        current: request.status === "Approved",
+        icon: "CheckCircle",
+      });
+
+      // Step 4: Released (only if approved)
+      if (isApproved) {
+        timeline.push({
+          step: 4,
+          status: "Released",
+          label: "Permit Released",
+          description: "Your permit is ready for download",
+          date: request.date_release,
+          completed: request.status === "Released",
+          current: request.status === "Released",
+          icon: "Download",
+        });
+      }
+    }
+
+    // Determine what's next
+    let whatsNext = {
+      message: "",
+      action: "",
+    };
+
+    switch (request.status) {
+      case "Pending":
+        whatsNext = {
+          message: "Your application is in queue for review",
+          action: "Wait for our team to start processing your request",
+        };
+        break;
+      case "Processing":
+        whatsNext = {
+          message: "Your application is currently being reviewed",
+          action: "Our team is evaluating your submitted documents",
+        };
+        break;
+      case "Approved":
+        whatsNext = {
+          message: "Payment required to proceed",
+          action: "Complete the payment to receive your permit",
+        };
+        break;
+      case "Released":
+        whatsNext = {
+          message: "Your permit is ready!",
+          action: "Download your permit from the attachments section",
+        };
+        break;
+      case "Rejected":
+        whatsNext = {
+          message: "Application not approved",
+          action: "Review the remarks and consider submitting a new application",
+        };
+        break;
+      case "Cancelled":
+        whatsNext = {
+          message: "Request was cancelled",
+          action: "Submit a new application if needed",
+        };
+        break;
+      default:
+        whatsNext = {
+          message: "Status update pending",
+          action: "Check back later for updates",
+        };
+    }
+
+    res.status(200).json({
+      success: true,
+      timeline,
+      whatsNext,
+      currentStatus: request.status,
+    });
+  } catch (err) {
+    console.error("Fetch request timeline error:", err);
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while fetching request timeline",
+    });
+  }
+});
+
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

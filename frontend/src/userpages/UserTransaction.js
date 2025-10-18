@@ -35,6 +35,9 @@ function UserTransaction() {
   const [updateFileFields, setUpdateFileFields] = useState({});
   const [updating, setUpdating] = useState(false);
   const [updateValidationErrors, setUpdateValidationErrors] = useState({});
+  const [timeline, setTimeline] = useState([]);
+  const [whatsNext, setWhatsNext] = useState(null);
+  const [loadingTimeline, setLoadingTimeline] = useState(false);
 
   // API Base URL
   const API_URL = "https://oabs-f7by.onrender.com";
@@ -146,16 +149,35 @@ function UserTransaction() {
     }
   };
 
+  const fetchRequestTimeline = async (requestId) => {
+    try {
+      setLoadingTimeline(true);
+      const response = await axios.get(`${API_URL}/api/request/timeline/${requestId}`);
+
+      if (response.data.success) {
+        setTimeline(response.data.timeline);
+        setWhatsNext(response.data.whatsNext);
+      }
+    } catch (err) {
+      console.error("Fetch timeline error:", err);
+    } finally {
+      setLoadingTimeline(false);
+    }
+  };
+
   const handleViewDetails = async (request) => {
     setSelectedRequest(request);
     setShowModal(true);
     await fetchRequestDetails(request.request_id);
+    await fetchRequestTimeline(request.request_id);
   };
 
   const closeModal = () => {
     setShowModal(false);
     setSelectedRequest(null);
     setRequestDetails(null);
+    setTimeline([]);
+    setWhatsNext(null);
     setShowCancelConfirm(false);
   };
 
@@ -800,6 +822,109 @@ function UserTransaction() {
                           </p>
                         </div>
                       </div>
+                    </div>
+
+                    {/* Status Timeline */}
+                    <div className="mb-4">
+                      <h6 className="text-primary border-bottom pb-2 mb-3">
+                        Application Progress
+                      </h6>
+                      {loadingTimeline ? (
+                        <div className="text-center py-3">
+                          <div className="spinner-border spinner-border-sm text-primary" role="status">
+                            <span className="visually-hidden">Loading timeline...</span>
+                          </div>
+                        </div>
+                      ) : timeline.length > 0 ? (
+                        <>
+                          {/* Timeline Steps */}
+                          <div className="timeline-container mb-4">
+                            {timeline.map((step, index) => {
+                              const IconComponent = step.icon === "FileText" ? FileText :
+                                                    step.icon === "Clock" ? Clock :
+                                                    step.icon === "CheckCircle" ? CheckCircle :
+                                                    step.icon === "XCircle" ? XCircle :
+                                                    step.icon === "Download" ? Download :
+                                                    FileText;
+
+                              return (
+                                <div key={step.step} className="d-flex mb-3">
+                                  {/* Icon and Connector */}
+                                  <div className="d-flex flex-column align-items-center me-3">
+                                    <div
+                                      className={`rounded-circle d-flex align-items-center justify-content-center ${
+                                        step.completed
+                                          ? step.isRejected
+                                            ? 'bg-danger text-white'
+                                            : 'bg-success text-white'
+                                          : step.current
+                                            ? 'bg-warning text-white'
+                                            : 'bg-light text-muted border'
+                                      }`}
+                                      style={{ width: '40px', height: '40px', flexShrink: 0 }}
+                                    >
+                                      <IconComponent size={20} />
+                                    </div>
+                                    {index < timeline.length - 1 && (
+                                      <div
+                                        className={`${
+                                          step.completed ? 'bg-success' : 'bg-light'
+                                        }`}
+                                        style={{ width: '2px', height: '100%', minHeight: '40px' }}
+                                      ></div>
+                                    )}
+                                  </div>
+
+                                  {/* Content */}
+                                  <div className="flex-grow-1 pb-3">
+                                    <div className="d-flex justify-content-between align-items-start mb-1">
+                                      <h6 className={`mb-1 ${step.current ? 'text-warning fw-bold' : ''}`}>
+                                        {step.label}
+                                        {step.current && (
+                                          <span className="badge bg-warning text-dark ms-2 small">Current</span>
+                                        )}
+                                      </h6>
+                                      {step.date && (
+                                        <small className="text-muted">
+                                          {formatDate(step.date)}
+                                        </small>
+                                      )}
+                                    </div>
+                                    <p className={`mb-0 small ${
+                                      step.isRejected ? 'text-danger' : 'text-muted'
+                                    }`}>
+                                      {step.description}
+                                    </p>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+
+                          {/* What's Next Section */}
+                          {whatsNext && (
+                            <div className={`alert ${
+                              selectedRequest?.status === 'Rejected' ? 'alert-danger' :
+                              selectedRequest?.status === 'Released' ? 'alert-success' :
+                              selectedRequest?.status === 'Approved' ? 'alert-warning' :
+                              'alert-info'
+                            } mb-0`}>
+                              <div className="d-flex align-items-start gap-2">
+                                <AlertCircle size={20} className="mt-1" />
+                                <div>
+                                  <h6 className="mb-1 fw-bold">What's Next?</h6>
+                                  <p className="mb-1">{whatsNext.message}</p>
+                                  <p className="mb-0 small opacity-75">{whatsNext.action}</p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <div className="alert alert-info mb-0">
+                          <p className="mb-0 small">Timeline information not available</p>
+                        </div>
+                      )}
                     </div>
 
                     {/* Form Data */}
