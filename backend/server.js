@@ -3517,6 +3517,72 @@ app.put("/api/payment/verify/:paymentId", async (req, res) => {
   }
 });
 
+// Update payment requirement (Admin only)
+app.put("/api/payment/update/:paymentId", async (req, res) => {
+  try {
+    const { paymentId } = req.params;
+    const {
+      amount,
+      paymentType,
+      description,
+      receiverName,
+      receiverNumber,
+      receiverAccount,
+      paymentMethod,
+    } = req.body;
+
+    // Validation
+    if (!paymentId || !amount) {
+      return res.status(400).json({
+        success: false,
+        message: "Payment ID and amount are required",
+      });
+    }
+
+    // Update payment
+    const { data, error } = await supabase
+      .from("Payments")
+      .update({
+        amount: parseFloat(amount),
+        payment_type: paymentType || "Permit Fee",
+        description: description || null,
+        receiver_name: receiverName || null,
+        receiver_number: receiverNumber || null,
+        receiver_account: receiverAccount || null,
+        payment_method: paymentMethod || null,
+      })
+      .eq("payment_id", paymentId)
+      .select();
+
+    if (error) {
+      console.error("Supabase error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to update payment requirement",
+      });
+    }
+
+    if (!data || data.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Payment not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Payment requirement updated successfully",
+      payment: data[0],
+    });
+  } catch (err) {
+    console.error("Update payment error:", err);
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while updating payment",
+    });
+  }
+});
+
 // Delete payment (Admin only)
 app.delete("/api/payment/delete/:paymentId", async (req, res) => {
   try {

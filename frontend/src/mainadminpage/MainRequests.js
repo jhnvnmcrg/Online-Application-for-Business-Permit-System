@@ -54,6 +54,8 @@ function MainRequests() {
   const [receiverAccount, setReceiverAccount] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("GCash");
   const [addingPayment, setAddingPayment] = useState(false);
+  const [existingPayment, setExistingPayment] = useState(null);
+  const [isUpdatingPayment, setIsUpdatingPayment] = useState(false);
 
   const navigate = useNavigate();
   const API_URL = "https://oabs-f7by.onrender.com";
@@ -82,8 +84,12 @@ function MainRequests() {
       const response = await axios.get(`${API_URL}/api/request/all`);
 
       if (response.data.success) {
-        setRequests(response.data.requests);
-        setFilteredRequests(response.data.requests);
+        // Filter to show only Pending, Processing, and Approved
+        const activeRequests = response.data.requests.filter(
+          (req) => req.status === "Pending" || req.status === "Processing" || req.status === "Approved"
+        );
+        setRequests(activeRequests);
+        setFilteredRequests(activeRequests);
       } else {
         setError("Failed to fetch requests");
       }
@@ -206,8 +212,44 @@ function MainRequests() {
     }
   };
 
-  const handleOpenPaymentModal = (request) => {
+  const handleOpenPaymentModal = async (request) => {
     setSelectedRequest(request);
+
+    // Check if payment already exists for this request
+    try {
+      const response = await axios.get(`${API_URL}/api/payment/request/${request.request_id}`);
+
+      if (response.data.success && response.data.payments.length > 0) {
+        // Payment exists, populate form with existing data
+        const payment = response.data.payments[0];
+        setExistingPayment(payment);
+        setIsUpdatingPayment(true);
+        setPaymentAmount(payment.amount.toString());
+        setPaymentType(payment.payment_type || "Permit Fee");
+        setPaymentDescription(payment.description || "");
+        setReceiverName(payment.receiver_name || "");
+        setReceiverNumber(payment.receiver_number || "");
+        setReceiverAccount(payment.receiver_account || "");
+        setPaymentMethod(payment.payment_method || "GCash");
+      } else {
+        // No payment exists, reset form
+        setExistingPayment(null);
+        setIsUpdatingPayment(false);
+        setPaymentAmount("");
+        setPaymentType("Permit Fee");
+        setPaymentDescription("");
+        setReceiverName("");
+        setReceiverNumber("");
+        setReceiverAccount("");
+        setPaymentMethod("GCash");
+      }
+    } catch (err) {
+      console.error("Fetch payment error:", err);
+      // If error, assume no payment exists
+      setExistingPayment(null);
+      setIsUpdatingPayment(false);
+    }
+
     setShowPaymentModal(true);
   };
 
@@ -217,17 +259,36 @@ function MainRequests() {
       setAddingPayment(true);
       setError("");
 
-      const response = await axios.post(`${API_URL}/api/payment/add`, {
-        requestId: selectedRequest.request_id,
-        amount: parseFloat(paymentAmount),
-        paymentType,
-        description: paymentDescription,
-        receiverName,
-        receiverNumber,
-        receiverAccount,
-        paymentMethod,
-        createdBy: adminId,
-      });
+      let response;
+
+      if (isUpdatingPayment && existingPayment) {
+        // Update existing payment
+        response = await axios.put(
+          `${API_URL}/api/payment/update/${existingPayment.payment_id}`,
+          {
+            amount: parseFloat(paymentAmount),
+            paymentType,
+            description: paymentDescription,
+            receiverName,
+            receiverNumber,
+            receiverAccount,
+            paymentMethod,
+          }
+        );
+      } else {
+        // Add new payment
+        response = await axios.post(`${API_URL}/api/payment/add`, {
+          requestId: selectedRequest.request_id,
+          amount: parseFloat(paymentAmount),
+          paymentType,
+          description: paymentDescription,
+          receiverName,
+          receiverNumber,
+          receiverAccount,
+          paymentMethod,
+          createdBy: adminId,
+        });
+      }
 
       if (response.data.success) {
         setShowPaymentModal(false);
@@ -239,14 +300,24 @@ function MainRequests() {
         setReceiverNumber("");
         setReceiverAccount("");
         setPaymentMethod("GCash");
-        alert("Payment requirement added successfully");
+        setExistingPayment(null);
+        setIsUpdatingPayment(false);
+        alert(
+          isUpdatingPayment
+            ? "Payment requirement updated successfully"
+            : "Payment requirement added successfully"
+        );
       } else {
-        setError(response.data.message || "Failed to add payment");
+        setError(
+          response.data.message ||
+            `Failed to ${isUpdatingPayment ? "update" : "add"} payment`
+        );
       }
     } catch (err) {
-      console.error("Add payment error:", err);
+      console.error("Payment error:", err);
       setError(
-        err.response?.data?.message || "An error occurred while adding payment"
+        err.response?.data?.message ||
+          `An error occurred while ${isUpdatingPayment ? "updating" : "adding"} payment`
       );
     } finally {
       setAddingPayment(false);
@@ -345,9 +416,6 @@ function MainRequests() {
                   <option value="Pending">Pending</option>
                   <option value="Processing">Processing</option>
                   <option value="Approved">Approved</option>
-                  <option value="Rejected">Rejected</option>
-                  <option value="Released">Released</option>
-                  <option value="Cancelled">Cancelled</option>
                 </select>
               </div>
               <div className="col-md-7">
@@ -420,13 +488,15 @@ function MainRequests() {
                           >
                             <Edit size={16} />
                           </button>
-                          <button
-                            className="btn btn-sm btn-success"
-                            onClick={() => handleOpenPaymentModal(request)}
-                            title="Add Payment"
-                          >
-                            <DollarSign size={16} />
-                          </button>
+                          {request.status === "Approved" && (
+                            <button
+                              className="btn btn-sm btn-success"
+                              onClick={() => handleOpenPaymentModal(request)}
+                              title="Manage Payment"
+                            >
+                              <DollarSign size={16} />
+                            </button>
+                          )}
                         </td>
                       </tr>
                     ))
@@ -806,7 +876,7 @@ function MainRequests() {
               <div className="modal-header bg-success text-white">
                 <h5 className="modal-title d-flex align-items-center gap-2">
                   <DollarSign size={20} />
-                  Add Payment Requirement - {selectedRequest?.tracking_code}
+                  {isUpdatingPayment ? "Update" : "Add"} Payment Requirement - {selectedRequest?.tracking_code}
                 </h5>
                 <button
                   type="button"
@@ -817,7 +887,7 @@ function MainRequests() {
               <div className="modal-body">
                 <form onSubmit={handleAddPayment}>
                   <div className="alert alert-info">
-                    <strong>Note:</strong> Add payment details that the owner needs to pay.
+                    <strong>Note:</strong> {isUpdatingPayment ? "Update" : "Add"} payment details that the owner needs to pay.
                     The owner will see these details and upload proof of payment.
                   </div>
 
@@ -944,10 +1014,10 @@ function MainRequests() {
                             className="spinner-border spinner-border-sm me-2"
                             role="status"
                           ></span>
-                          Adding...
+                          {isUpdatingPayment ? "Updating..." : "Adding..."}
                         </>
                       ) : (
-                        "Add Payment"
+                        isUpdatingPayment ? "Update Payment" : "Add Payment"
                       )}
                     </button>
                   </div>
