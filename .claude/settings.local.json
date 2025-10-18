@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(npm uninstall nodemailer)",
-      "Bash(npm install nodemailer)"
+      "Bash(npm install nodemailer)",
+      "Bash(npm install jsonwebtoken)"
     ],
     "deny": [],
     "ask": []

@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const bcrypt = require("bcrypt");
 const multer = require("multer");
+const jwt = require("jsonwebtoken");
 const { createClient } = require("@supabase/supabase-js");
 require("dotenv").config();
 
@@ -29,6 +30,119 @@ const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
 });
+
+// ==================== JWT AUTHENTICATION MIDDLEWARE ====================
+function authenticateToken(req, res, next) {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+
+  if (!token) {
+    return res.status(401).json({
+      success: false,
+      error: 'Access denied. No token provided.'
+    });
+  }
+
+  jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+    if (err) {
+      return res.status(403).json({
+        success: false,
+        error: 'Invalid or expired token.'
+      });
+    }
+    req.user = decoded; // { userId, userType, username, role }
+    next();
+  });
+}
+
+// Helper function to generate JWT token
+function generateToken(userId, userType, username, role = null) {
+  return jwt.sign(
+    {
+      userId: userId,
+      userType: userType, // 'admin', 'user', 'processor'
+      username: username,
+      role: role
+    },
+    process.env.JWT_SECRET,
+    { expiresIn: '24h' }
+  );
+}
+
+// ==================== NOTIFICATION HELPER FUNCTIONS ====================
+async function createNotification(userId, userType, type, subject, message, requestId = null, paymentId = null) {
+  try {
+    const { data, error } = await supabase
+      .from('Notifications')
+      .insert([{
+        user_type: userType,
+        user_id: userId,
+        type: type, // 'InApp', 'Email', 'SMS'
+        subject: subject,
+        message: message,
+        request_id: requestId,
+        payment_id: paymentId,
+        status: 'Pending'
+      }])
+      .select();
+
+    if (error) {
+      console.error('Notification creation error:', error);
+      return null;
+    }
+
+    return data[0];
+  } catch (err) {
+    console.error('Notification helper error:', err);
+    return null;
+  }
+}
+
+// Helper to create notification for user when request status changes
+async function notifyRequestStatusChange(requestId, ownerId, trackingCode, oldStatus, newStatus) {
+  const statusMessages = {
+    'Pending': 'Your request has been received and is pending review.',
+    'Processing': 'Your request is now being processed by our team.',
+    'Approved': 'Congratulations! Your request has been approved.',
+    'Rejected': 'Your request has been rejected. Please check the remarks for details.',
+    'Released': 'Your document is ready! You can now download it from the Downloadables section.',
+    'Cancelled': 'Your request has been cancelled.'
+  };
+
+  const message = statusMessages[newStatus] || `Your request status has been updated to ${newStatus}.`;
+
+  await createNotification(
+    ownerId,
+    'User',
+    'InApp',
+    `Request ${trackingCode} - Status Update`,
+    message,
+    requestId,
+    null
+  );
+}
+
+// Helper to notify user about payment status
+async function notifyPaymentStatusChange(paymentId, ownerId, requestId, trackingCode, status, amount) {
+  const messages = {
+    'Pending': `A payment of ₱${amount.toFixed(2)} is required for request ${trackingCode}.`,
+    'Submitted': `Your payment proof for request ${trackingCode} has been received and is under review.`,
+    'Verified': `Your payment of ₱${amount.toFixed(2)} for request ${trackingCode} has been verified.`,
+    'Rejected': `Your payment proof for request ${trackingCode} was rejected. Please resubmit.`
+  };
+
+  const message = messages[status] || `Payment status updated to ${status}.`;
+
+  await createNotification(
+    ownerId,
+    'User',
+    'InApp',
+    `Payment Update - ${trackingCode}`,
+    message,
+    requestId,
+    paymentId
+  );
+}
 
 // Register main admin endpoint
 app.post("/api/main/register", async (req, res) => {
@@ -162,8 +276,22 @@ app.post("/api/main/login", async (req, res) => {
       });
     }
 
-    // Generate a simple token (you can use JWT for better security)
-    const token = Buffer.from(`${user.id}:${Date.now()}`).toString("base64");
+    // Check if account is active
+    if (user.status !== 'active') {
+      return res.status(403).json({
+        success: false,
+        error: "Your account is inactive. Please contact the administrator.",
+      });
+    }
+
+    // Update last login timestamp
+    await supabase
+      .from("Admins")
+      .update({ last_login_at: new Date().toISOString() })
+      .eq("admin_id", user.admin_id);
+
+    // Generate JWT token
+    const token = generateToken(user.admin_id, 'admin', user.username, user.role);
 
     // Return user data (exclude password)
     res.status(200).json({
@@ -175,6 +303,7 @@ app.post("/api/main/login", async (req, res) => {
         fullname: user.fullname,
         email: user.email,
         username: user.username,
+        role: user.role,
         created_at: user.created_at,
       },
     });
@@ -560,8 +689,22 @@ app.post("/api/user/login", async (req, res) => {
       });
     }
 
-    // Generate a simple token (you can use JWT for better security)
-    const token = Buffer.from(`${user.id}:${Date.now()}`).toString("base64");
+    // Check if account is active
+    if (user.status !== 'Active') {
+      return res.status(403).json({
+        success: false,
+        error: "Your account is inactive. Please contact support.",
+      });
+    }
+
+    // Update last login timestamp
+    await supabase
+      .from("Owners")
+      .update({ last_login_at: new Date().toISOString() })
+      .eq("owner_id", user.owner_id);
+
+    // Generate JWT token
+    const token = generateToken(user.owner_id, 'user', user.username);
 
     // Return user data (exclude password)
     res.status(200).json({
@@ -699,8 +842,14 @@ app.post("/api/processor/login", async (req, res) => {
       });
     }
 
-    // Generate a simple token (you can use JWT for better security)
-    const token = Buffer.from(`${user.id}:${Date.now()}`).toString("base64");
+    // Update last login timestamp
+    await supabase
+      .from("Admins")
+      .update({ last_login_at: new Date().toISOString() })
+      .eq("admin_id", user.admin_id);
+
+    // Generate JWT token
+    const token = generateToken(user.admin_id, 'processor', user.username, user.role);
 
     // Return user data (exclude password)
     res.status(200).json({
@@ -2773,7 +2922,7 @@ app.put("/api/request/update-status/:requestId", upload.single("attachmentFile")
     // Get current request to track status change
     const { data: currentRequest } = await supabase
       .from("Requests")
-      .select("status")
+      .select("status, owner_id, tracking_code")
       .eq("request_id", requestId)
       .single();
 
@@ -2867,6 +3016,15 @@ app.put("/api/request/update-status/:requestId", upload.single("attachmentFile")
           remarks: remarks || null,
         },
       ]);
+
+      // Send notification to user about status change
+      await notifyRequestStatusChange(
+        requestId,
+        currentRequest.owner_id,
+        currentRequest.tracking_code,
+        currentRequest.status,
+        status
+      );
     }
 
 
@@ -3275,6 +3433,23 @@ app.post("/api/payment/add", async (req, res) => {
         },
       ]);
 
+    // Send notification to user about new payment requirement
+    const { data: requestData } = await supabase
+      .from("Requests")
+      .select("owner_id, tracking_code")
+      .eq("request_id", requestId)
+      .single();
+
+    if (requestData) {
+      await notifyPaymentStatusChange(
+        data[0].payment_id,
+        requestData.owner_id,
+        requestId,
+        requestData.tracking_code,
+        "Pending",
+        parseFloat(amount)
+      );
+    }
 
     res.status(201).json({
       success: true,
@@ -3469,6 +3644,25 @@ app.put("/api/payment/submit-proof/:paymentId", upload.single("proofPayment"), a
       });
     }
 
+    // Get request information for notification
+    const { data: requestData } = await supabase
+      .from("Requests")
+      .select("owner_id, tracking_code")
+      .eq("request_id", payment.request_id)
+      .single();
+
+    // Send notification to user that proof was submitted
+    if (requestData) {
+      await notifyPaymentStatusChange(
+        paymentId,
+        requestData.owner_id,
+        payment.request_id,
+        requestData.tracking_code,
+        "Submitted",
+        payment.amount
+      );
+    }
+
     res.status(200).json({
       success: true,
       message: "Payment proof submitted successfully",
@@ -3531,6 +3725,24 @@ app.put("/api/payment/verify/:paymentId", async (req, res) => {
       });
     }
 
+    // Get request information for notification
+    const { data: requestData } = await supabase
+      .from("Requests")
+      .select("owner_id, tracking_code")
+      .eq("request_id", data[0].request_id)
+      .single();
+
+    // Send notification to user about payment verification
+    if (requestData) {
+      await notifyPaymentStatusChange(
+        paymentId,
+        requestData.owner_id,
+        data[0].request_id,
+        requestData.tracking_code,
+        status,
+        data[0].amount
+      );
+    }
 
     res.status(200).json({
       success: true,
@@ -4121,6 +4333,248 @@ app.get("/api/request/timeline/:requestId", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "An error occurred while fetching request timeline",
+    });
+  }
+});
+
+// ==================== NOTIFICATION ENDPOINTS ====================
+
+// Get all notifications for a user
+app.get("/api/notifications/:userType/:userId", authenticateToken, async (req, res) => {
+  try {
+    const { userType, userId } = req.params;
+    const { limit = 50, unreadOnly = false } = req.query;
+
+    // Verify the requesting user matches the userId in token
+    if (req.user.userId != userId || req.user.userType !== userType.toLowerCase()) {
+      return res.status(403).json({
+        success: false,
+        error: "You can only access your own notifications"
+      });
+    }
+
+    let query = supabase
+      .from('Notifications')
+      .select('*')
+      .eq('user_type', userType)
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(parseInt(limit));
+
+    if (unreadOnly === 'true') {
+      query = query.is('read_at', null);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Notifications fetch error:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to fetch notifications'
+      });
+    }
+
+    res.json({
+      success: true,
+      notifications: data
+    });
+  } catch (err) {
+    console.error('Get notifications error:', err);
+    res.status(500).json({
+      success: false,
+      error: 'An error occurred while fetching notifications'
+    });
+  }
+});
+
+// Get unread notification count
+app.get("/api/notifications/:userType/:userId/unread-count", authenticateToken, async (req, res) => {
+  try {
+    const { userType, userId } = req.params;
+
+    // Verify the requesting user matches the userId in token
+    if (req.user.userId != userId || req.user.userType !== userType.toLowerCase()) {
+      return res.status(403).json({
+        success: false,
+        error: "Unauthorized access"
+      });
+    }
+
+    const { count, error } = await supabase
+      .from('Notifications')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_type', userType)
+      .eq('user_id', userId)
+      .is('read_at', null);
+
+    if (error) {
+      console.error('Unread count error:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to get unread count'
+      });
+    }
+
+    res.json({
+      success: true,
+      count: count || 0
+    });
+  } catch (err) {
+    console.error('Unread count error:', err);
+    res.status(500).json({
+      success: false,
+      error: 'An error occurred'
+    });
+  }
+});
+
+// Mark notification as read
+app.put("/api/notifications/:notificationId/read", authenticateToken, async (req, res) => {
+  try {
+    const { notificationId } = req.params;
+
+    // Get notification to verify ownership
+    const { data: notification, error: fetchError } = await supabase
+      .from('Notifications')
+      .select('*')
+      .eq('notification_id', notificationId)
+      .single();
+
+    if (fetchError || !notification) {
+      return res.status(404).json({
+        success: false,
+        error: 'Notification not found'
+      });
+    }
+
+    // Verify the user owns this notification
+    if (notification.user_id != req.user.userId) {
+      return res.status(403).json({
+        success: false,
+        error: 'Unauthorized access'
+      });
+    }
+
+    // Mark as read
+    const { data, error } = await supabase
+      .from('Notifications')
+      .update({ read_at: new Date().toISOString() })
+      .eq('notification_id', notificationId)
+      .select();
+
+    if (error) {
+      console.error('Mark as read error:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to mark notification as read'
+      });
+    }
+
+    res.json({
+      success: true,
+      notification: data[0]
+    });
+  } catch (err) {
+    console.error('Mark notification as read error:', err);
+    res.status(500).json({
+      success: false,
+      error: 'An error occurred'
+    });
+  }
+});
+
+// Mark all notifications as read
+app.put("/api/notifications/:userType/:userId/read-all", authenticateToken, async (req, res) => {
+  try {
+    const { userType, userId } = req.params;
+
+    // Verify the requesting user matches the userId in token
+    if (req.user.userId != userId || req.user.userType !== userType.toLowerCase()) {
+      return res.status(403).json({
+        success: false,
+        error: "Unauthorized access"
+      });
+    }
+
+    const { data, error } = await supabase
+      .from('Notifications')
+      .update({ read_at: new Date().toISOString() })
+      .eq('user_type', userType)
+      .eq('user_id', userId)
+      .is('read_at', null)
+      .select();
+
+    if (error) {
+      console.error('Mark all as read error:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to mark all notifications as read'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: `Marked ${data.length} notifications as read`
+    });
+  } catch (err) {
+    console.error('Mark all notifications as read error:', err);
+    res.status(500).json({
+      success: false,
+      error: 'An error occurred'
+    });
+  }
+});
+
+// Delete notification
+app.delete("/api/notifications/:notificationId", authenticateToken, async (req, res) => {
+  try {
+    const { notificationId } = req.params;
+
+    // Get notification to verify ownership
+    const { data: notification, error: fetchError } = await supabase
+      .from('Notifications')
+      .select('*')
+      .eq('notification_id', notificationId)
+      .single();
+
+    if (fetchError || !notification) {
+      return res.status(404).json({
+        success: false,
+        error: 'Notification not found'
+      });
+    }
+
+    // Verify the user owns this notification
+    if (notification.user_id != req.user.userId) {
+      return res.status(403).json({
+        success: false,
+        error: 'Unauthorized access'
+      });
+    }
+
+    const { error } = await supabase
+      .from('Notifications')
+      .delete()
+      .eq('notification_id', notificationId);
+
+    if (error) {
+      console.error('Delete notification error:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to delete notification'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Notification deleted successfully'
+    });
+  } catch (err) {
+    console.error('Delete notification error:', err);
+    res.status(500).json({
+      success: false,
+      error: 'An error occurred'
     });
   }
 });
