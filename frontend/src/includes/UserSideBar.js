@@ -13,6 +13,7 @@ import {
   History,
   LogOut,
 } from "lucide-react";
+import NotificationBell from "./NotificationBell";
 // Import the external CSS file
 
 function UserSidebar({ children }) {
@@ -47,6 +48,7 @@ function UserSidebar({ children }) {
     // Clear localStorage
     localStorage.removeItem("user");
     localStorage.removeItem("token");
+    localStorage.removeItem("userType");
     // Redirect to login
     navigate("/oabps/user/login");
   };
@@ -245,6 +247,7 @@ function UserSidebar({ children }) {
                 <User size={20} className="me-2" />
                 <span className="fw-medium">{username}</span>
               </div>
+              <NotificationBell />
               <button
                 onClick={handleLogout}
                 className="btn btn-outline-light d-flex align-items-center"
