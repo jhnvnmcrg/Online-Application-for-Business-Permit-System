@@ -3738,4 +3738,233 @@ app.get("/api/payment/history/:paymentId", async (req, res) => {
   }
 });
 
+// ============================================
+// DASHBOARD STATISTICS ENDPOINTS
+// ============================================
+
+// Get admin/superadmin dashboard statistics
+app.get("/api/dashboard/admin/stats", async (req, res) => {
+  try {
+    // Get total requests by status
+    const { data: requests, error: requestsError } = await supabase
+      .from("Requests")
+      .select("status");
+
+    if (requestsError) throw requestsError;
+
+    // Get total payments by status
+    const { data: payments, error: paymentsError } = await supabase
+      .from("Payments")
+      .select("status, payment_deadline");
+
+    if (paymentsError) throw paymentsError;
+
+    // Get total business owners
+    const { count: ownersCount, error: ownersError } = await supabase
+      .from("Owners")
+      .select("*", { count: "exact", head: true });
+
+    if (ownersError) throw ownersError;
+
+    // Get total admins/processors
+    const { count: adminsCount, error: adminsError } = await supabase
+      .from("Admins")
+      .select("*", { count: "exact", head: true });
+
+    if (adminsError) throw adminsError;
+
+    // Get total document categories
+    const { count: categoriesCount, error: categoriesError } = await supabase
+      .from("Document Categories")
+      .select("*", { count: "exact", head: true });
+
+    if (categoriesError) throw categoriesError;
+
+    // Calculate statistics
+    const stats = {
+      requests: {
+        total: requests.length,
+        pending: requests.filter(r => r.status === "Pending").length,
+        processing: requests.filter(r => r.status === "Processing").length,
+        approved: requests.filter(r => r.status === "Approved").length,
+        rejected: requests.filter(r => r.status === "Rejected").length,
+        released: requests.filter(r => r.status === "Released").length,
+      },
+      payments: {
+        total: payments.length,
+        pending: payments.filter(p => p.status === "Pending").length,
+        submitted: payments.filter(p => p.status === "Submitted").length,
+        verified: payments.filter(p => p.status === "Verified").length,
+        overdue: payments.filter(p => {
+          if (!p.payment_deadline || p.status === "Verified") return false;
+          return new Date(p.payment_deadline) < new Date();
+        }).length,
+      },
+      users: {
+        owners: ownersCount || 0,
+        admins: adminsCount || 0,
+        total: (ownersCount || 0) + (adminsCount || 0),
+      },
+      categories: categoriesCount || 0,
+    };
+
+    res.status(200).json({
+      success: true,
+      stats,
+    });
+  } catch (err) {
+    console.error("Fetch admin stats error:", err);
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while fetching dashboard statistics",
+    });
+  }
+});
+
+// Get user/owner dashboard statistics
+app.get("/api/dashboard/user/stats/:ownerId", async (req, res) => {
+  try {
+    const { ownerId } = req.params;
+
+    // Get all requests for this owner
+    const { data: requests, error: requestsError } = await supabase
+      .from("Requests")
+      .select("request_id, status, created_at")
+      .eq("owner_id", ownerId);
+
+    if (requestsError) throw requestsError;
+
+    // Get all payments for this owner's requests
+    const requestIds = requests.map(r => r.request_id);
+    let payments = [];
+
+    if (requestIds.length > 0) {
+      const { data: paymentsData, error: paymentsError } = await supabase
+        .from("Payments")
+        .select("status, payment_deadline, amount")
+        .in("request_id", requestIds);
+
+      if (paymentsError) throw paymentsError;
+      payments = paymentsData || [];
+    }
+
+    // Calculate statistics
+    const stats = {
+      requests: {
+        total: requests.length,
+        pending: requests.filter(r => r.status === "Pending").length,
+        processing: requests.filter(r => r.status === "Processing").length,
+        approved: requests.filter(r => r.status === "Approved").length,
+        rejected: requests.filter(r => r.status === "Rejected").length,
+        released: requests.filter(r => r.status === "Released").length,
+      },
+      payments: {
+        total: payments.length,
+        pending: payments.filter(p => p.status === "Pending").length,
+        submitted: payments.filter(p => p.status === "Submitted").length,
+        verified: payments.filter(p => p.status === "Verified").length,
+        overdue: payments.filter(p => {
+          if (!p.payment_deadline || p.status === "Verified") return false;
+          return new Date(p.payment_deadline) < new Date();
+        }).length,
+        totalAmount: payments.reduce((sum, p) => sum + parseFloat(p.amount || 0), 0),
+      },
+    };
+
+    res.status(200).json({
+      success: true,
+      stats,
+    });
+  } catch (err) {
+    console.error("Fetch user stats error:", err);
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while fetching dashboard statistics",
+    });
+  }
+});
+
+// Get recent requests for admin dashboard
+app.get("/api/dashboard/admin/recent-requests", async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from("Requests")
+      .select(`
+        request_id,
+        tracking_code,
+        status,
+        created_at,
+        Owners!inner(fullname),
+        DocumentCategories:category_id(category_name)
+      `)
+      .order("created_at", { ascending: false })
+      .limit(10);
+
+    if (error) throw error;
+
+    const formattedRequests = data.map(req => ({
+      request_id: req.request_id,
+      tracking_code: req.tracking_code,
+      status: req.status,
+      created_at: req.created_at,
+      owner_name: req.Owners?.fullname || "Unknown",
+      category_name: req.DocumentCategories?.category_name || "Unknown",
+    }));
+
+    res.status(200).json({
+      success: true,
+      requests: formattedRequests,
+    });
+  } catch (err) {
+    console.error("Fetch recent requests error:", err);
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while fetching recent requests",
+    });
+  }
+});
+
+// Get recent activity for user dashboard
+app.get("/api/dashboard/user/recent-activity/:ownerId", async (req, res) => {
+  try {
+    const { ownerId } = req.params;
+
+    const { data, error } = await supabase
+      .from("Requests")
+      .select(`
+        request_id,
+        tracking_code,
+        status,
+        created_at,
+        updated_at,
+        DocumentCategories:category_id(category_name)
+      `)
+      .eq("owner_id", ownerId)
+      .order("updated_at", { ascending: false })
+      .limit(5);
+
+    if (error) throw error;
+
+    const formattedActivity = data.map(req => ({
+      request_id: req.request_id,
+      tracking_code: req.tracking_code,
+      status: req.status,
+      created_at: req.created_at,
+      updated_at: req.updated_at,
+      category_name: req.DocumentCategories?.category_name || "Unknown",
+    }));
+
+    res.status(200).json({
+      success: true,
+      activity: formattedActivity,
+    });
+  } catch (err) {
+    console.error("Fetch recent activity error:", err);
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while fetching recent activity",
+    });
+  }
+});
+
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
