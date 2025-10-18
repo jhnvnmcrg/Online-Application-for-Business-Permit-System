@@ -3197,6 +3197,8 @@ app.post("/api/payment/add", async (req, res) => {
       receiverAccount,
       paymentMethod,
       createdBy,
+      paymentDeadline,
+      deadlineDays,
     } = req.body;
 
     // Validation
@@ -3221,6 +3223,14 @@ app.post("/api/payment/add", async (req, res) => {
       });
     }
 
+    // Calculate payment deadline if deadlineDays is provided
+    let calculatedDeadline = paymentDeadline;
+    if (!paymentDeadline && deadlineDays) {
+      const deadline = new Date();
+      deadline.setDate(deadline.getDate() + parseInt(deadlineDays));
+      calculatedDeadline = deadline.toISOString();
+    }
+
     // Insert payment
     const { data, error } = await supabase
       .from("Payments")
@@ -3234,6 +3244,7 @@ app.post("/api/payment/add", async (req, res) => {
           receiver_number: receiverNumber || null,
           receiver_account: receiverAccount || null,
           payment_method: paymentMethod || null,
+          payment_deadline: calculatedDeadline || null,
           created_by: createdBy,
           status: "Pending",
         },
@@ -3543,6 +3554,8 @@ app.put("/api/payment/update/:paymentId", async (req, res) => {
       receiverAccount,
       paymentMethod,
       updatedBy,
+      paymentDeadline,
+      deadlineDays,
     } = req.body;
 
     // Validation
@@ -3560,6 +3573,14 @@ app.put("/api/payment/update/:paymentId", async (req, res) => {
       .eq("payment_id", paymentId)
       .single();
 
+    // Calculate payment deadline if deadlineDays is provided
+    let calculatedDeadline = paymentDeadline;
+    if (!paymentDeadline && deadlineDays) {
+      const deadline = new Date();
+      deadline.setDate(deadline.getDate() + parseInt(deadlineDays));
+      calculatedDeadline = deadline.toISOString();
+    }
+
     // Update payment
     const { data, error } = await supabase
       .from("Payments")
@@ -3571,6 +3592,7 @@ app.put("/api/payment/update/:paymentId", async (req, res) => {
         receiver_number: receiverNumber || null,
         receiver_account: receiverAccount || null,
         payment_method: paymentMethod || null,
+        payment_deadline: calculatedDeadline !== undefined ? calculatedDeadline : currentPayment?.payment_deadline,
       })
       .eq("payment_id", paymentId)
       .select();

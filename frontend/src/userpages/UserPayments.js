@@ -176,6 +176,76 @@ function UserPayments() {
     );
   };
 
+  const getDeadlineInfo = (payment) => {
+    if (!payment.payment_deadline) {
+      return { text: "No deadline set", color: "secondary", isOverdue: false, daysLeft: null };
+    }
+
+    const now = new Date();
+    const deadline = new Date(payment.payment_deadline);
+    const diffTime = deadline - now;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays < 0) {
+      return {
+        text: `Overdue by ${Math.abs(diffDays)} day${Math.abs(diffDays) > 1 ? 's' : ''}`,
+        color: "danger",
+        isOverdue: true,
+        daysLeft: diffDays,
+      };
+    } else if (diffDays === 0) {
+      return {
+        text: "Due today!",
+        color: "danger",
+        isOverdue: false,
+        daysLeft: 0,
+      };
+    } else if (diffDays === 1) {
+      return {
+        text: "Due tomorrow",
+        color: "warning",
+        isOverdue: false,
+        daysLeft: 1,
+      };
+    } else if (diffDays <= 3) {
+      return {
+        text: `${diffDays} days left`,
+        color: "warning",
+        isOverdue: false,
+        daysLeft: diffDays,
+      };
+    } else {
+      return {
+        text: `${diffDays} days left`,
+        color: "info",
+        isOverdue: false,
+        daysLeft: diffDays,
+      };
+    }
+  };
+
+  const renderDeadlineBadge = (payment) => {
+    // Only show deadline for Pending or Rejected payments
+    if (payment.status !== "Pending" && payment.status !== "Rejected") {
+      return null;
+    }
+
+    const deadlineInfo = getDeadlineInfo(payment);
+
+    if (deadlineInfo.text === "No deadline set") {
+      return null;
+    }
+
+    return (
+      <div className="d-flex align-items-center gap-1">
+        <Clock size={14} />
+        <span className={`badge bg-${deadlineInfo.color}`}>
+          {deadlineInfo.text}
+        </span>
+      </div>
+    );
+  };
+
   return (
     <>
       <UserSideBAr>
@@ -213,6 +283,7 @@ function UserPayments() {
                           <th>Amount</th>
                           <th>Payment Type</th>
                           <th>Status</th>
+                          <th>Deadline</th>
                           <th>Date Created</th>
                           <th>Action</th>
                         </tr>
@@ -220,7 +291,7 @@ function UserPayments() {
                       <tbody>
                         {loading ? (
                           <tr>
-                            <td colSpan="8" className="text-center py-4">
+                            <td colSpan="9" className="text-center py-4">
                               <div className="spinner-border text-primary" role="status">
                                 <span className="visually-hidden">Loading...</span>
                               </div>
@@ -228,41 +299,45 @@ function UserPayments() {
                           </tr>
                         ) : payments.length === 0 ? (
                           <tr>
-                            <td colSpan="8" className="text-center text-muted py-4">
+                            <td colSpan="9" className="text-center text-muted py-4">
                               No payment requirements yet
                             </td>
                           </tr>
                         ) : (
-                          payments.map((payment, index) => (
-                            <tr key={payment.payment_id}>
-                              <td>{index + 1}</td>
-                              <td>
-                                <span className="badge bg-secondary">
-                                  {payment.tracking_code}
-                                </span>
-                              </td>
-                              <td>{payment.category_name || "N/A"}</td>
-                              <td>₱{parseFloat(payment.amount).toFixed(2)}</td>
-                              <td>{payment.payment_type}</td>
-                              <td>{getStatusBadge(payment.status)}</td>
-                              <td>{formatDate(payment.created_at)}</td>
-                              <td>
-                                {payment.status === "Pending" || payment.status === "Rejected" ? (
-                                  <button
-                                    className="btn btn-sm btn-success d-flex align-items-center gap-1"
-                                    onClick={() => handleOpenSubmitModal(payment)}
-                                  >
-                                    <Upload size={14} />
-                                    Submit Proof
-                                  </button>
-                                ) : payment.status === "Submitted" ? (
-                                  <span className="text-muted small">Waiting for verification</span>
-                                ) : payment.status === "Verified" ? (
-                                  <span className="text-success small">Payment verified</span>
-                                ) : null}
-                              </td>
-                            </tr>
-                          ))
+                          payments.map((payment, index) => {
+                            const deadlineInfo = getDeadlineInfo(payment);
+                            return (
+                              <tr key={payment.payment_id} className={deadlineInfo.isOverdue ? "table-danger" : ""}>
+                                <td>{index + 1}</td>
+                                <td>
+                                  <span className="badge bg-secondary">
+                                    {payment.tracking_code}
+                                  </span>
+                                </td>
+                                <td>{payment.category_name || "N/A"}</td>
+                                <td>₱{parseFloat(payment.amount).toFixed(2)}</td>
+                                <td>{payment.payment_type}</td>
+                                <td>{getStatusBadge(payment.status)}</td>
+                                <td>{renderDeadlineBadge(payment) || <span className="text-muted">-</span>}</td>
+                                <td>{formatDate(payment.created_at)}</td>
+                                <td>
+                                  {payment.status === "Pending" || payment.status === "Rejected" ? (
+                                    <button
+                                      className="btn btn-sm btn-success d-flex align-items-center gap-1"
+                                      onClick={() => handleOpenSubmitModal(payment)}
+                                    >
+                                      <Upload size={14} />
+                                      Submit Proof
+                                    </button>
+                                  ) : payment.status === "Submitted" ? (
+                                    <span className="text-muted small">Waiting for verification</span>
+                                  ) : payment.status === "Verified" ? (
+                                    <span className="text-success small">Payment verified</span>
+                                  ) : null}
+                                </td>
+                              </tr>
+                            );
+                          })
                         )}
                       </tbody>
                     </table>
@@ -301,6 +376,31 @@ function UserPayments() {
                 ></button>
               </div>
               <div className="modal-body">
+                {/* Deadline Warning */}
+                {selectedPayment.payment_deadline && (
+                  (() => {
+                    const deadlineInfo = getDeadlineInfo(selectedPayment);
+                    if (deadlineInfo.isOverdue || deadlineInfo.daysLeft <= 3) {
+                      return (
+                        <div className={`alert alert-${deadlineInfo.isOverdue ? 'danger' : 'warning'} mb-3`}>
+                          <div className="d-flex align-items-center gap-2">
+                            <AlertCircle size={20} />
+                            <div>
+                              <strong>
+                                {deadlineInfo.isOverdue ? 'Payment Overdue!' : 'Payment Deadline Approaching!'}
+                              </strong>
+                              <p className="mb-0">
+                                {deadlineInfo.text} - Deadline: {formatDate(selectedPayment.payment_deadline)}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()
+                )}
+
                 {/* Payment Details */}
                 <div className="alert alert-info mb-4">
                   <h6 className="mb-3">Payment Details</h6>
@@ -311,6 +411,14 @@ function UserPayments() {
                     <div className="col-md-6 mb-2">
                       <strong>Payment Type:</strong> {selectedPayment.payment_type}
                     </div>
+                    {selectedPayment.payment_deadline && (
+                      <div className="col-md-12 mb-2">
+                        <strong>Deadline:</strong>{" "}
+                        <span className={getDeadlineInfo(selectedPayment).isOverdue ? 'text-danger fw-bold' : ''}>
+                          {formatDate(selectedPayment.payment_deadline)}
+                        </span>
+                      </div>
+                    )}
                     <div className="col-md-12 mb-2">
                       <strong>Description:</strong>{" "}
                       {selectedPayment.description || "N/A"}

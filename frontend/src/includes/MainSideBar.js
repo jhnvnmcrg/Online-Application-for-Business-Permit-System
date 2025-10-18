@@ -155,7 +155,7 @@ function MainSideBar({ children }) {
       id: "paymentshistory",
       label: "Payments History",
       icon: CreditCard,
-      path: "/oabps/main/history",
+      path: "/oabps/main/paymentshistory",
     },
     {
       id: "transaction",

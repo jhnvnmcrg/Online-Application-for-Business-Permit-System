@@ -55,6 +55,8 @@ function MainRequests() {
   const [receiverNumber, setReceiverNumber] = useState("");
   const [receiverAccount, setReceiverAccount] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("GCash");
+  const [paymentDeadlineDays, setPaymentDeadlineDays] = useState("7");
+  const [paymentDeadline, setPaymentDeadline] = useState("");
   const [addingPayment, setAddingPayment] = useState(false);
   const [existingPayment, setExistingPayment] = useState(null);
   const [isUpdatingPayment, setIsUpdatingPayment] = useState(false);
@@ -271,6 +273,17 @@ function MainRequests() {
         setReceiverAccount(payment.receiver_account || "");
         setPaymentMethod(payment.payment_method || "GCash");
 
+        // Handle deadline - if payment has a deadline, convert to local date format
+        if (payment.payment_deadline) {
+          const deadlineDate = new Date(payment.payment_deadline);
+          const formattedDate = deadlineDate.toISOString().split('T')[0];
+          setPaymentDeadline(formattedDate);
+          setPaymentDeadlineDays("");
+        } else {
+          setPaymentDeadline("");
+          setPaymentDeadlineDays("7");
+        }
+
         // Fetch payment history
         await fetchPaymentHistory(payment.payment_id);
       } else {
@@ -284,6 +297,8 @@ function MainRequests() {
         setReceiverNumber("");
         setReceiverAccount("");
         setPaymentMethod("GCash");
+        setPaymentDeadlineDays("7");
+        setPaymentDeadline("");
         setPaymentHistory([]);
       }
     } catch (err) {
@@ -291,6 +306,8 @@ function MainRequests() {
       // If error, assume no payment exists
       setExistingPayment(null);
       setIsUpdatingPayment(false);
+      setPaymentDeadlineDays("7");
+      setPaymentDeadline("");
       setPaymentHistory([]);
     }
 
@@ -305,6 +322,16 @@ function MainRequests() {
 
       let response;
 
+      // Prepare deadline data
+      const deadlineData = {};
+      if (paymentDeadline) {
+        // If specific date is set, use it
+        deadlineData.paymentDeadline = new Date(paymentDeadline).toISOString();
+      } else if (paymentDeadlineDays) {
+        // If days is set, let backend calculate
+        deadlineData.deadlineDays = parseInt(paymentDeadlineDays);
+      }
+
       if (isUpdatingPayment && existingPayment) {
         // Update existing payment
         response = await axios.put(
@@ -318,6 +345,7 @@ function MainRequests() {
             receiverAccount,
             paymentMethod,
             updatedBy: adminId,
+            ...deadlineData,
           }
         );
       } else {
@@ -332,6 +360,7 @@ function MainRequests() {
           receiverAccount,
           paymentMethod,
           createdBy: adminId,
+          ...deadlineData,
         });
       }
 
@@ -345,6 +374,8 @@ function MainRequests() {
         setReceiverNumber("");
         setReceiverAccount("");
         setPaymentMethod("GCash");
+        setPaymentDeadlineDays("7");
+        setPaymentDeadline("");
         setExistingPayment(null);
         setIsUpdatingPayment(false);
         alert(
@@ -395,6 +426,8 @@ function MainRequests() {
         setReceiverNumber("");
         setReceiverAccount("");
         setPaymentMethod("GCash");
+        setPaymentDeadlineDays("7");
+        setPaymentDeadline("");
         setExistingPayment(null);
         setIsUpdatingPayment(false);
         alert("Payment requirement removed successfully");
@@ -1044,6 +1077,52 @@ function MainRequests() {
                       onChange={(e) => setPaymentDescription(e.target.value)}
                       placeholder="Payment description or instructions..."
                     />
+                  </div>
+
+                  <hr />
+                  <h6 className="mb-3">Payment Deadline</h6>
+
+                  <div className="row">
+                    <div className="col-md-6 mb-3">
+                      <label className="form-label">Deadline (Days from now)</label>
+                      <select
+                        className="form-select"
+                        value={paymentDeadlineDays}
+                        onChange={(e) => {
+                          setPaymentDeadlineDays(e.target.value);
+                          if (e.target.value) setPaymentDeadline("");
+                        }}
+                        disabled={paymentDeadline !== ""}
+                      >
+                        <option value="">Custom date...</option>
+                        <option value="3">3 days</option>
+                        <option value="5">5 days</option>
+                        <option value="7">7 days (default)</option>
+                        <option value="10">10 days</option>
+                        <option value="14">14 days</option>
+                        <option value="30">30 days</option>
+                      </select>
+                      <small className="text-muted">
+                        Quick select deadline in days from today
+                      </small>
+                    </div>
+
+                    <div className="col-md-6 mb-3">
+                      <label className="form-label">Or Specific Date</label>
+                      <input
+                        type="date"
+                        className="form-control"
+                        value={paymentDeadline}
+                        onChange={(e) => {
+                          setPaymentDeadline(e.target.value);
+                          if (e.target.value) setPaymentDeadlineDays("");
+                        }}
+                        min={new Date().toISOString().split('T')[0]}
+                      />
+                      <small className="text-muted">
+                        Choose a specific deadline date
+                      </small>
+                    </div>
                   </div>
 
                   <hr />
