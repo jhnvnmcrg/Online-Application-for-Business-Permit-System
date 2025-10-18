@@ -32,6 +32,17 @@ function MainPayments() {
   const [verifyStatus, setVerifyStatus] = useState("");
   const [verifyRemarks, setVerifyRemarks] = useState("");
   const [verifying, setVerifying] = useState(false);
+  const [showLightbox, setShowLightbox] = useState(false);
+  const [lightboxImage, setLightboxImage] = useState("");
+
+  // Statistics
+  const [stats, setStats] = useState({
+    total: 0,
+    pending: 0,
+    submitted: 0,
+    verified: 0,
+    rejected: 0,
+  });
 
   const navigate = useNavigate();
   const API_URL = "https://oabs-f7by.onrender.com";
@@ -60,8 +71,18 @@ function MainPayments() {
       const response = await axios.get(`${API_URL}/api/payment/all`);
 
       if (response.data.success) {
-        setPayments(response.data.payments);
-        setFilteredPayments(response.data.payments);
+        const paymentsData = response.data.payments;
+        setPayments(paymentsData);
+        setFilteredPayments(paymentsData);
+
+        // Calculate statistics
+        setStats({
+          total: paymentsData.length,
+          pending: paymentsData.filter((p) => p.status === "Pending").length,
+          submitted: paymentsData.filter((p) => p.status === "Submitted").length,
+          verified: paymentsData.filter((p) => p.status === "Verified").length,
+          rejected: paymentsData.filter((p) => p.status === "Rejected").length,
+        });
       } else {
         setError("Failed to fetch payments");
       }
@@ -153,6 +174,36 @@ function MainPayments() {
     setError("");
   };
 
+  const handleImageClick = (imageUrl) => {
+    setLightboxImage(imageUrl);
+    setShowLightbox(true);
+  };
+
+  const getDeadlineInfo = (payment) => {
+    if (!payment.payment_deadline) {
+      return null;
+    }
+
+    const now = new Date();
+    const deadline = new Date(payment.payment_deadline);
+    const diffTime = deadline - now;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays < 0) {
+      return {
+        text: `Overdue by ${Math.abs(diffDays)} day${Math.abs(diffDays) > 1 ? "s" : ""}`,
+        color: "danger",
+        isOverdue: true,
+      };
+    } else if (diffDays === 0) {
+      return { text: "Due today!", color: "danger", isOverdue: false };
+    } else if (diffDays <= 3) {
+      return { text: `${diffDays} days left`, color: "warning", isOverdue: false };
+    } else {
+      return { text: `${diffDays} days left`, color: "info", isOverdue: false };
+    }
+  };
+
   // Pagination
   const indexOfLastEntry = currentPage * entriesPerPage;
   const indexOfFirstEntry = indexOfLastEntry - entriesPerPage;
@@ -200,17 +251,96 @@ function MainPayments() {
     <>
       <MainSideBar>
         <div className="container-fluid p-4">
-          <div className="bg-light p-4 border-bottom mb-4 shadow-sm">
-            <h4 className="mb-4">Payment Verification</h4>
+          {/* Page Header */}
+          <div className="mb-4">
+            <h2 className="fw-bold text-dark mb-2">Payment Verification</h2>
+            <p className="text-muted">Review and verify payment submissions</p>
+          </div>
 
-            {error && (
-              <div className="alert alert-danger d-flex align-items-center gap-2">
-                <AlertCircle size={20} />
-                {error}
+          {/* Statistics Cards */}
+          <div className="row mb-4 g-3">
+            <div className="col-md-3">
+              <div className="card border-0 shadow-sm h-100">
+                <div className="card-body">
+                  <div className="d-flex justify-content-between align-items-start">
+                    <div>
+                      <p className="text-muted mb-1 small">Total Payments</p>
+                      <h3 className="mb-0 fw-bold text-primary">{stats.total}</h3>
+                    </div>
+                    <div className="bg-primary bg-opacity-10 p-2 rounded">
+                      <DollarSign size={24} className="text-primary" />
+                    </div>
+                  </div>
+                </div>
               </div>
-            )}
+            </div>
 
-            {/* Filters */}
+            <div className="col-md-3">
+              <div className="card border-0 shadow-sm h-100">
+                <div className="card-body">
+                  <div className="d-flex justify-content-between align-items-start">
+                    <div>
+                      <p className="text-muted mb-1 small">To Verify</p>
+                      <h3 className="mb-0 fw-bold text-info">{stats.submitted}</h3>
+                      <small className="text-muted">Needs attention</small>
+                    </div>
+                    <div className="bg-info bg-opacity-10 p-2 rounded">
+                      <Upload size={24} className="text-info" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="col-md-3">
+              <div className="card border-0 shadow-sm h-100">
+                <div className="card-body">
+                  <div className="d-flex justify-content-between align-items-start">
+                    <div>
+                      <p className="text-muted mb-1 small">Verified</p>
+                      <h3 className="mb-0 fw-bold text-success">{stats.verified}</h3>
+                      <small className="text-muted">Approved</small>
+                    </div>
+                    <div className="bg-success bg-opacity-10 p-2 rounded">
+                      <CheckCircle size={24} className="text-success" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="col-md-3">
+              <div className="card border-0 shadow-sm h-100">
+                <div className="card-body">
+                  <div className="d-flex justify-content-between align-items-start">
+                    <div>
+                      <p className="text-muted mb-1 small">Rejected</p>
+                      <h3 className="mb-0 fw-bold text-danger">{stats.rejected}</h3>
+                      <small className="text-muted">Denied</small>
+                    </div>
+                    <div className="bg-danger bg-opacity-10 p-2 rounded">
+                      <XCircle size={24} className="text-danger" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Main Card */}
+          <div className="card border-0 shadow-sm">
+            <div className="card-header bg-white border-bottom">
+              <h5 className="mb-0">All Payments</h5>
+            </div>
+            <div className="card-body">
+              {error && (
+                <div className="alert alert-danger d-flex align-items-center gap-2">
+                  <AlertCircle size={20} />
+                  {error}
+                </div>
+              )}
+
+              {/* Filters */}
             <div className="row mb-3">
               <div className="col-md-2">
                 <select
@@ -259,6 +389,7 @@ function MainPayments() {
                     <th>Amount</th>
                     <th>Payment Type</th>
                     <th>Status</th>
+                    <th>Deadline</th>
                     <th>Date Submitted</th>
                     <th>Actions</th>
                   </tr>
@@ -266,7 +397,7 @@ function MainPayments() {
                 <tbody>
                   {loading ? (
                     <tr>
-                      <td colSpan="8" className="text-center py-4">
+                      <td colSpan="9" className="text-center py-4">
                         <div className="spinner-border text-primary" role="status">
                           <span className="visually-hidden">Loading...</span>
                         </div>
@@ -274,25 +405,37 @@ function MainPayments() {
                     </tr>
                   ) : currentEntries.length === 0 ? (
                     <tr>
-                      <td colSpan="8" className="text-center text-muted py-4">
+                      <td colSpan="9" className="text-center text-muted py-4">
                         No payments found
                       </td>
                     </tr>
                   ) : (
-                    currentEntries.map((payment, index) => (
-                      <tr key={payment.payment_id}>
-                        <td>{indexOfFirstEntry + index + 1}</td>
-                        <td>
-                          <span className="badge bg-secondary">
-                            {payment.Requests?.tracking_code || "N/A"}
-                          </span>
-                        </td>
-                        <td>{payment.Requests?.Owners?.fullname || "N/A"}</td>
-                        <td className="fw-bold">₱{parseFloat(payment.amount).toFixed(2)}</td>
-                        <td>{payment.payment_type}</td>
-                        <td>{getStatusBadge(payment.status)}</td>
-                        <td>{formatDate(payment.payment_date)}</td>
-                        <td>
+                    currentEntries.map((payment, index) => {
+                      const deadlineInfo = getDeadlineInfo(payment);
+                      return (
+                        <tr key={payment.payment_id} className={deadlineInfo?.isOverdue ? 'table-danger' : ''}>
+                          <td>{indexOfFirstEntry + index + 1}</td>
+                          <td>
+                            <span className="badge bg-secondary">
+                              {payment.Requests?.tracking_code || "N/A"}
+                            </span>
+                          </td>
+                          <td>{payment.Requests?.Owners?.fullname || "N/A"}</td>
+                          <td className="fw-bold">₱{parseFloat(payment.amount).toFixed(2)}</td>
+                          <td>{payment.payment_type}</td>
+                          <td>{getStatusBadge(payment.status)}</td>
+                          <td>
+                            {deadlineInfo ? (
+                              <span className={`badge bg-${deadlineInfo.color}`}>
+                                <Clock size={12} className="me-1" />
+                                {deadlineInfo.text}
+                              </span>
+                            ) : (
+                              <span className="text-muted">-</span>
+                            )}
+                          </td>
+                          <td>{formatDate(payment.payment_date)}</td>
+                          <td>
                           <button
                             className="btn btn-sm btn-info me-1"
                             onClick={() => handleViewDetails(payment)}
@@ -311,7 +454,8 @@ function MainPayments() {
                           )}
                         </td>
                       </tr>
-                    ))
+                      );
+                    })
                   )}
                 </tbody>
               </table>
@@ -366,6 +510,7 @@ function MainPayments() {
                     </li>
                   </ul>
                 </nav>
+                </div>
               </div>
             </div>
           </div>
@@ -509,12 +654,13 @@ function MainPayments() {
                         <img
                           src={selectedPayment.proof_payment}
                           alt="Payment Proof"
-                          className="img-fluid border rounded"
-                          style={{ maxHeight: "400px", cursor: "pointer" }}
-                          onClick={() => window.open(selectedPayment.proof_payment, "_blank")}
+                          className="img-fluid border rounded shadow-sm"
+                          style={{ maxHeight: "400px", cursor: "zoom-in" }}
+                          onClick={() => handleImageClick(selectedPayment.proof_payment)}
                         />
                         <p className="text-muted small mt-2">
-                          Click image to view full size
+                          <Eye size={14} className="me-1" />
+                          Click image to zoom
                         </p>
                       </div>
                     </div>
@@ -619,9 +765,14 @@ function MainPayments() {
                       <img
                         src={selectedPayment.proof_payment}
                         alt="Payment Proof"
-                        className="img-fluid border rounded"
-                        style={{ maxHeight: "300px" }}
+                        className="img-fluid border rounded shadow-sm"
+                        style={{ maxHeight: "300px", cursor: "zoom-in" }}
+                        onClick={() => handleImageClick(selectedPayment.proof_payment)}
                       />
+                      <p className="text-muted small mt-2">
+                        <Eye size={14} className="me-1" />
+                        Click to zoom
+                      </p>
                     </div>
                   </div>
                 )}
@@ -697,6 +848,35 @@ function MainPayments() {
                     </button>
                   </div>
                 </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Image Lightbox */}
+      {showLightbox && (
+        <div
+          className="modal show d-block"
+          style={{ backgroundColor: "rgba(0,0,0,0.9)" }}
+          onClick={() => setShowLightbox(false)}
+        >
+          <div className="modal-dialog modal-fullscreen" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-content bg-transparent border-0">
+              <div className="modal-header border-0">
+                <button
+                  type="button"
+                  className="btn-close btn-close-white ms-auto"
+                  onClick={() => setShowLightbox(false)}
+                ></button>
+              </div>
+              <div className="modal-body d-flex align-items-center justify-content-center">
+                <img
+                  src={lightboxImage}
+                  alt="Payment Proof Full Size"
+                  className="img-fluid"
+                  style={{ maxHeight: "90vh", maxWidth: "90vw" }}
+                />
               </div>
             </div>
           </div>

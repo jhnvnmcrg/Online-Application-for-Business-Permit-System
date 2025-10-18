@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const bcrypt = require("bcrypt");
 const multer = require("multer");
+const nodemailer = require("nodemailer");
 const { createClient } = require("@supabase/supabase-js");
 require("dotenv").config();
 
@@ -29,6 +30,149 @@ const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
 });
+
+// Configure nodemailer transporter
+const transporter = nodemailer.createTransport({
+  service: process.env.EMAIL_SERVICE || "gmail",
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASSWORD,
+  },
+});
+
+// Email templates
+const emailTemplates = {
+  requestSubmitted: (ownerName, trackingCode) => ({
+    subject: "Application Submitted Successfully",
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #0d6efd;">Application Submitted</h2>
+        <p>Dear ${ownerName},</p>
+        <p>Your business permit application has been successfully submitted.</p>
+        <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+          <p><strong>Tracking Code:</strong> ${trackingCode}</p>
+        </div>
+        <p>You can track your application status using the tracking code above.</p>
+        <p>We will notify you once your application is reviewed.</p>
+        <br>
+        <p>Best regards,<br><strong>OABP Team</strong></p>
+      </div>
+    `,
+  }),
+
+  paymentRequired: (ownerName, trackingCode, amount, deadline) => ({
+    subject: "Payment Required for Your Application",
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #0d6efd;">Payment Required</h2>
+        <p>Dear ${ownerName},</p>
+        <p>Your application has been reviewed and payment is now required.</p>
+        <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+          <p><strong>Tracking Code:</strong> ${trackingCode}</p>
+          <p><strong>Amount Due:</strong> ₱${amount}</p>
+          ${deadline ? `<p><strong>Payment Deadline:</strong> ${new Date(deadline).toLocaleDateString()}</p>` : ''}
+        </div>
+        <p>Please submit your payment proof through your dashboard to proceed with your application.</p>
+        ${deadline ? `<p style="color: #dc3545;"><strong>Note:</strong> Payment must be submitted before the deadline.</p>` : ''}
+        <br>
+        <p>Best regards,<br><strong>OABP Team</strong></p>
+      </div>
+    `,
+  }),
+
+  paymentVerified: (ownerName, trackingCode) => ({
+    subject: "Payment Verified Successfully",
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #198754;">Payment Verified</h2>
+        <p>Dear ${ownerName},</p>
+        <p>Your payment has been verified successfully!</p>
+        <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+          <p><strong>Tracking Code:</strong> ${trackingCode}</p>
+        </div>
+        <p>Your application is now being processed for final approval.</p>
+        <br>
+        <p>Best regards,<br><strong>OABP Team</strong></p>
+      </div>
+    `,
+  }),
+
+  applicationApproved: (ownerName, trackingCode) => ({
+    subject: "Application Approved - Permit Ready for Release",
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #198754;">Application Approved!</h2>
+        <p>Dear ${ownerName},</p>
+        <p>Congratulations! Your business permit application has been approved.</p>
+        <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+          <p><strong>Tracking Code:</strong> ${trackingCode}</p>
+        </div>
+        <p>Your permit is now ready for release. Please check your dashboard for more details.</p>
+        <br>
+        <p>Best regards,<br><strong>OABP Team</strong></p>
+      </div>
+    `,
+  }),
+
+  applicationRejected: (ownerName, trackingCode, remarks) => ({
+    subject: "Application Status Update",
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #dc3545;">Application Update</h2>
+        <p>Dear ${ownerName},</p>
+        <p>We regret to inform you that your application requires attention.</p>
+        <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+          <p><strong>Tracking Code:</strong> ${trackingCode}</p>
+          ${remarks ? `<p><strong>Remarks:</strong> ${remarks}</p>` : ''}
+        </div>
+        <p>Please review the remarks and resubmit your application with the necessary corrections.</p>
+        <br>
+        <p>Best regards,<br><strong>OABP Team</strong></p>
+      </div>
+    `,
+  }),
+
+  paymentRejected: (ownerName, trackingCode, remarks) => ({
+    subject: "Payment Verification Update",
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #dc3545;">Payment Verification Update</h2>
+        <p>Dear ${ownerName},</p>
+        <p>Your payment submission requires attention.</p>
+        <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+          <p><strong>Tracking Code:</strong> ${trackingCode}</p>
+          ${remarks ? `<p><strong>Remarks:</strong> ${remarks}</p>` : ''}
+        </div>
+        <p>Please resubmit your payment proof with the necessary corrections.</p>
+        <br>
+        <p>Best regards,<br><strong>OABP Team</strong></p>
+      </div>
+    `,
+  }),
+};
+
+// Helper function to send email
+const sendEmail = async (to, template) => {
+  try {
+    // Skip if email is not configured
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
+      console.log("Email not configured, skipping email send");
+      return { success: true, message: "Email not configured" };
+    }
+
+    await transporter.sendMail({
+      from: `"OABP System" <${process.env.EMAIL_USER}>`,
+      to,
+      subject: template.subject,
+      html: template.html,
+    });
+
+    return { success: true, message: "Email sent successfully" };
+  } catch (error) {
+    console.error("Error sending email:", error);
+    return { success: false, error: error.message };
+  }
+};
 
 // Register main admin endpoint
 app.post("/api/main/register", async (req, res) => {
@@ -2521,6 +2665,21 @@ app.post("/api/request/submit", upload.any(), async (req, res) => {
       }
     }
 
+    // Send email notification to business owner
+    const { data: ownerData } = await supabase
+      .from("Owners")
+      .select("fullname, email")
+      .eq("owner_id", ownerId)
+      .single();
+
+    if (ownerData?.email) {
+      const emailTemplate = emailTemplates.requestSubmitted(
+        ownerData.fullname,
+        trackingCode
+      );
+      await sendEmail(ownerData.email, emailTemplate);
+    }
+
     res.status(201).json({
       success: true,
       message: "Request submitted successfully",
@@ -2865,6 +3024,33 @@ app.put("/api/request/update-status/:requestId", upload.single("attachmentFile")
           remarks: remarks || null,
         },
       ]);
+    }
+
+    // Send email notification to business owner based on status
+    const { data: requestData } = await supabase
+      .from("Requests")
+      .select("Owners!Requests_owner_id_fkey(fullname, email), tracking_code")
+      .eq("request_id", requestId)
+      .single();
+
+    if (requestData?.Owners?.email) {
+      let emailTemplate;
+      if (status === "Approved" || status === "Released") {
+        emailTemplate = emailTemplates.applicationApproved(
+          requestData.Owners.fullname,
+          requestData.tracking_code
+        );
+      } else if (status === "Rejected") {
+        emailTemplate = emailTemplates.applicationRejected(
+          requestData.Owners.fullname,
+          requestData.tracking_code,
+          remarks
+        );
+      }
+
+      if (emailTemplate) {
+        await sendEmail(requestData.Owners.email, emailTemplate);
+      }
     }
 
     res.status(200).json({
@@ -3272,6 +3458,23 @@ app.post("/api/payment/add", async (req, res) => {
         },
       ]);
 
+    // Send email notification to business owner
+    const { data: ownerData } = await supabase
+      .from("Requests")
+      .select("Owners!Requests_owner_id_fkey(fullname, email), tracking_code")
+      .eq("request_id", requestId)
+      .single();
+
+    if (ownerData?.Owners?.email) {
+      const emailTemplate = emailTemplates.paymentRequired(
+        ownerData.Owners.fullname,
+        ownerData.tracking_code,
+        parseFloat(amount),
+        calculatedDeadline
+      );
+      await sendEmail(ownerData.Owners.email, emailTemplate);
+    }
+
     res.status(201).json({
       success: true,
       message: "Payment requirement added successfully",
@@ -3525,6 +3728,30 @@ app.put("/api/payment/verify/:paymentId", async (req, res) => {
         success: false,
         message: "Payment not found",
       });
+    }
+
+    // Send email notification to business owner
+    const { data: paymentData } = await supabase
+      .from("Payments")
+      .select("Requests!inner(Owners!Requests_owner_id_fkey(fullname, email), tracking_code)")
+      .eq("payment_id", paymentId)
+      .single();
+
+    if (paymentData?.Requests?.Owners?.email) {
+      let emailTemplate;
+      if (status === "Verified") {
+        emailTemplate = emailTemplates.paymentVerified(
+          paymentData.Requests.Owners.fullname,
+          paymentData.Requests.tracking_code
+        );
+      } else {
+        emailTemplate = emailTemplates.paymentRejected(
+          paymentData.Requests.Owners.fullname,
+          paymentData.Requests.tracking_code,
+          remarks
+        );
+      }
+      await sendEmail(paymentData.Requests.Owners.email, emailTemplate);
     }
 
     res.status(200).json({
