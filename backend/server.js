@@ -3894,7 +3894,7 @@ app.get("/api/dashboard/admin/recent-requests", async (req, res) => {
         tracking_code,
         status,
         created_at,
-        Owners!inner(fullname),
+        Owners!Requests_owner_id_fkey(fullname),
         DocumentCategories:category_id(category_name)
       `)
       .order("created_at", { ascending: false })
