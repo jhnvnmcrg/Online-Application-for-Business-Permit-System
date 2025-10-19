@@ -144,22 +144,10 @@ function MainSideBar({ children }) {
     },
     
     {
-      id: "requestshistory",
-      label: "Requests History",
-      icon: ClipboardClock,
-      path: "/oabps/main/requestshistory",
-    },
-    {
       id: "payments",
       label: "Payments",
       icon: CreditCard,
       path: "/oabps/main/payments",
-    },
-    {
-      id: "paymentshistory",
-      label: "Payments History",
-      icon: CreditCard,
-      path: "/oabps/main/paymentshistory",
     },
     {
       id: "transaction",

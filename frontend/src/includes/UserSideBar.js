@@ -271,12 +271,13 @@ function UserSidebar({ children }) {
               className="d-flex align-items-center gap-3 position-relative me-4"
               ref={userMenuRef}
             >
-              <NotificationBell />
+              <NotificationBell className="text-white"/>
               <div
                 onClick={() => setShowUserMenu(!showUserMenu)}
                 style={{ cursor: "pointer" }}
               >
                 <UserRoundCog className="text-white" size={24} />
+              
               </div>
 
               {/* User Dropdown Menu */}
