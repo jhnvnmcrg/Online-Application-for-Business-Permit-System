@@ -30,10 +30,9 @@ function MainLogin() {
 
       if (response.data.success) {
         // Store user data in localStorage
-        localStorage.setItem("user", JSON.stringify(response.data.user));
+        localStorage.setItem("main", JSON.stringify(response.data.user));
         localStorage.setItem("token", response.data.token);
-        localStorage.setItem("userType", "Admin"); // For notification system
-        localStorage.setItem("main", JSON.stringify(response.data.user)); // Backward compatibility
+        localStorage.setItem("userType", "Admin"); // For notification system (not JWT)
 
         // Log successful login audit
         try {

@@ -2,7 +2,6 @@ const express = require("express");
 const cors = require("cors");
 const bcrypt = require("bcrypt");
 const multer = require("multer");
-const jwt = require("jsonwebtoken");
 const { createClient } = require("@supabase/supabase-js");
 require("dotenv").config();
 
@@ -30,44 +29,6 @@ const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
 });
-
-// ==================== JWT AUTHENTICATION MIDDLEWARE ====================
-function authenticateToken(req, res, next) {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
-
-  if (!token) {
-    return res.status(401).json({
-      success: false,
-      error: 'Access denied. No token provided.'
-    });
-  }
-
-  jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-    if (err) {
-      return res.status(403).json({
-        success: false,
-        error: 'Invalid or expired token.'
-      });
-    }
-    req.user = decoded; // { userId, userType, username, role }
-    next();
-  });
-}
-
-// Helper function to generate JWT token
-function generateToken(userId, userType, username, role = null) {
-  return jwt.sign(
-    {
-      userId: userId,
-      userType: userType, // 'admin', 'user', 'processor'
-      username: username,
-      role: role
-    },
-    process.env.JWT_SECRET,
-    { expiresIn: '24h' }
-  );
-}
 
 // ==================== NOTIFICATION HELPER FUNCTIONS ====================
 async function createNotification(userId, userType, type, subject, message, requestId = null, paymentId = null) {
@@ -276,22 +237,8 @@ app.post("/api/main/login", async (req, res) => {
       });
     }
 
-    // Check if account is active
-    if (user.status !== 'active') {
-      return res.status(403).json({
-        success: false,
-        error: "Your account is inactive. Please contact the administrator.",
-      });
-    }
-
-    // Update last login timestamp
-    await supabase
-      .from("Admins")
-      .update({ last_login_at: new Date().toISOString() })
-      .eq("admin_id", user.admin_id);
-
-    // Generate JWT token
-    const token = generateToken(user.admin_id, 'admin', user.username, user.role);
+    // Generate a simple token (you can use JWT for better security)
+    const token = Buffer.from(`${user.id}:${Date.now()}`).toString("base64");
 
     // Return user data (exclude password)
     res.status(200).json({
@@ -303,7 +250,6 @@ app.post("/api/main/login", async (req, res) => {
         fullname: user.fullname,
         email: user.email,
         username: user.username,
-        role: user.role,
         created_at: user.created_at,
       },
     });
@@ -689,22 +635,8 @@ app.post("/api/user/login", async (req, res) => {
       });
     }
 
-    // Check if account is active
-    if (user.status !== 'Active') {
-      return res.status(403).json({
-        success: false,
-        error: "Your account is inactive. Please contact support.",
-      });
-    }
-
-    // Update last login timestamp
-    await supabase
-      .from("Owners")
-      .update({ last_login_at: new Date().toISOString() })
-      .eq("owner_id", user.owner_id);
-
-    // Generate JWT token
-    const token = generateToken(user.owner_id, 'user', user.username);
+    // Generate a simple token (you can use JWT for better security)
+    const token = Buffer.from(`${user.id}:${Date.now()}`).toString("base64");
 
     // Return user data (exclude password)
     res.status(200).json({
@@ -842,14 +774,8 @@ app.post("/api/processor/login", async (req, res) => {
       });
     }
 
-    // Update last login timestamp
-    await supabase
-      .from("Admins")
-      .update({ last_login_at: new Date().toISOString() })
-      .eq("admin_id", user.admin_id);
-
-    // Generate JWT token
-    const token = generateToken(user.admin_id, 'processor', user.username, user.role);
+    // Generate a simple token (you can use JWT for better security)
+    const token = Buffer.from(`${user.id}:${Date.now()}`).toString("base64");
 
     // Return user data (exclude password)
     res.status(200).json({
@@ -4340,18 +4266,10 @@ app.get("/api/request/timeline/:requestId", async (req, res) => {
 // ==================== NOTIFICATION ENDPOINTS ====================
 
 // Get all notifications for a user
-app.get("/api/notifications/:userType/:userId", authenticateToken, async (req, res) => {
+app.get("/api/notifications/:userType/:userId", async (req, res) => {
   try {
     const { userType, userId } = req.params;
     const { limit = 50, unreadOnly = false } = req.query;
-
-    // Verify the requesting user matches the userId in token
-    if (req.user.userId != userId || req.user.userType !== userType.toLowerCase()) {
-      return res.status(403).json({
-        success: false,
-        error: "You can only access your own notifications"
-      });
-    }
 
     let query = supabase
       .from('Notifications')
@@ -4389,17 +4307,9 @@ app.get("/api/notifications/:userType/:userId", authenticateToken, async (req, r
 });
 
 // Get unread notification count
-app.get("/api/notifications/:userType/:userId/unread-count", authenticateToken, async (req, res) => {
+app.get("/api/notifications/:userType/:userId/unread-count", async (req, res) => {
   try {
     const { userType, userId } = req.params;
-
-    // Verify the requesting user matches the userId in token
-    if (req.user.userId != userId || req.user.userType !== userType.toLowerCase()) {
-      return res.status(403).json({
-        success: false,
-        error: "Unauthorized access"
-      });
-    }
 
     const { count, error } = await supabase
       .from('Notifications')
@@ -4430,31 +4340,9 @@ app.get("/api/notifications/:userType/:userId/unread-count", authenticateToken, 
 });
 
 // Mark notification as read
-app.put("/api/notifications/:notificationId/read", authenticateToken, async (req, res) => {
+app.put("/api/notifications/:notificationId/read", async (req, res) => {
   try {
     const { notificationId } = req.params;
-
-    // Get notification to verify ownership
-    const { data: notification, error: fetchError } = await supabase
-      .from('Notifications')
-      .select('*')
-      .eq('notification_id', notificationId)
-      .single();
-
-    if (fetchError || !notification) {
-      return res.status(404).json({
-        success: false,
-        error: 'Notification not found'
-      });
-    }
-
-    // Verify the user owns this notification
-    if (notification.user_id != req.user.userId) {
-      return res.status(403).json({
-        success: false,
-        error: 'Unauthorized access'
-      });
-    }
 
     // Mark as read
     const { data, error } = await supabase
@@ -4485,17 +4373,9 @@ app.put("/api/notifications/:notificationId/read", authenticateToken, async (req
 });
 
 // Mark all notifications as read
-app.put("/api/notifications/:userType/:userId/read-all", authenticateToken, async (req, res) => {
+app.put("/api/notifications/:userType/:userId/read-all", async (req, res) => {
   try {
     const { userType, userId } = req.params;
-
-    // Verify the requesting user matches the userId in token
-    if (req.user.userId != userId || req.user.userType !== userType.toLowerCase()) {
-      return res.status(403).json({
-        success: false,
-        error: "Unauthorized access"
-      });
-    }
 
     const { data, error } = await supabase
       .from('Notifications')
@@ -4527,31 +4407,9 @@ app.put("/api/notifications/:userType/:userId/read-all", authenticateToken, asyn
 });
 
 // Delete notification
-app.delete("/api/notifications/:notificationId", authenticateToken, async (req, res) => {
+app.delete("/api/notifications/:notificationId", async (req, res) => {
   try {
     const { notificationId } = req.params;
-
-    // Get notification to verify ownership
-    const { data: notification, error: fetchError } = await supabase
-      .from('Notifications')
-      .select('*')
-      .eq('notification_id', notificationId)
-      .single();
-
-    if (fetchError || !notification) {
-      return res.status(404).json({
-        success: false,
-        error: 'Notification not found'
-      });
-    }
-
-    // Verify the user owns this notification
-    if (notification.user_id != req.user.userId) {
-      return res.status(403).json({
-        success: false,
-        error: 'Unauthorized access'
-      });
-    }
 
     const { error } = await supabase
       .from('Notifications')

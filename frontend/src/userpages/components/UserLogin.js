@@ -32,7 +32,7 @@ function UserLogin() {
         // Store user data in localStorage
         localStorage.setItem("user", JSON.stringify(response.data.user));
         localStorage.setItem("token", response.data.token);
-        localStorage.setItem("userType", "User"); // For notification system
+        localStorage.setItem("userType", "User"); // For notification system (not JWT)
 
         // Redirect to dashboard
         navigate("/oabps/user/dashboard");

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
+import { Bell, BellOff, X } from 'lucide-react';
 
 function NotificationBell() {
   const [notifications, setNotifications] = useState([]);
@@ -8,32 +9,36 @@ function NotificationBell() {
   const [loading, setLoading] = useState(false);
   const dropdownRef = useRef(null);
 
-  const API_URL = 'http://localhost:3000';
+  // API URL - matches the backend URL
+  // For local development, change to: const API_URL = 'http://localhost:3000';
+  const API_URL = 'https://oabs-f7by.onrender.com';
 
   // Get user info from localStorage
   const getUserInfo = () => {
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    const token = localStorage.getItem('token');
     const userType = localStorage.getItem('userType'); // 'User', 'Admin', or 'Processor'
 
-    return { user, token, userType };
+    // Read from the correct localStorage key based on userType
+    let user = {};
+    if (userType === 'User') {
+      user = JSON.parse(localStorage.getItem('user') || '{}');
+    } else if (userType === 'Admin') {
+      // Try 'main' first (for Main Admin), then 'processor' (for Processor)
+      user = JSON.parse(localStorage.getItem('main') || localStorage.getItem('processor') || '{}');
+    }
+
+    return { user, userType };
   };
 
   // Fetch unread count
   const fetchUnreadCount = async () => {
     try {
-      const { user, token, userType } = getUserInfo();
-      if (!user || !token || !userType) return;
+      const { user, userType } = getUserInfo();
+      if (!user || !userType) return;
 
       const userId = userType === 'User' ? user.owner_id : user.admin_id;
 
       const response = await axios.get(
-        `${API_URL}/api/notifications/${userType}/${userId}/unread-count`,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        }
+        `${API_URL}/api/notifications/${userType}/${userId}/unread-count`
       );
 
       if (response.data.success) {
@@ -48,18 +53,13 @@ function NotificationBell() {
   const fetchNotifications = async () => {
     try {
       setLoading(true);
-      const { user, token, userType } = getUserInfo();
-      if (!user || !token || !userType) return;
+      const { user, userType } = getUserInfo();
+      if (!user || !userType) return;
 
       const userId = userType === 'User' ? user.owner_id : user.admin_id;
 
       const response = await axios.get(
-        `${API_URL}/api/notifications/${userType}/${userId}?limit=10`,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        }
+        `${API_URL}/api/notifications/${userType}/${userId}?limit=10`
       );
 
       if (response.data.success) {
@@ -75,17 +75,8 @@ function NotificationBell() {
   // Mark notification as read
   const markAsRead = async (notificationId) => {
     try {
-      const { token } = getUserInfo();
-      if (!token) return;
-
       await axios.put(
-        `${API_URL}/api/notifications/${notificationId}/read`,
-        {},
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        }
+        `${API_URL}/api/notifications/${notificationId}/read`
       );
 
       // Update local state
@@ -104,19 +95,13 @@ function NotificationBell() {
   // Mark all as read
   const markAllAsRead = async () => {
     try {
-      const { user, token, userType } = getUserInfo();
-      if (!user || !token || !userType) return;
+      const { user, userType } = getUserInfo();
+      if (!user || !userType) return;
 
       const userId = userType === 'User' ? user.owner_id : user.admin_id;
 
       await axios.put(
-        `${API_URL}/api/notifications/${userType}/${userId}/read-all`,
-        {},
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        }
+        `${API_URL}/api/notifications/${userType}/${userId}/read-all`
       );
 
       // Refresh notifications
@@ -130,16 +115,8 @@ function NotificationBell() {
   // Delete notification
   const deleteNotification = async (notificationId) => {
     try {
-      const { token } = getUserInfo();
-      if (!token) return;
-
       await axios.delete(
-        `${API_URL}/api/notifications/${notificationId}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        }
+        `${API_URL}/api/notifications/${notificationId}`
       );
 
       // Update local state
@@ -199,9 +176,9 @@ function NotificationBell() {
       <button
         className="btn btn-link position-relative p-2"
         onClick={toggleDropdown}
-        style={{ textDecoration: 'none' }}
+        style={{ textDecoration: 'none', color: 'inherit' }}
       >
-        <i className="fas fa-bell" style={{ fontSize: '20px', color: '#333' }}></i>
+        <Bell size={20} />
         {unreadCount > 0 && (
           <span
             className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
@@ -250,7 +227,7 @@ function NotificationBell() {
               </div>
             ) : notifications.length === 0 ? (
               <div className="text-center p-4 text-muted">
-                <i className="fas fa-bell-slash mb-2" style={{ fontSize: '24px' }}></i>
+                <BellOff size={24} className="mb-2" />
                 <p className="mb-0">No notifications</p>
               </div>
             ) : (
@@ -281,7 +258,7 @@ function NotificationBell() {
                       }}
                       title="Delete"
                     >
-                      <i className="fas fa-times"></i>
+                      <X size={16} />
                     </button>
                   </div>
                 </div>

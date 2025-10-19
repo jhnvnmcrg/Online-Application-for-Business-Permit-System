@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   ChevronDown,
@@ -11,7 +11,9 @@ import {
   FileDown,
   House,
   History,
+  UserRoundCog,
   LogOut,
+  Settings,
 } from "lucide-react";
 import NotificationBell from "./NotificationBell";
 // Import the external CSS file
@@ -20,8 +22,24 @@ function UserSidebar({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [expandedMenus, setExpandedMenus] = useState({});
   const [username, setUsername] = useState("User");
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const userMenuRef = useRef(null);
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+        setShowUserMenu(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   useEffect(() => {
     // Get user data from localStorage
@@ -51,6 +69,12 @@ function UserSidebar({ children }) {
     localStorage.removeItem("userType");
     // Redirect to login
     navigate("/oabps/user/login");
+  };
+
+  const handleSettings = () => {
+    setShowUserMenu(false);
+    // Navigate to settings page
+    navigate("/oabps/user/settings");
   };
 
   // Check if current path matches any menu item
@@ -242,20 +266,69 @@ function UserSidebar({ children }) {
                 <h4 className="navbar-brand mb-0 text-white">Online BPLS</h4>
               </Link>
             </div>
-            <div className="d-flex align-items-center gap-3 me-4">
-              <div className="d-flex align-items-center text-white">
-                <User size={20} className="me-2" />
-                <span className="fw-medium">{username}</span>
-              </div>
+            <div
+              className="d-flex align-items-center gap-3 position-relative me-4"
+              ref={userMenuRef}
+            >
               <NotificationBell />
-              <button
-                onClick={handleLogout}
-                className="btn btn-outline-light d-flex align-items-center"
-                aria-label="Logout"
+              <div
+                onClick={() => setShowUserMenu(!showUserMenu)}
+                style={{ cursor: "pointer" }}
               >
-                <LogOut size={20} className="me-2" />
-                <span>Logout</span>
-              </button>
+                <UserRoundCog className="text-white" size={24} />
+              </div>
+
+              {/* User Dropdown Menu */}
+              {showUserMenu && (
+                <div
+                  className="position-absolute bg-white shadow-lg rounded border"
+                  style={{
+                    top: "100%",
+                    right: 0,
+                    marginTop: "0.5rem",
+                    minWidth: "200px",
+                    zIndex: 1000,
+                  }}
+                >
+                  <div className="py-1">
+                    <div
+                      className="d-flex align-items-center px-3 py-2 text-decoration-none"
+                      onClick={handleSettings}
+                      style={{
+                        cursor: "pointer",
+                        transition: "background-color 0.2s",
+                      }}
+                      onMouseEnter={(e) =>
+                        (e.currentTarget.style.backgroundColor = "#f8f9fa")
+                      }
+                      onMouseLeave={(e) =>
+                        (e.currentTarget.style.backgroundColor = "transparent")
+                      }
+                    >
+                      <Settings size={18} className="me-2 text-secondary" />
+                      <span className="text-dark">Settings</span>
+                    </div>
+                    <hr className="my-1" />
+                    <div
+                      className="d-flex align-items-center px-3 py-2 text-decoration-none"
+                      onClick={handleLogout}
+                      style={{
+                        cursor: "pointer",
+                        transition: "background-color 0.2s",
+                      }}
+                      onMouseEnter={(e) =>
+                        (e.currentTarget.style.backgroundColor = "#f8f9fa")
+                      }
+                      onMouseLeave={(e) =>
+                        (e.currentTarget.style.backgroundColor = "transparent")
+                      }
+                    >
+                      <LogOut size={18} className="me-2 text-danger" />
+                      <span className="text-danger">Logout</span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </nav>
