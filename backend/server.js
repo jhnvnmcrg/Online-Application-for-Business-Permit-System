@@ -289,7 +289,7 @@ app.post("/api/main/login", async (req, res) => {
     if (error || !user) {
       return res.status(401).json({
         success: false,
-        error: "Invalid username/email or password, or you are not a superadmin",
+        error: "Invalid username/email or password",
       });
     }
 
