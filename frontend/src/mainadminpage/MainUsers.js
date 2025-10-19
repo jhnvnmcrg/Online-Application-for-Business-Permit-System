@@ -12,6 +12,10 @@ function MainUsers() {
   const navigate = useNavigate();
   const [username, setUsername] = useState("User");
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
   // API Base URL
   const API_URL = "https://oabs-f7by.onrender.com";
   // const API_URL = "http://localhost:3000"; // For local development
@@ -69,6 +73,59 @@ function MainUsers() {
       owner.business_name?.toLowerCase().includes(searchTerm)
     );
   });
+
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredOwners.length / itemsPerPage);
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filteredOwners.slice(indexOfFirstItem, indexOfLastItem);
+
+  // Handle page change
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
+  };
+
+  // Reset to page 1 when search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchName]);
+
+  // Generate page numbers for pagination
+  const getPageNumbers = () => {
+    const pageNumbers = [];
+    const maxPagesToShow = 5;
+
+    if (totalPages <= maxPagesToShow) {
+      for (let i = 1; i <= totalPages; i++) {
+        pageNumbers.push(i);
+      }
+    } else {
+      if (currentPage <= 3) {
+        for (let i = 1; i <= 4; i++) {
+          pageNumbers.push(i);
+        }
+        pageNumbers.push('...');
+        pageNumbers.push(totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pageNumbers.push(1);
+        pageNumbers.push('...');
+        for (let i = totalPages - 3; i <= totalPages; i++) {
+          pageNumbers.push(i);
+        }
+      } else {
+        pageNumbers.push(1);
+        pageNumbers.push('...');
+        for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+          pageNumbers.push(i);
+        }
+        pageNumbers.push('...');
+        pageNumbers.push(totalPages);
+      }
+    }
+
+    return pageNumbers;
+  };
+
   return (
     <>
       <MainSideBar>
@@ -83,7 +140,7 @@ function MainUsers() {
                 <h4 className="mb-0">Owners</h4>
               </div>
               <div className="col-md-4"></div>
-              <div className="col-md-4">
+              <div className="col-md-4 d-flex gap-2">
                 <input
                   type="text"
                   className="form-control form-control-lg"
@@ -91,6 +148,20 @@ function MainUsers() {
                   value={searchName}
                   onChange={(e) => setSearchName(e.target.value)}
                 />
+                <select
+                  className="form-select form-select-lg"
+                  style={{ maxWidth: "100px" }}
+                  value={itemsPerPage}
+                  onChange={(e) => {
+                    setItemsPerPage(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                >
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
               </div>
             </div>
 
@@ -137,9 +208,9 @@ function MainUsers() {
                       </td>
                     </tr>
                   ) : (
-                    filteredOwners.map((owner, index) => (
+                    currentItems.map((owner, index) => (
                       <tr key={owner.owner_id}>
-                        <td>{index + 1}</td>
+                        <td>{indexOfFirstItem + index + 1}</td>
                         <td className="fw-semibold">{owner.fullname || "N/A"}</td>
                         <td>{owner.email || "N/A"}</td>
                         <td>{owner.phone_number || "N/A"}</td>
@@ -164,10 +235,56 @@ function MainUsers() {
               </table>
             </div>
 
-            {/* Total Count */}
+            {/* Pagination Controls */}
             {!loading && filteredOwners.length > 0 && (
-              <div className="text-muted mt-3">
-                Showing {filteredOwners.length} of {owners.length} owner(s)
+              <div className="d-flex justify-content-between align-items-center mt-4">
+                <div className="text-muted">
+                  Showing {indexOfFirstItem + 1} to {Math.min(indexOfLastItem, filteredOwners.length)} of {filteredOwners.length} owner(s)
+                </div>
+
+                {totalPages > 1 && (
+                  <nav>
+                    <ul className="pagination mb-0">
+                      <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
+                        <button
+                          className="page-link"
+                          onClick={() => handlePageChange(currentPage - 1)}
+                          disabled={currentPage === 1}
+                        >
+                          Previous
+                        </button>
+                      </li>
+
+                      {getPageNumbers().map((pageNum, index) => (
+                        <li
+                          key={index}
+                          className={`page-item ${pageNum === currentPage ? 'active' : ''} ${pageNum === '...' ? 'disabled' : ''}`}
+                        >
+                          {pageNum === '...' ? (
+                            <span className="page-link">...</span>
+                          ) : (
+                            <button
+                              className="page-link"
+                              onClick={() => handlePageChange(pageNum)}
+                            >
+                              {pageNum}
+                            </button>
+                          )}
+                        </li>
+                      ))}
+
+                      <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
+                        <button
+                          className="page-link"
+                          onClick={() => handlePageChange(currentPage + 1)}
+                          disabled={currentPage === totalPages}
+                        >
+                          Next
+                        </button>
+                      </li>
+                    </ul>
+                  </nav>
+                )}
               </div>
             )}
           </div>

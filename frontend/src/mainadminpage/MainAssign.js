@@ -30,6 +30,10 @@ function MainAssign() {
   const [categories, setCategories] = useState([]);
   const [assignments, setAssignments] = useState([]);
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
   useEffect(() => {
     // Get user data from localStorage
     const userData = localStorage.getItem("main");
@@ -227,6 +231,53 @@ function MainAssign() {
     }
   };
 
+  // Pagination calculations
+  const totalPages = Math.ceil(assignments.length / itemsPerPage);
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = assignments.slice(indexOfFirstItem, indexOfLastItem);
+
+  // Handle page change
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
+  };
+
+  // Generate page numbers for pagination
+  const getPageNumbers = () => {
+    const pageNumbers = [];
+    const maxPagesToShow = 5;
+
+    if (totalPages <= maxPagesToShow) {
+      for (let i = 1; i <= totalPages; i++) {
+        pageNumbers.push(i);
+      }
+    } else {
+      if (currentPage <= 3) {
+        for (let i = 1; i <= 4; i++) {
+          pageNumbers.push(i);
+        }
+        pageNumbers.push('...');
+        pageNumbers.push(totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pageNumbers.push(1);
+        pageNumbers.push('...');
+        for (let i = totalPages - 3; i <= totalPages; i++) {
+          pageNumbers.push(i);
+        }
+      } else {
+        pageNumbers.push(1);
+        pageNumbers.push('...');
+        for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+          pageNumbers.push(i);
+        }
+        pageNumbers.push('...');
+        pageNumbers.push(totalPages);
+      }
+    }
+
+    return pageNumbers;
+  };
+
   return (
     <>
       <MainSideBar>
@@ -236,9 +287,23 @@ function MainAssign() {
           <div className="bg-light p-4 border-bottom text-center mb-4 shadow-sm">
             <div className="d-flex justify-content-between align-items-center mb-4">
               <h4 className="mb-0">Assign Processor to Category</h4>
-              <div>
+              <div className="d-flex gap-2">
+                <select
+                  className="form-select"
+                  style={{ maxWidth: "100px" }}
+                  value={itemsPerPage}
+                  onChange={(e) => {
+                    setItemsPerPage(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                >
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
                 <button
-                  className="btn btn-outline-secondary me-2"
+                  className="btn btn-outline-secondary"
                   onClick={handleAddModalOpen}
                 >
                   <Plus /> Add Assignment
@@ -268,9 +333,9 @@ function MainAssign() {
                       </td>
                     </tr>
                   ) : (
-                    assignments.map((assignment, index) => (
+                    currentItems.map((assignment, index) => (
                       <tr key={assignment.assignment_id}>
-                        <td>{index + 1}</td>
+                        <td>{indexOfFirstItem + index + 1}</td>
                         <td>{assignment.admin_fullname || "Unknown"}</td>
                         <td>{assignment.admin_username || "Unknown"}</td>
                         <td>
@@ -298,6 +363,59 @@ function MainAssign() {
                 </tbody>
               </table>
             </div>
+
+            {/* Pagination Controls */}
+            {assignments.length > 0 && (
+              <div className="d-flex justify-content-between align-items-center mt-4">
+                <div className="text-muted">
+                  Showing {indexOfFirstItem + 1} to {Math.min(indexOfLastItem, assignments.length)} of {assignments.length} assignment(s)
+                </div>
+
+                {totalPages > 1 && (
+                  <nav>
+                    <ul className="pagination mb-0">
+                      <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
+                        <button
+                          className="page-link"
+                          onClick={() => handlePageChange(currentPage - 1)}
+                          disabled={currentPage === 1}
+                        >
+                          Previous
+                        </button>
+                      </li>
+
+                      {getPageNumbers().map((pageNum, index) => (
+                        <li
+                          key={index}
+                          className={`page-item ${pageNum === currentPage ? 'active' : ''} ${pageNum === '...' ? 'disabled' : ''}`}
+                        >
+                          {pageNum === '...' ? (
+                            <span className="page-link">...</span>
+                          ) : (
+                            <button
+                              className="page-link"
+                              onClick={() => handlePageChange(pageNum)}
+                            >
+                              {pageNum}
+                            </button>
+                          )}
+                        </li>
+                      ))}
+
+                      <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
+                        <button
+                          className="page-link"
+                          onClick={() => handlePageChange(currentPage + 1)}
+                          disabled={currentPage === totalPages}
+                        >
+                          Next
+                        </button>
+                      </li>
+                    </ul>
+                  </nav>
+                )}
+              </div>
+            )}
           </div>
         </div>
 

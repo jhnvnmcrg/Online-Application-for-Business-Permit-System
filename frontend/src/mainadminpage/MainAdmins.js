@@ -11,6 +11,7 @@ function MainAdmins() {
 
   const navigate = useNavigate();
   const [username, setUsername] = useState("User");
+  const [currentAdminId, setCurrentAdminId] = useState(null);
   const [fetchLoading, setFetchLoading] = useState(false);
 
   // Add Admin Modal States
@@ -43,6 +44,10 @@ function MainAdmins() {
   // Admins List State
   const [admins, setAdmins] = useState([]);
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
   useEffect(() => {
     // Get user data from localStorage
     const userData = localStorage.getItem("main");
@@ -57,6 +62,8 @@ function MainAdmins() {
       const user = JSON.parse(userData);
       // Set username from user data
       setUsername(user.username || user.fullname || "User");
+      // Set current admin ID to hide from list
+      setCurrentAdminId(user.admin_id);
     } catch (error) {
       console.error("Error parsing user data:", error);
       navigate("/oabps/main/login");
@@ -83,6 +90,11 @@ function MainAdmins() {
 
   // Filter admins based on search and filters
   const filteredAdmins = admins.filter((admin) => {
+    // Hide current logged-in admin from list
+    if (admin.admin_id === currentAdminId) {
+      return false;
+    }
+
     const searchTerm = searchName.toLowerCase();
     const matchesSearch =
       admin.fullname?.toLowerCase().includes(searchTerm) ||
@@ -94,6 +106,58 @@ function MainAdmins() {
 
     return matchesSearch && matchesRole && matchesStatus;
   });
+
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredAdmins.length / itemsPerPage);
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filteredAdmins.slice(indexOfFirstItem, indexOfLastItem);
+
+  // Handle page change
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
+  };
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchName, filterRole, filterStatus]);
+
+  // Generate page numbers for pagination
+  const getPageNumbers = () => {
+    const pageNumbers = [];
+    const maxPagesToShow = 5;
+
+    if (totalPages <= maxPagesToShow) {
+      for (let i = 1; i <= totalPages; i++) {
+        pageNumbers.push(i);
+      }
+    } else {
+      if (currentPage <= 3) {
+        for (let i = 1; i <= 4; i++) {
+          pageNumbers.push(i);
+        }
+        pageNumbers.push('...');
+        pageNumbers.push(totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pageNumbers.push(1);
+        pageNumbers.push('...');
+        for (let i = totalPages - 3; i <= totalPages; i++) {
+          pageNumbers.push(i);
+        }
+      } else {
+        pageNumbers.push(1);
+        pageNumbers.push('...');
+        for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+          pageNumbers.push(i);
+        }
+        pageNumbers.push('...');
+        pageNumbers.push(totalPages);
+      }
+    }
+
+    return pageNumbers;
+  };
 
   // Handle Add Admin Modal Open
   const handleAddModalOpen = () => {
@@ -276,7 +340,7 @@ function MainAdmins() {
 
             {/* Search and Filters */}
             <div className="row mb-3">
-              <div className="col-md-6">
+              <div className="col-md-5">
                 <input
                   type="text"
                   className="form-control"
@@ -285,7 +349,7 @@ function MainAdmins() {
                   onChange={(e) => setSearchName(e.target.value)}
                 />
               </div>
-              <div className="col-md-3">
+              <div className="col-md-2">
                 <select
                   className="form-select"
                   value={filterRole}
@@ -296,7 +360,7 @@ function MainAdmins() {
                   <option value="Processor">Processor</option>
                 </select>
               </div>
-              <div className="col-md-3">
+              <div className="col-md-2">
                 <select
                   className="form-select"
                   value={filterStatus}
@@ -305,6 +369,21 @@ function MainAdmins() {
                   <option value="all">All Status</option>
                   <option value="active">Active</option>
                   <option value="inactive">Inactive</option>
+                </select>
+              </div>
+              <div className="col-md-3">
+                <select
+                  className="form-select"
+                  value={itemsPerPage}
+                  onChange={(e) => {
+                    setItemsPerPage(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                >
+                  <option value={10}>Show 10</option>
+                  <option value={25}>Show 25</option>
+                  <option value={50}>Show 50</option>
+                  <option value={100}>Show 100</option>
                 </select>
               </div>
             </div>
@@ -344,9 +423,9 @@ function MainAdmins() {
                       </td>
                     </tr>
                   ) : (
-                    filteredAdmins.map((admin, index) => (
+                    currentItems.map((admin, index) => (
                       <tr key={admin.admin_id}>
-                        <td>{index + 1}</td>
+                        <td>{indexOfFirstItem + index + 1}</td>
                         <td className="fw-semibold">{admin.fullname}</td>
                         <td>{admin.email}</td>
                         <td>{admin.username}</td>
@@ -404,10 +483,56 @@ function MainAdmins() {
               </table>
             </div>
 
-            {/* Total Count */}
+            {/* Pagination Controls */}
             {!fetchLoading && filteredAdmins.length > 0 && (
-              <div className="text-muted mt-3 text-start">
-                Showing {filteredAdmins.length} of {admins.length} admin(s)
+              <div className="d-flex justify-content-between align-items-center mt-4">
+                <div className="text-muted">
+                  Showing {indexOfFirstItem + 1} to {Math.min(indexOfLastItem, filteredAdmins.length)} of {filteredAdmins.length} admin(s)
+                </div>
+
+                {totalPages > 1 && (
+                  <nav>
+                    <ul className="pagination mb-0">
+                      <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
+                        <button
+                          className="page-link"
+                          onClick={() => handlePageChange(currentPage - 1)}
+                          disabled={currentPage === 1}
+                        >
+                          Previous
+                        </button>
+                      </li>
+
+                      {getPageNumbers().map((pageNum, index) => (
+                        <li
+                          key={index}
+                          className={`page-item ${pageNum === currentPage ? 'active' : ''} ${pageNum === '...' ? 'disabled' : ''}`}
+                        >
+                          {pageNum === '...' ? (
+                            <span className="page-link">...</span>
+                          ) : (
+                            <button
+                              className="page-link"
+                              onClick={() => handlePageChange(pageNum)}
+                            >
+                              {pageNum}
+                            </button>
+                          )}
+                        </li>
+                      ))}
+
+                      <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
+                        <button
+                          className="page-link"
+                          onClick={() => handlePageChange(currentPage + 1)}
+                          disabled={currentPage === totalPages}
+                        >
+                          Next
+                        </button>
+                      </li>
+                    </ul>
+                  </nav>
+                )}
               </div>
             )}
           </div>
