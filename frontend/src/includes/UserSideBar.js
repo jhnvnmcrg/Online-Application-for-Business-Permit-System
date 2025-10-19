@@ -12,6 +12,7 @@ import {
   House,
   History,
   UserRoundCog,
+  
   LogOut,
   Settings,
 } from "lucide-react";
