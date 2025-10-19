@@ -288,9 +288,9 @@ function MainAssign() {
             <div className="d-flex justify-content-between align-items-center mb-4">
               <h4 className="mb-0">Assign Processor to Category</h4>
               <div className="d-flex gap-2">
-                <select
+                {/* <select 
                   className="form-select"
-                  style={{ maxWidth: "100px" }}
+                  
                   value={itemsPerPage}
                   onChange={(e) => {
                     setItemsPerPage(Number(e.target.value));
@@ -301,7 +301,7 @@ function MainAssign() {
                   <option value={25}>25</option>
                   <option value={50}>50</option>
                   <option value={100}>100</option>
-                </select>
+                </select> */}
                 <button
                   className="btn btn-outline-secondary"
                   onClick={handleAddModalOpen}

@@ -143,13 +143,13 @@ function MainUsers() {
               <div className="col-md-4 d-flex gap-2">
                 <input
                   type="text"
-                  className="form-control form-control-lg"
+                  className="form-control "
                   placeholder="Search..."
                   value={searchName}
                   onChange={(e) => setSearchName(e.target.value)}
                 />
                 <select
-                  className="form-select form-select-lg"
+                  className="form-select "
                   style={{ maxWidth: "100px" }}
                   value={itemsPerPage}
                   onChange={(e) => {

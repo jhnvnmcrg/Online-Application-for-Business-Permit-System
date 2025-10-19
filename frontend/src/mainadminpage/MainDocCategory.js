@@ -211,12 +211,12 @@ function MainDocCategory() {
     <>
       <MainSideBar>
         <div className="container-fluid p-4">
-          <div className="bg-light p-4 border-bottom text-center mb-4 shadow-sm">
+          <div className="bg-light p-3 border-bottom text-center mb-4 shadow-sm">
             {/* Header */}
             <div className="d-flex justify-content-between align-items-center mb-4">
               <h4 className="mb-0">Document Category</h4>
               <div className="d-flex gap-2">
-                  <select
+                  {/* <select
                     className="form-select"
                     style={{ maxWidth: "100px" }}
                     value={itemsPerPage}
@@ -229,7 +229,7 @@ function MainDocCategory() {
                     <option value={25}>25</option>
                     <option value={50}>50</option>
                     <option value={100}>100</option>
-                  </select>
+                  </select> */}
                   <button
                     className="btn btn-outline-secondary"
                     onClick={handleAddCategory}
@@ -240,14 +240,14 @@ function MainDocCategory() {
             </div>
             <hr className="my-0" />
             <div className="bg-light p-4 border-bottom text-center mb-4 shadow-sm">
-              {/* Table */}
+              {/* Table */} 
               <div className="table-responsive">
                 <table className="table table-hover">
                   <thead className="table-light">
                     <tr>
                       <th>#</th>
                       <th className="w-25">Category Name</th>
-                      <th className="w-50">Description</th>
+                      <th style={{ width: "50em" }}>Description</th>
                       
                       <th>Action</th>
                     </tr>
@@ -264,7 +264,7 @@ function MainDocCategory() {
                         <tr key={category.category_id}>
                           <td>{indexOfFirstItem + index + 1}</td>
                           <td>{category.category_name}</td>
-                          <td>{category.description}</td>
+                          <td className="">{category.description}</td>
                           
                           <td>
                             <button

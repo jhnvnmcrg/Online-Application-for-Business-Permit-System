@@ -149,13 +149,13 @@ function MainLogAudits() {
               <div className="col-md-6 d-flex">
                 <input
                   type="text"
-                  className="form-control form-control-lg mx-1"
+                  className="form-control mx-1"
                   placeholder="Search by name..."
                   value={searchName}
                   onChange={(e) => setSearchName(e.target.value)}
                 />
                 <select
-                  className="form-select form-select-lg mx-1"
+                  className="form-select  mx-1"
                   value={searchStatus}
                   onChange={(e) => setSearchStatus(e.target.value)}
                 >
@@ -164,7 +164,7 @@ function MainLogAudits() {
                   <option value="Failed">Failed</option>
                 </select>
                 <select
-                  className="form-select form-select-lg mx-1"
+                  className="form-select  mx-1"
                   style={{ maxWidth: "100px" }}
                   value={itemsPerPage}
                   onChange={(e) => {
