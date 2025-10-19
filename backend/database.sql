@@ -163,9 +163,13 @@ CREATE TABLE public.Notifications (
   retry_count integer DEFAULT 0,
   request_id integer,
   payment_id integer,
+  admin_id integer,
+  owner_id integer,
   CONSTRAINT Notifications_pkey PRIMARY KEY (notification_id),
   CONSTRAINT Notifications_request_id_fkey FOREIGN KEY (request_id) REFERENCES public.Requests(request_id),
-  CONSTRAINT Notifications_payment_id_fkey FOREIGN KEY (payment_id) REFERENCES public.Payments(payment_id)
+  CONSTRAINT Notifications_payment_id_fkey FOREIGN KEY (payment_id) REFERENCES public.Payments(payment_id),
+  CONSTRAINT Notifications_admin_id_fkey FOREIGN KEY (admin_id) REFERENCES public.Admins(admin_id),
+  CONSTRAINT Notifications_owner_id_fkey FOREIGN KEY (owner_id) REFERENCES public.Owners(owner_id)
 );
 CREATE TABLE public.Owners (
   owner_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,

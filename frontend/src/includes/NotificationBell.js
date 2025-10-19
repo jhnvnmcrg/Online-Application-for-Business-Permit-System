@@ -54,19 +54,36 @@ function NotificationBell() {
     try {
       setLoading(true);
       const { user, userType } = getUserInfo();
-      if (!user || !userType) return;
+
+      if (!user || !userType) {
+        console.warn('❌ User info not found in localStorage');
+        setLoading(false);
+        return;
+      }
 
       const userId = userType === 'User' ? user.owner_id : user.admin_id;
 
+      if (!userId) {
+        console.warn('❌ User ID not found:', { user, userType });
+        setLoading(false);
+        return;
+      }
+
+      console.log('🔔 Fetching notifications for:', { userType, userId });
+
       const response = await axios.get(
-        `${API_URL}/api/notifications/${userType}/${userId}?limit=10`
+        `${API_URL}/api/notifications/${userType}/${userId}?limit=10&unreadOnly=true`
       );
+
+      console.log('✅ Notifications response:', response.data);
 
       if (response.data.success) {
         setNotifications(response.data.notifications);
+        console.log('📬 Loaded', response.data.notifications.length, 'notifications');
       }
     } catch (error) {
-      console.error('Error fetching notifications:', error);
+      console.error('❌ Error fetching notifications:', error);
+      console.error('Error details:', error.response?.data);
     } finally {
       setLoading(false);
     }
@@ -112,18 +129,19 @@ function NotificationBell() {
     }
   };
 
-  // Delete notification
-  const deleteNotification = async (notificationId) => {
+  // Clear/dismiss notification (mark as read and remove from list)
+  const clearNotification = async (notificationId) => {
     try {
-      await axios.delete(
-        `${API_URL}/api/notifications/${notificationId}`
+      // Mark as read instead of deleting from database
+      await axios.put(
+        `${API_URL}/api/notifications/${notificationId}/read`
       );
 
-      // Update local state
+      // Remove from local state (clears from UI)
       setNotifications(notifications.filter(n => n.notification_id !== notificationId));
       fetchUnreadCount();
     } catch (error) {
-      console.error('Error deleting notification:', error);
+      console.error('Error clearing notification:', error);
     }
   };
 
@@ -251,12 +269,12 @@ function NotificationBell() {
                       </small>
                     </div>
                     <button
-                      className="btn btn-sm btn-link text-danger p-0 ms-2"
+                      className="btn btn-sm btn-link text-secondary p-0 ms-2"
                       onClick={(e) => {
                         e.stopPropagation();
-                        deleteNotification(notification.notification_id);
+                        clearNotification(notification.notification_id);
                       }}
-                      title="Delete"
+                      title="Clear"
                     >
                       <X size={16} />
                     </button>

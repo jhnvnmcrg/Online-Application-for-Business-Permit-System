@@ -74,8 +74,9 @@ async function createNotification(userId, userType, type, subject, message, requ
 }
 
 // Helper to create notification for user when request status changes
-async function notifyRequestStatusChange(requestId, ownerId, trackingCode, oldStatus, newStatus) {
-  const statusMessages = {
+async function notifyRequestStatusChange(requestId, ownerId, trackingCode, oldStatus, newStatus, processedBy = null) {
+  // Messages for the USER who submitted the request
+  const userMessages = {
     'Pending': 'Your request has been received and is pending review.',
     'Processing': 'Your request is now being processed by our team.',
     'Approved': 'Congratulations! Your request has been approved.',
@@ -84,39 +85,88 @@ async function notifyRequestStatusChange(requestId, ownerId, trackingCode, oldSt
     'Cancelled': 'Your request has been cancelled.'
   };
 
-  const message = statusMessages[newStatus] || `Your request status has been updated to ${newStatus}.`;
+  // Messages for the ADMIN/PROCESSOR handling the request
+  const adminMessages = {
+    'Pending': `Request ${trackingCode} has been submitted and is awaiting review.`,
+    'Processing': `You are now processing request ${trackingCode}.`,
+    'Approved': `You have approved request ${trackingCode}.`,
+    'Rejected': `You have rejected request ${trackingCode}.`,
+    'Released': `Request ${trackingCode} has been released to the user.`,
+    'Cancelled': `Request ${trackingCode} has been cancelled.`
+  };
 
+  const userMessage = userMessages[newStatus] || `Your request status has been updated to ${newStatus}.`;
+  const adminMessage = adminMessages[newStatus] || `Request ${trackingCode} status updated to ${newStatus}.`;
+
+  // Notify the USER (owner)
   await createNotification(
     ownerId,
     'User',
     'InApp',
     `Request ${trackingCode} - Status Update`,
-    message,
+    userMessage,
     requestId,
     null
   );
+
+  // Notify the ADMIN/PROCESSOR (if assigned)
+  if (processedBy) {
+    await createNotification(
+      processedBy,
+      'Admin',
+      'InApp',
+      `Request ${trackingCode} - Status Update`,
+      adminMessage,
+      requestId,
+      null
+    );
+  }
 }
 
 // Helper to notify user about payment status
-async function notifyPaymentStatusChange(paymentId, ownerId, requestId, trackingCode, status, amount) {
-  const messages = {
+async function notifyPaymentStatusChange(paymentId, ownerId, requestId, trackingCode, status, amount, verifiedBy = null) {
+  // Messages for the USER who made the payment
+  const userMessages = {
     'Pending': `A payment of ₱${amount.toFixed(2)} is required for request ${trackingCode}.`,
     'Submitted': `Your payment proof for request ${trackingCode} has been received and is under review.`,
     'Verified': `Your payment of ₱${amount.toFixed(2)} for request ${trackingCode} has been verified.`,
     'Rejected': `Your payment proof for request ${trackingCode} was rejected. Please resubmit.`
   };
 
-  const message = messages[status] || `Payment status updated to ${status}.`;
+  // Messages for the ADMIN who verifies/rejects the payment
+  const adminMessages = {
+    'Pending': `Payment of ₱${amount.toFixed(2)} is pending for request ${trackingCode}.`,
+    'Submitted': `New payment proof submitted for request ${trackingCode}. Please review.`,
+    'Verified': `You have verified payment of ₱${amount.toFixed(2)} for request ${trackingCode}.`,
+    'Rejected': `You have rejected payment proof for request ${trackingCode}.`
+  };
 
+  const userMessage = userMessages[status] || `Payment status updated to ${status}.`;
+  const adminMessage = adminMessages[status] || `Payment for ${trackingCode} updated to ${status}.`;
+
+  // Notify the USER (owner)
   await createNotification(
     ownerId,
     'User',
     'InApp',
     `Payment Update - ${trackingCode}`,
-    message,
+    userMessage,
     requestId,
     paymentId
   );
+
+  // Notify the ADMIN (if payment action was performed by admin)
+  if (verifiedBy && (status === 'Verified' || status === 'Rejected' || status === 'Submitted')) {
+    await createNotification(
+      verifiedBy,
+      'Admin',
+      'InApp',
+      `Payment Update - ${trackingCode}`,
+      adminMessage,
+      requestId,
+      paymentId
+    );
+  }
 }
 
 // Register main admin endpoint
@@ -2957,13 +3007,14 @@ app.put("/api/request/update-status/:requestId", upload.single("attachmentFile")
         },
       ]);
 
-      // Send notification to user about status change
+      // Send notification to user AND admin about status change
       await notifyRequestStatusChange(
         requestId,
         currentRequest.owner_id,
         currentRequest.tracking_code,
         currentRequest.status,
-        status
+        status,
+        processedBy || currentRequest.processed_by // Admin who processed the request
       );
     }
 
@@ -3373,10 +3424,10 @@ app.post("/api/payment/add", async (req, res) => {
         },
       ]);
 
-    // Send notification to user about new payment requirement
+    // Send notification to user AND admin about new payment requirement
     const { data: requestData } = await supabase
       .from("Requests")
-      .select("owner_id, tracking_code")
+      .select("owner_id, tracking_code, processed_by")
       .eq("request_id", requestId)
       .single();
 
@@ -3387,7 +3438,8 @@ app.post("/api/payment/add", async (req, res) => {
         requestId,
         requestData.tracking_code,
         "Pending",
-        parseFloat(amount)
+        parseFloat(amount),
+        requestData.processed_by // Admin assigned to this request
       );
     }
 
@@ -3584,14 +3636,14 @@ app.put("/api/payment/submit-proof/:paymentId", upload.single("proofPayment"), a
       });
     }
 
-    // Get request information for notification
+    // Get request information for notification (including assigned processor)
     const { data: requestData } = await supabase
       .from("Requests")
-      .select("owner_id, tracking_code")
+      .select("owner_id, tracking_code, processed_by")
       .eq("request_id", payment.request_id)
       .single();
 
-    // Send notification to user that proof was submitted
+    // Send notification to user AND admin that proof was submitted
     if (requestData) {
       await notifyPaymentStatusChange(
         paymentId,
@@ -3599,7 +3651,8 @@ app.put("/api/payment/submit-proof/:paymentId", upload.single("proofPayment"), a
         payment.request_id,
         requestData.tracking_code,
         "Submitted",
-        payment.amount
+        payment.amount,
+        requestData.processed_by // Admin assigned to this request
       );
     }
 
@@ -3672,7 +3725,7 @@ app.put("/api/payment/verify/:paymentId", async (req, res) => {
       .eq("request_id", data[0].request_id)
       .single();
 
-    // Send notification to user about payment verification
+    // Send notification to user AND admin about payment verification
     if (requestData) {
       await notifyPaymentStatusChange(
         paymentId,
@@ -3680,7 +3733,8 @@ app.put("/api/payment/verify/:paymentId", async (req, res) => {
         data[0].request_id,
         requestData.tracking_code,
         status,
-        data[0].amount
+        data[0].amount,
+        verifiedBy // Admin who verified/rejected the payment
       );
     }
 
