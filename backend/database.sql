@@ -166,10 +166,10 @@ CREATE TABLE public.Notifications (
   admin_id integer,
   owner_id integer,
   CONSTRAINT Notifications_pkey PRIMARY KEY (notification_id),
-  CONSTRAINT Notifications_request_id_fkey FOREIGN KEY (request_id) REFERENCES public.Requests(request_id),
-  CONSTRAINT Notifications_payment_id_fkey FOREIGN KEY (payment_id) REFERENCES public.Payments(payment_id),
   CONSTRAINT Notifications_admin_id_fkey FOREIGN KEY (admin_id) REFERENCES public.Admins(admin_id),
-  CONSTRAINT Notifications_owner_id_fkey FOREIGN KEY (owner_id) REFERENCES public.Owners(owner_id)
+  CONSTRAINT Notifications_owner_id_fkey FOREIGN KEY (owner_id) REFERENCES public.Owners(owner_id),
+  CONSTRAINT Notifications_payment_id_fkey FOREIGN KEY (payment_id) REFERENCES public.Payments(payment_id),
+  CONSTRAINT Notifications_request_id_fkey FOREIGN KEY (request_id) REFERENCES public.Requests(request_id)
 );
 CREATE TABLE public.Owners (
   owner_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
@@ -181,9 +181,6 @@ CREATE TABLE public.Owners (
   phone_number character varying,
   business_name text,
   business_address text,
-  tin character varying,
-  email_verified boolean DEFAULT false,
-  phone_verified boolean DEFAULT false,
   status character varying DEFAULT 'Active'::character varying,
   last_login_at timestamp without time zone,
   CONSTRAINT Owners_pkey PRIMARY KEY (owner_id)

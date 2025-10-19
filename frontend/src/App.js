@@ -27,6 +27,7 @@ import ProcessorDocuments from './processorpage/ProcessorDocuments'
 import ProcessorRequests from './processorpage/ProcessorRequests'
 import ProcessorPayments from './processorpage/ProcessorPayments'
 import ProcessorTransactions from './processorpage/ProcessorTransactions'
+import ProcessorSettings from './processorpage/ProcessorSettings'
 
 import UserRegister from './userpages/components/UserRegister'
 import UserLogin from './userpages/components/UserLogin'
@@ -84,6 +85,7 @@ function App() {
         <Route path='/oabps/processor/requests' element={<ProcessorRequests/>}></Route>
         <Route path='/oabps/processor/payments' element={<ProcessorPayments/>}></Route>
         <Route path='/oabps/processor/transactions' element={<ProcessorTransactions/>}></Route>
+        <Route path='/oabps/processor/settings' element={<ProcessorSettings/>}></Route>
 
         <Route path='/oabps/user/register' element={<UserRegister/>}></Route>
         <Route path='/oabps/user/login' element={<UserLogin/>}></Route>

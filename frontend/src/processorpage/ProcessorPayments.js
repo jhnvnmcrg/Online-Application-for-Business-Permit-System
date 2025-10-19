@@ -1,120 +1,944 @@
 import { useState, useEffect } from "react";
-import ProcessorSideBar from "../includes/ProcessorSideBar";
-import { Plus, Trash, Pencil } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import ProcessorSideBar from "../includes/ProcessorSideBar";
+import axios from "axios";
+import {
+  DollarSign,
+  Clock,
+  CheckCircle,
+  XCircle,
+  Upload,
+  Eye,
+  AlertCircle,
+  FileText,
+  User,
+  Calendar,
+} from "lucide-react";
 
 function ProcessorPayments() {
-  const [searchName, setSearchName] = useState("");
+  const [payments, setPayments] = useState([]);
+  const [filteredPayments, setFilteredPayments] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("All");
+  const [entriesPerPage, setEntriesPerPage] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [assignedCategoryIds, setAssignedCategoryIds] = useState([]);
+
+  // Modal states
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [showVerifyModal, setShowVerifyModal] = useState(false);
+  const [selectedPayment, setSelectedPayment] = useState(null);
+  const [verifyStatus, setVerifyStatus] = useState("");
+  const [verifyRemarks, setVerifyRemarks] = useState("");
+  const [verifying, setVerifying] = useState(false);
+  const [showLightbox, setShowLightbox] = useState(false);
+  const [lightboxImage, setLightboxImage] = useState("");
+
+  // Statistics
+  const [stats, setStats] = useState({
+    total: 0,
+    pending: 0,
+    submitted: 0,
+    verified: 0,
+    rejected: 0,
+  });
 
   const navigate = useNavigate();
-  const [username, setUsername] = useState("User");
+  const API_URL = "https://oabs-f7by.onrender.com";
+  // const API_URL = "http://localhost:3000";
 
   useEffect(() => {
-    // Get user data from localStorage
     const userData = localStorage.getItem("processor");
 
     if (!userData) {
-      // If no user data, redirect to login
       navigate("/oabps/processor/login");
       return;
     }
 
     try {
       const user = JSON.parse(userData);
-      // Set username from user data
-      setUsername(user.username || user.fullname || "User");
+      const processorId = user.admin_id;
+
+      if (!processorId) {
+        navigate("/oabps/processor/login");
+        return;
+      }
+
+      fetchAssignedCategoriesAndPayments(processorId);
     } catch (error) {
       console.error("Error parsing user data:", error);
       navigate("/oabps/processor/login");
     }
-  }, [navigate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    filterPayments();
+  }, [searchTerm, statusFilter, payments]);
+
+  const fetchAssignedCategoriesAndPayments = async (processorId) => {
+    try {
+      setLoading(true);
+      setError("");
+
+      // First, fetch assigned categories
+      const categoriesResponse = await axios.get(
+        `${API_URL}/api/processor/assigned-categories/${processorId}`
+      );
+
+      if (categoriesResponse.data.success && categoriesResponse.data.categories) {
+        const categories = categoriesResponse.data.categories || [];
+
+        if (categories.length === 0) {
+          setError("No categories assigned to this processor");
+          setPayments([]);
+          setFilteredPayments([]);
+          setAssignedCategoryIds([]);
+          setStats({
+            total: 0,
+            pending: 0,
+            submitted: 0,
+            verified: 0,
+            rejected: 0,
+          });
+          setLoading(false);
+          return;
+        }
+
+        const categoryIds = categories.map((cat) => cat.category_id);
+        setAssignedCategoryIds(categoryIds);
+
+        // Fetch all payments
+        const response = await axios.get(`${API_URL}/api/payment/all`);
+
+        if (response.data.success && response.data.payments) {
+          const allPayments = response.data.payments || [];
+
+          // Filter payments by requests in assigned categories
+          const filteredPaymentsData = allPayments.filter((payment) =>
+            categoryIds.includes(payment.Requests?.category_id)
+          );
+
+          setPayments(filteredPaymentsData);
+          setFilteredPayments(filteredPaymentsData);
+
+          // Calculate statistics
+          setStats({
+            total: filteredPaymentsData.length,
+            pending: filteredPaymentsData.filter((p) => p.status === "Pending").length,
+            submitted: filteredPaymentsData.filter((p) => p.status === "Submitted").length,
+            verified: filteredPaymentsData.filter((p) => p.status === "Verified").length,
+            rejected: filteredPaymentsData.filter((p) => p.status === "Rejected").length,
+          });
+        } else {
+          setError("Failed to fetch payments");
+        }
+      } else {
+        setError("No categories assigned to this processor");
+      }
+    } catch (err) {
+      console.error("Fetch payments error:", err);
+      setError("An error occurred while fetching payments");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filterPayments = () => {
+    let filtered = [...payments];
+
+    if (statusFilter !== "All") {
+      filtered = filtered.filter((pay) => pay.status === statusFilter);
+    }
+
+    if (searchTerm.trim() !== "") {
+      const search = searchTerm.toLowerCase();
+      filtered = filtered.filter(
+        (pay) =>
+          pay.Requests?.tracking_code?.toLowerCase().includes(search) ||
+          pay.Requests?.Owners?.fullname?.toLowerCase().includes(search) ||
+          pay.reference_number?.toLowerCase().includes(search)
+      );
+    }
+
+    setFilteredPayments(filtered);
+    setCurrentPage(1);
+  };
+
+  const handleViewDetails = (payment) => {
+    setSelectedPayment(payment);
+    setShowViewModal(true);
+  };
+
+  const handleOpenVerifyModal = (payment) => {
+    setSelectedPayment(payment);
+    setVerifyStatus("");
+    setVerifyRemarks("");
+    setShowVerifyModal(true);
+  };
+
+  const handleVerifyPayment = async (e) => {
+    e.preventDefault();
+
+    if (!verifyStatus) {
+      setError("Please select verification status");
+      return;
+    }
+
+    try {
+      setVerifying(true);
+      setError("");
+
+      const user = JSON.parse(localStorage.getItem("processor") || "{}");
+      const processorId = user.admin_id;
+
+      const response = await axios.put(
+        `${API_URL}/api/payment/verify/${selectedPayment.payment_id}`,
+        {
+          status: verifyStatus,
+          verifiedBy: processorId,
+          remarks: verifyRemarks || null,
+        }
+      );
+
+      if (response.data.success) {
+        await fetchAssignedCategoriesAndPayments(processorId);
+        setShowVerifyModal(false);
+        setVerifyStatus("");
+        setVerifyRemarks("");
+        alert(`Payment ${verifyStatus.toLowerCase()} successfully`);
+      } else {
+        setError(response.data.message || "Failed to verify payment");
+      }
+    } catch (err) {
+      console.error("Verify payment error:", err);
+      setError(
+        err.response?.data?.message || "An error occurred while verifying payment"
+      );
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  const closeModals = () => {
+    setShowViewModal(false);
+    setShowVerifyModal(false);
+    setSelectedPayment(null);
+    setError("");
+  };
+
+  const handleImageClick = (imageUrl) => {
+    setLightboxImage(imageUrl);
+    setShowLightbox(true);
+  };
+
+  const getDeadlineInfo = (payment) => {
+    if (!payment.payment_deadline) {
+      return null;
+    }
+
+    const now = new Date();
+    const deadline = new Date(payment.payment_deadline);
+    const diffTime = deadline - now;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays < 0) {
+      return {
+        text: `Overdue by ${Math.abs(diffDays)} day${Math.abs(diffDays) > 1 ? "s" : ""}`,
+        color: "danger",
+        isOverdue: true,
+      };
+    } else if (diffDays === 0) {
+      return { text: "Due today!", color: "danger", isOverdue: false };
+    } else if (diffDays <= 3) {
+      return { text: `${diffDays} days left`, color: "warning", isOverdue: false };
+    } else {
+      return { text: `${diffDays} days left`, color: "info", isOverdue: false };
+    }
+  };
+
+  // Pagination
+  const indexOfLastEntry = currentPage * entriesPerPage;
+  const indexOfFirstEntry = indexOfLastEntry - entriesPerPage;
+  const currentEntries = filteredPayments.slice(
+    indexOfFirstEntry,
+    indexOfLastEntry
+  );
+  const totalPages = Math.ceil(filteredPayments.length / entriesPerPage);
+
+  const paginate = (pageNumber) => {
+    if (pageNumber >= 1 && pageNumber <= totalPages) {
+      setCurrentPage(pageNumber);
+    }
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "2-digit",
+      year: "numeric",
+    });
+  };
+
+  const getStatusBadge = (status) => {
+    const badges = {
+      Pending: { color: "warning", icon: <Clock size={14} /> },
+      Submitted: { color: "info", icon: <Upload size={14} /> },
+      Verified: { color: "success", icon: <CheckCircle size={14} /> },
+      Rejected: { color: "danger", icon: <XCircle size={14} /> },
+    };
+
+    const badge = badges[status] || badges.Pending;
+
+    return (
+      <span className={`badge bg-${badge.color} d-inline-flex align-items-center gap-1`}>
+        {badge.icon}
+        {status}
+      </span>
+    );
+  };
+
   return (
     <>
       <ProcessorSideBar>
         <div className="container-fluid p-4">
-          <h2 className="display-5 fw-bold text-dark mb-2">
-            Welcome, {username}!
-          </h2>
-          {/* Header */}
+          {/* Page Header */}
+          <div className="mb-4">
+            <h2 className="fw-bold text-dark mb-2">Payment Verification (My Categories)</h2>
+            <p className="text-muted">Review and verify payment submissions for your assigned categories</p>
+          </div>
 
-          <div className="bg-light p-4 border-bottom text-center mb-4 shadow-sm">
-            {/* Search and Filter Row */}
-            <div className="row mb-4">
-              <div className="col-md-4 d-flex">
-                <h4 className="mb-0">Payment</h4>
+          {/* Statistics Cards */}
+          <div className="row mb-4 g-3">
+            <div className="col-md-3">
+              <div className="card border-0 shadow-sm h-100">
+                <div className="card-body">
+                  <div className="d-flex justify-content-between align-items-start">
+                    <div>
+                      <p className="text-muted mb-1 small">Total Payments</p>
+                      <h3 className="mb-0 fw-bold text-primary">{stats.total}</h3>
+                    </div>
+                    <div className="bg-primary bg-opacity-10 p-2 rounded">
+                      <DollarSign size={24} className="text-primary" />
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div className="col-md-4"></div>
-              <div className="col-md-4">
+            </div>
+
+            <div className="col-md-3">
+              <div className="card border-0 shadow-sm h-100">
+                <div className="card-body">
+                  <div className="d-flex justify-content-between align-items-start">
+                    <div>
+                      <p className="text-muted mb-1 small">To Verify</p>
+                      <h3 className="mb-0 fw-bold text-info">{stats.submitted}</h3>
+                      <small className="text-muted">Needs attention</small>
+                    </div>
+                    <div className="bg-info bg-opacity-10 p-2 rounded">
+                      <Upload size={24} className="text-info" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="col-md-3">
+              <div className="card border-0 shadow-sm h-100">
+                <div className="card-body">
+                  <div className="d-flex justify-content-between align-items-start">
+                    <div>
+                      <p className="text-muted mb-1 small">Verified</p>
+                      <h3 className="mb-0 fw-bold text-success">{stats.verified}</h3>
+                      <small className="text-muted">Approved</small>
+                    </div>
+                    <div className="bg-success bg-opacity-10 p-2 rounded">
+                      <CheckCircle size={24} className="text-success" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="col-md-3">
+              <div className="card border-0 shadow-sm h-100">
+                <div className="card-body">
+                  <div className="d-flex justify-content-between align-items-start">
+                    <div>
+                      <p className="text-muted mb-1 small">Rejected</p>
+                      <h3 className="mb-0 fw-bold text-danger">{stats.rejected}</h3>
+                      <small className="text-muted">Denied</small>
+                    </div>
+                    <div className="bg-danger bg-opacity-10 p-2 rounded">
+                      <XCircle size={24} className="text-danger" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Main Card */}
+          <div className="card border-0 shadow-sm">
+            <div className="card-header bg-white border-bottom">
+              <h5 className="mb-0">All Payments</h5>
+            </div>
+            <div className="card-body">
+              {error && (
+                <div className="alert alert-danger d-flex align-items-center gap-2">
+                  <AlertCircle size={20} />
+                  {error}
+                </div>
+              )}
+
+              {/* Filters */}
+            <div className="row mb-3">
+              <div className="col-md-2">
+                <select
+                  className="form-select"
+                  value={entriesPerPage}
+                  onChange={(e) => setEntriesPerPage(parseInt(e.target.value))}
+                >
+                  <option value={10}>10 entries</option>
+                  <option value={25}>25 entries</option>
+                  <option value={50}>50 entries</option>
+                  <option value={100}>100 entries</option>
+                </select>
+              </div>
+              <div className="col-md-3">
+                <select
+                  className="form-select"
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                >
+                  <option value="All">All Status</option>
+                  <option value="Pending">Pending</option>
+                  <option value="Submitted">Submitted</option>
+                  <option value="Verified">Verified</option>
+                  <option value="Rejected">Rejected</option>
+                </select>
+              </div>
+              <div className="col-md-7">
                 <input
                   type="text"
-                  className="form-control form-control-lg"
-                  placeholder="Search..."
-                  value={searchName}
-                  onChange={(e) => setSearchName(e.target.value)}
+                  className="form-control"
+                  placeholder="Search by tracking code, owner, or reference number..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
             </div>
 
-            <hr />
-
             {/* Table */}
             <div className="table-responsive">
-              <table className="table table-hover">
+              <table className="table table-hover table-striped">
                 <thead className="table-light">
                   <tr>
                     <th>#</th>
-                    <th>Request ID</th>
-                    <th>Proof of Payment</th>
+                    <th>Tracking Code</th>
+                    <th>Owner</th>
                     <th>Amount</th>
-                    <th>Reference Number</th>
-                    <th>Date of Payment</th>
+                    <th>Payment Type</th>
                     <th>Status</th>
-                    <th>Action</th>
+                    <th>Deadline</th>
+                    <th>Date Submitted</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr>
-                    <td>1</td>
-                    <td>0000-0000</td>
-                    <td>Gcash</td>
-                    <td>666</td>
-                    <td>00-0000</td>
-                    <td>00-00-0000</td>
-                    <td>Paid</td>
-                    <td>
-                      <button className="btn btn-sm">
-                        <Pencil className="text-primary" />
-                      </button>
-                      <button className="btn btn-sm">
-                        <Trash className="text-danger" />
-                      </button>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>2</td>
-                    <td>0000-0000</td>
-                    <td>Cashier</td>
-                    <td>999</td>
-                    <td>00-0000</td>
-                    <td>00-00-0000</td>
-                    <td>Pending</td>
-                    <td>
-                      <button className="btn btn-sm">
-                        <Pencil className="text-primary" />
-                      </button>
-                      <button className="btn btn-sm">
-                        <Trash className="text-danger" />
-                      </button>
-                    </td>
-                  </tr>
+                  {loading ? (
+                    <tr>
+                      <td colSpan="9" className="text-center py-4">
+                        <div className="spinner-border text-primary" role="status">
+                          <span className="visually-hidden">Loading...</span>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : currentEntries.length === 0 ? (
+                    <tr>
+                      <td colSpan="9" className="text-center text-muted py-4">
+                        No payments found in your assigned categories
+                      </td>
+                    </tr>
+                  ) : (
+                    currentEntries.map((payment, index) => {
+                      const deadlineInfo = getDeadlineInfo(payment);
+                      return (
+                        <tr key={payment.payment_id} className={deadlineInfo?.isOverdue ? 'table-danger' : ''}>
+                          <td>{indexOfFirstEntry + index + 1}</td>
+                          <td>
+                            <span className="badge bg-secondary">
+                              {payment.Requests?.tracking_code || "N/A"}
+                            </span>
+                          </td>
+                          <td>{payment.Requests?.Owners?.fullname || "N/A"}</td>
+                          <td className="fw-bold">₱{parseFloat(payment.amount).toFixed(2)}</td>
+                          <td>{payment.payment_type}</td>
+                          <td>{getStatusBadge(payment.status)}</td>
+                          <td>
+                            {deadlineInfo ? (
+                              <span className={`badge bg-${deadlineInfo.color}`}>
+                                <Clock size={12} className="me-1" />
+                                {deadlineInfo.text}
+                              </span>
+                            ) : (
+                              <span className="text-muted">-</span>
+                            )}
+                          </td>
+                          <td>{formatDate(payment.payment_date)}</td>
+                          <td>
+                          <button
+                            className="btn btn-sm btn-info me-1"
+                            onClick={() => handleViewDetails(payment)}
+                            title="View Details"
+                          >
+                            <Eye size={16} />
+                          </button>
+                          {payment.status === "Submitted" && (
+                            <button
+                              className="btn btn-sm btn-success"
+                              onClick={() => handleOpenVerifyModal(payment)}
+                              title="Verify Payment"
+                            >
+                              <CheckCircle size={16} />
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                      );
+                    })
+                  )}
                 </tbody>
               </table>
+            </div>
+
+            {/* Pagination */}
+            <div className="row mt-3">
+              <div className="col-md-6">
+                <p className="text-muted small">
+                  Showing {indexOfFirstEntry + 1} to{" "}
+                  {Math.min(indexOfLastEntry, filteredPayments.length)} of{" "}
+                  {filteredPayments.length} entries
+                </p>
+              </div>
+              <div className="col-md-6">
+                <nav>
+                  <ul className="pagination pagination-sm justify-content-end mb-0">
+                    <li className={`page-item ${currentPage === 1 ? "disabled" : ""}`}>
+                      <button
+                        className="page-link"
+                        onClick={() => paginate(currentPage - 1)}
+                      >
+                        Previous
+                      </button>
+                    </li>
+                    {[...Array(totalPages)].map((_, i) => (
+                      <li
+                        key={i + 1}
+                        className={`page-item ${
+                          currentPage === i + 1 ? "active" : ""
+                        }`}
+                      >
+                        <button
+                          className="page-link"
+                          onClick={() => paginate(i + 1)}
+                        >
+                          {i + 1}
+                        </button>
+                      </li>
+                    ))}
+                    <li
+                      className={`page-item ${
+                        currentPage === totalPages ? "disabled" : ""
+                      }`}
+                    >
+                      <button
+                        className="page-link"
+                        onClick={() => paginate(currentPage + 1)}
+                      >
+                        Next
+                      </button>
+                    </li>
+                  </ul>
+                </nav>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </ProcessorSideBar>
+
+      {/* View Details Modal */}
+      {showViewModal && selectedPayment && (
+        <div
+          className="modal show d-block"
+          style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+          onClick={closeModals}
+        >
+          <div
+            className="modal-dialog modal-xl modal-dialog-scrollable"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-content">
+              <div className="modal-header bg-info text-white">
+                <h5 className="modal-title d-flex align-items-center gap-2">
+                  <FileText size={20} />
+                  Payment Details - {selectedPayment.Requests?.tracking_code}
+                </h5>
+                <button
+                  type="button"
+                  className="btn-close btn-close-white"
+                  onClick={closeModals}
+                ></button>
+              </div>
+              <div className="modal-body">
+                {/* Payment Information */}
+                <div className="mb-4">
+                  <h6 className="text-primary border-bottom pb-2">
+                    Payment Information
+                  </h6>
+                  <div className="row">
+                    <div className="col-md-6 mb-3">
+                      <label className="text-muted small">Tracking Code</label>
+                      <p className="mb-0">
+                        <span className="badge bg-secondary fs-6">
+                          {selectedPayment.Requests?.tracking_code}
+                        </span>
+                      </p>
+                    </div>
+                    <div className="col-md-6 mb-3">
+                      <label className="text-muted small">Status</label>
+                      <p className="mb-0">{getStatusBadge(selectedPayment.status)}</p>
+                    </div>
+                    <div className="col-md-6 mb-3">
+                      <label className="text-muted small">Amount</label>
+                      <p className="mb-0 fw-bold fs-5 text-success">
+                        ₱{parseFloat(selectedPayment.amount).toFixed(2)}
+                      </p>
+                    </div>
+                    <div className="col-md-6 mb-3">
+                      <label className="text-muted small">Payment Type</label>
+                      <p className="mb-0">{selectedPayment.payment_type}</p>
+                    </div>
+                    <div className="col-md-12 mb-3">
+                      <label className="text-muted small">Description</label>
+                      <p className="mb-0">{selectedPayment.description || "N/A"}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Owner Information */}
+                <div className="mb-4">
+                  <h6 className="text-primary border-bottom pb-2">
+                    Owner Information
+                  </h6>
+                  <div className="row">
+                    <div className="col-md-6 mb-3">
+                      <label className="text-muted small">Owner Name</label>
+                      <p className="mb-0 d-flex align-items-center gap-1">
+                        <User size={14} />
+                        {selectedPayment.Requests?.Owners?.fullname || "N/A"}
+                      </p>
+                    </div>
+                    <div className="col-md-6 mb-3">
+                      <label className="text-muted small">Category</label>
+                      <p className="mb-0">
+                        {selectedPayment.Requests?.DocumentCategories?.category_name || "N/A"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Payment Receiver Details */}
+                {selectedPayment.receiver_name && (
+                  <div className="mb-4">
+                    <h6 className="text-primary border-bottom pb-2">
+                      Payment Receiver Details
+                    </h6>
+                    <div className="row">
+                      <div className="col-md-6 mb-3">
+                        <label className="text-muted small">Receiver Name</label>
+                        <p className="mb-0">{selectedPayment.receiver_name}</p>
+                      </div>
+                      <div className="col-md-6 mb-3">
+                        <label className="text-muted small">Payment Method</label>
+                        <p className="mb-0">{selectedPayment.payment_method || "N/A"}</p>
+                      </div>
+                      <div className="col-md-6 mb-3">
+                        <label className="text-muted small">Receiver Number</label>
+                        <p className="mb-0">{selectedPayment.receiver_number || "N/A"}</p>
+                      </div>
+                      <div className="col-md-6 mb-3">
+                        <label className="text-muted small">Bank Account</label>
+                        <p className="mb-0">{selectedPayment.receiver_account || "N/A"}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Payment Proof (if submitted) */}
+                {selectedPayment.proof_payment && (
+                  <div className="mb-4">
+                    <h6 className="text-primary border-bottom pb-2">
+                      Payment Proof Details
+                    </h6>
+                    <div className="row">
+                      <div className="col-md-6 mb-3">
+                        <label className="text-muted small">Sender Number</label>
+                        <p className="mb-0">{selectedPayment.sender_number || "N/A"}</p>
+                      </div>
+                      <div className="col-md-6 mb-3">
+                        <label className="text-muted small">Reference Number</label>
+                        <p className="mb-0">{selectedPayment.reference_number || "N/A"}</p>
+                      </div>
+                      <div className="col-md-6 mb-3">
+                        <label className="text-muted small">Payment Date</label>
+                        <p className="mb-0 d-flex align-items-center gap-1">
+                          <Calendar size={14} />
+                          {formatDate(selectedPayment.payment_date)}
+                        </p>
+                      </div>
+                      <div className="col-md-12 mb-3">
+                        <label className="text-muted small d-block mb-2">
+                          Proof of Payment
+                        </label>
+                        <img
+                          src={selectedPayment.proof_payment}
+                          alt="Payment Proof"
+                          className="img-fluid border rounded shadow-sm"
+                          style={{ maxHeight: "400px", cursor: "zoom-in" }}
+                          onClick={() => handleImageClick(selectedPayment.proof_payment)}
+                        />
+                        <p className="text-muted small mt-2">
+                          <Eye size={14} className="me-1" />
+                          Click image to zoom
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Verification Details */}
+                {selectedPayment.verified_by && (
+                  <div className="mb-4">
+                    <h6 className="text-primary border-bottom pb-2">
+                      Verification Details
+                    </h6>
+                    <div className="row">
+                      <div className="col-md-6 mb-3">
+                        <label className="text-muted small">Verified By</label>
+                        <p className="mb-0">
+                          {selectedPayment.VerifiedBy?.fullname || "N/A"}
+                        </p>
+                      </div>
+                      <div className="col-md-6 mb-3">
+                        <label className="text-muted small">Verification Date</label>
+                        <p className="mb-0">{formatDate(selectedPayment.updated_at)}</p>
+                      </div>
+                      {selectedPayment.remarks && (
+                        <div className="col-md-12 mb-3">
+                          <label className="text-muted small">Remarks</label>
+                          <p className="mb-0">{selectedPayment.remarks}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={closeModals}
+                >
+                  Close
+                </button>
+                {selectedPayment.status === "Submitted" && (
+                  <button
+                    type="button"
+                    className="btn btn-success"
+                    onClick={() => {
+                      closeModals();
+                      handleOpenVerifyModal(selectedPayment);
+                    }}
+                  >
+                    <CheckCircle size={16} className="me-2" />
+                    Verify Payment
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Verify Payment Modal */}
+      {showVerifyModal && selectedPayment && (
+        <div
+          className="modal show d-block"
+          style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+          onClick={closeModals}
+        >
+          <div
+            className="modal-dialog modal-lg"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-content">
+              <div className="modal-header bg-success text-white">
+                <h5 className="modal-title d-flex align-items-center gap-2">
+                  <CheckCircle size={20} />
+                  Verify Payment - {selectedPayment.Requests?.tracking_code}
+                </h5>
+                <button
+                  type="button"
+                  className="btn-close btn-close-white"
+                  onClick={closeModals}
+                ></button>
+              </div>
+              <div className="modal-body">
+                {/* Quick Payment Info */}
+                <div className="alert alert-info mb-4">
+                  <div className="row">
+                    <div className="col-md-6">
+                      <strong>Amount:</strong> ₱{parseFloat(selectedPayment.amount).toFixed(2)}
+                    </div>
+                    <div className="col-md-6">
+                      <strong>Reference:</strong> {selectedPayment.reference_number || "N/A"}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Proof Preview */}
+                {selectedPayment.proof_payment && (
+                  <div className="mb-4">
+                    <label className="form-label fw-bold">Payment Proof:</label>
+                    <div className="text-center">
+                      <img
+                        src={selectedPayment.proof_payment}
+                        alt="Payment Proof"
+                        className="img-fluid border rounded shadow-sm"
+                        style={{ maxHeight: "300px", cursor: "zoom-in" }}
+                        onClick={() => handleImageClick(selectedPayment.proof_payment)}
+                      />
+                      <p className="text-muted small mt-2">
+                        <Eye size={14} className="me-1" />
+                        Click to zoom
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                <form onSubmit={handleVerifyPayment}>
+                  <div className="mb-3">
+                    <label className="form-label">
+                      Verification Status <span className="text-danger">*</span>
+                    </label>
+                    <select
+                      className="form-select"
+                      value={verifyStatus}
+                      onChange={(e) => setVerifyStatus(e.target.value)}
+                      required
+                    >
+                      <option value="">-- Select Status --</option>
+                      <option value="Verified">✅ Verified (Approve Payment)</option>
+                      <option value="Rejected">❌ Rejected (Deny Payment)</option>
+                    </select>
+                  </div>
+
+                  <div className="mb-3">
+                    <label className="form-label">Remarks (Optional)</label>
+                    <textarea
+                      className="form-control"
+                      rows={3}
+                      value={verifyRemarks}
+                      onChange={(e) => setVerifyRemarks(e.target.value)}
+                      placeholder="Add verification notes or reason for rejection..."
+                    />
+                  </div>
+
+                  {error && (
+                    <div className="alert alert-danger">
+                      {error}
+                    </div>
+                  )}
+
+                  <div className="d-flex justify-content-end gap-2">
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={closeModals}
+                      disabled={verifying}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className={`btn ${
+                        verifyStatus === "Verified" ? "btn-success" : "btn-danger"
+                      }`}
+                      disabled={verifying}
+                    >
+                      {verifying ? (
+                        <>
+                          <span
+                            className="spinner-border spinner-border-sm me-2"
+                            role="status"
+                          ></span>
+                          Processing...
+                        </>
+                      ) : (
+                        <>
+                          {verifyStatus === "Verified" ? (
+                            <CheckCircle size={16} className="me-2" />
+                          ) : (
+                            <XCircle size={16} className="me-2" />
+                          )}
+                          {verifyStatus === "Verified" ? "Verify Payment" : "Reject Payment"}
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Image Lightbox */}
+      {showLightbox && (
+        <div
+          className="modal show d-block"
+          style={{ backgroundColor: "rgba(0,0,0,0.9)" }}
+          onClick={() => setShowLightbox(false)}
+        >
+          <div className="modal-dialog modal-fullscreen" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-content bg-transparent border-0">
+              <div className="modal-header border-0">
+                <button
+                  type="button"
+                  className="btn-close btn-close-white ms-auto"
+                  onClick={() => setShowLightbox(false)}
+                ></button>
+              </div>
+              <div className="modal-body d-flex align-items-center justify-content-center">
+                <img
+                  src={lightboxImage}
+                  alt="Payment Proof Full Size"
+                  className="img-fluid"
+                  style={{ maxHeight: "90vh", maxWidth: "90vw" }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
-  )
+  );
 }
 
-export default ProcessorPayments
+export default ProcessorPayments;

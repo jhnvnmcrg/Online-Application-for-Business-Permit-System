@@ -2381,9 +2381,19 @@ app.get("/api/processor/assigned-categories/:adminId", async (req, res) => {
       });
     }
 
+    // Transform data to return categories array
+    const categories = (data || [])
+      .filter(assignment => assignment.DocumentCategories) // Filter out null categories
+      .map(assignment => ({
+        ...assignment.DocumentCategories,
+        assignment_id: assignment.assignment_id,
+        assigned_at: assignment.created_at
+      }));
+
     res.status(200).json({
       success: true,
-      assignments: data,
+      categories: categories,
+      assignments: data || [], // Keep for backward compatibility
     });
   } catch (err) {
     console.error("Fetch assigned categories error:", err);
