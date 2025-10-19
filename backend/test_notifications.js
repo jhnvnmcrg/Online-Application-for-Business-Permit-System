@@ -65,8 +65,8 @@ CREATE TABLE IF NOT EXISTS public."Notifications" (
   const { data: notification, error: createError } = await supabase
     .from('Notifications')
     .insert([{
-      user_type: 'User',
-      user_id: testUser.owner_id,
+      owner_id: testUser.owner_id,
+      admin_id: null,
       type: 'Test',
       subject: 'Test Notification',
       message: 'This is a test notification created by test_notifications.js',
@@ -86,8 +86,7 @@ CREATE TABLE IF NOT EXISTS public."Notifications" (
   const { count, error: countError } = await supabase
     .from('Notifications')
     .select('*', { count: 'exact', head: true })
-    .eq('user_type', 'User')
-    .eq('user_id', testUser.owner_id)
+    .eq('owner_id', testUser.owner_id)
     .is('read_at', null);
 
   if (countError) {
@@ -101,8 +100,7 @@ CREATE TABLE IF NOT EXISTS public."Notifications" (
   const { data: notifications, error: fetchError } = await supabase
     .from('Notifications')
     .select('*')
-    .eq('user_type', 'User')
-    .eq('user_id', testUser.owner_id)
+    .eq('owner_id', testUser.owner_id)
     .order('created_at', { ascending: false });
 
   if (fetchError) {
@@ -133,8 +131,8 @@ CREATE TABLE IF NOT EXISTS public."Notifications" (
     const { data: reqNotif, error: reqNotifError } = await supabase
       .from('Notifications')
       .insert([{
-        user_type: 'User',
-        user_id: testRequest.owner_id,
+        owner_id: testRequest.owner_id,
+        admin_id: null,
         type: 'Request',
         subject: `Request ${testRequest.tracking_code} - Status Update`,
         message: `Your request has been updated to ${testRequest.status}`,

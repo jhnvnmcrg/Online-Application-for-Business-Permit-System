@@ -33,18 +33,31 @@ const upload = multer({
 // ==================== NOTIFICATION HELPER FUNCTIONS ====================
 async function createNotification(userId, userType, type, subject, message, requestId = null, paymentId = null) {
   try {
+    // Build notification data with proper foreign keys
+    const notificationData = {
+      type: type,
+      subject: subject,
+      message: message,
+      request_id: requestId,
+      payment_id: paymentId,
+      status: 'Pending'
+    };
+
+    // Set the appropriate foreign key based on user type
+    if (userType === 'Admin') {
+      notificationData.admin_id = userId;
+      notificationData.owner_id = null;
+    } else if (userType === 'User') {
+      notificationData.owner_id = userId;
+      notificationData.admin_id = null;
+    } else {
+      console.error('Invalid user type:', userType);
+      return null;
+    }
+
     const { data, error } = await supabase
       .from('Notifications')
-      .insert([{
-        user_type: userType,
-        user_id: userId,
-        type: type, // 'InApp', 'Email', 'SMS'
-        subject: subject,
-        message: message,
-        request_id: requestId,
-        payment_id: paymentId,
-        status: 'Pending'
-      }])
+      .insert([notificationData])
       .select();
 
     if (error) {
@@ -52,6 +65,7 @@ async function createNotification(userId, userType, type, subject, message, requ
       return null;
     }
 
+    console.log('✅ Notification created:', data[0].notification_id, 'for', userType, userId);
     return data[0];
   } catch (err) {
     console.error('Notification helper error:', err);
@@ -4271,13 +4285,24 @@ app.get("/api/notifications/:userType/:userId", async (req, res) => {
     const { userType, userId } = req.params;
     const { limit = 50, unreadOnly = false } = req.query;
 
+    // Build query based on user type using proper foreign keys
     let query = supabase
       .from('Notifications')
       .select('*')
-      .eq('user_type', userType)
-      .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .limit(parseInt(limit));
+
+    // Filter by user type using admin_id or owner_id
+    if (userType === 'Admin') {
+      query = query.eq('admin_id', userId);
+    } else if (userType === 'User') {
+      query = query.eq('owner_id', userId);
+    } else {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid user type. Must be "Admin" or "User"'
+      });
+    }
 
     if (unreadOnly === 'true') {
       query = query.is('read_at', null);
@@ -4311,12 +4336,25 @@ app.get("/api/notifications/:userType/:userId/unread-count", async (req, res) =>
   try {
     const { userType, userId } = req.params;
 
-    const { count, error } = await supabase
+    // Build query based on user type using proper foreign keys
+    let query = supabase
       .from('Notifications')
       .select('*', { count: 'exact', head: true })
-      .eq('user_type', userType)
-      .eq('user_id', userId)
       .is('read_at', null);
+
+    // Filter by user type using admin_id or owner_id
+    if (userType === 'Admin') {
+      query = query.eq('admin_id', userId);
+    } else if (userType === 'User') {
+      query = query.eq('owner_id', userId);
+    } else {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid user type'
+      });
+    }
+
+    const { count, error } = await query;
 
     if (error) {
       console.error('Unread count error:', error);
@@ -4377,13 +4415,25 @@ app.put("/api/notifications/:userType/:userId/read-all", async (req, res) => {
   try {
     const { userType, userId } = req.params;
 
-    const { data, error } = await supabase
+    // Build query based on user type using proper foreign keys
+    let query = supabase
       .from('Notifications')
       .update({ read_at: new Date().toISOString() })
-      .eq('user_type', userType)
-      .eq('user_id', userId)
-      .is('read_at', null)
-      .select();
+      .is('read_at', null);
+
+    // Filter by user type using admin_id or owner_id
+    if (userType === 'Admin') {
+      query = query.eq('admin_id', userId);
+    } else if (userType === 'User') {
+      query = query.eq('owner_id', userId);
+    } else {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid user type'
+      });
+    }
+
+    const { data, error } = await query.select();
 
     if (error) {
       console.error('Mark all as read error:', error);
