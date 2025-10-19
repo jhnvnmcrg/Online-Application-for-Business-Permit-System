@@ -196,7 +196,7 @@ function NotificationBell() {
         onClick={toggleDropdown}
         style={{ textDecoration: 'none', color: 'inherit' }}
       >
-        <Bell size={20} />
+        <Bell size={24} className='text-white'/>
         {unreadCount > 0 && (
           <span
             className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"

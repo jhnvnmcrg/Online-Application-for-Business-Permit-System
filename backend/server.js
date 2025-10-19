@@ -792,6 +792,35 @@ app.post("/api/user/forgot-password", async (req, res) => {
   }
 });
 
+// Get all owners (for admin view)
+app.get("/api/owners/all", async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from("Owners")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Supabase error:", error);
+      return res.status(500).json({
+        success: false,
+        error: "Failed to fetch owners",
+      });
+    }
+
+    res.json({
+      success: true,
+      owners: data,
+    });
+  } catch (err) {
+    console.error("Get all owners error:", err);
+    res.status(500).json({
+      success: false,
+      error: "An error occurred while fetching owners",
+    });
+  }
+});
+
 // Login processor endpoint
 app.post("/api/processor/login", async (req, res) => {
   try {
