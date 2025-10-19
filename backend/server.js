@@ -472,9 +472,17 @@ app.put("/api/admin/update/:id", async (req, res) => {
       fullname,
       email,
       username,
-      role: role || "Processor",
-      status: status || "active",
     };
+
+    // Only update role if explicitly provided
+    if (role) {
+      updateData.role = role;
+    }
+
+    // Only update status if explicitly provided
+    if (status) {
+      updateData.status = status;
+    }
 
     // If password is provided, hash it and include in update
     if (password && password.trim() !== "") {

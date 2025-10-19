@@ -17,6 +17,7 @@ import MainAssign from './mainadminpage/MainAssign'
 import MainAdmins from './mainadminpage/MainAdmins'
 import MainUsers from './mainadminpage/MainUsers'
 import MainLogAudits from './mainadminpage/MainLogAudits'
+import MainSettings from './mainadminpage/MainSettings'
 
 import ProcessorLogin from './processorpage/components/ProcessorLogin'
 import ProcessorForgot from './processorpage/components/ProcessorForgot'
@@ -73,6 +74,7 @@ function App() {
         <Route path='/oabps/main/admins' element={<MainAdmins/>}></Route>
         <Route path='/oabps/main/users' element={<MainUsers/>}></Route>
         <Route path='/oabps/main/logaudits' element={<MainLogAudits/>}></Route>
+        <Route path='/oabps/main/settings' element={<MainSettings/>}></Route>
 
         <Route path='/oabps/processor/login' element={<ProcessorLogin/>}></Route>
         <Route path='/oabps/processor/forgot' element={<ProcessorForgot/>}></Route>

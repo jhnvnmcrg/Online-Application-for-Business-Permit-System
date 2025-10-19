@@ -6,13 +6,12 @@ import axios from "axios";
 
 function MainAdmins() {
   const [searchName, setSearchName] = useState("");
-  const [searchTags, setSearchTags] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("");
-
-  const categories = ["Barangay Clearance", "Occupancy Permit"];
+  const [filterRole, setFilterRole] = useState("all");
+  const [filterStatus, setFilterStatus] = useState("all");
 
   const navigate = useNavigate();
   const [username, setUsername] = useState("User");
+  const [fetchLoading, setFetchLoading] = useState(false);
 
   // Add Admin Modal States
   const [showAddModal, setShowAddModal] = useState(false);
@@ -70,14 +69,31 @@ function MainAdmins() {
   // Fetch all admins
   const fetchAdmins = async () => {
     try {
+      setFetchLoading(true);
       const response = await axios.get("https://oabs-f7by.onrender.com/api/admin/all");
       if (response.data.success) {
         setAdmins(response.data.admins);
       }
     } catch (error) {
       console.error("Error fetching admins:", error);
+    } finally {
+      setFetchLoading(false);
     }
   };
+
+  // Filter admins based on search and filters
+  const filteredAdmins = admins.filter((admin) => {
+    const searchTerm = searchName.toLowerCase();
+    const matchesSearch =
+      admin.fullname?.toLowerCase().includes(searchTerm) ||
+      admin.email?.toLowerCase().includes(searchTerm) ||
+      admin.username?.toLowerCase().includes(searchTerm);
+
+    const matchesRole = filterRole === "all" || admin.role === filterRole;
+    const matchesStatus = filterStatus === "all" || admin.status === filterStatus;
+
+    return matchesSearch && matchesRole && matchesStatus;
+  });
 
   // Handle Add Admin Modal Open
   const handleAddModalOpen = () => {
@@ -246,14 +262,50 @@ function MainAdmins() {
 
           <div className="bg-light p-4 border-bottom text-center mb-4 shadow-sm">
             <div className="d-flex justify-content-between align-items-center mb-4">
-              <h4 className="mb-0">Admins</h4>
+              <h4 className="mb-0">Admins & Processors</h4>
               <div>
                 <button
-                  className="btn btn-outline-secondary me-2"
+                  className="btn btn-primary"
                   onClick={handleAddModalOpen}
                 >
-                  <Plus /> Add Admin
+                  <Plus size={18} className="me-2" />
+                  Add Admin
                 </button>
+              </div>
+            </div>
+
+            {/* Search and Filters */}
+            <div className="row mb-3">
+              <div className="col-md-6">
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="Search by name, email, or username..."
+                  value={searchName}
+                  onChange={(e) => setSearchName(e.target.value)}
+                />
+              </div>
+              <div className="col-md-3">
+                <select
+                  className="form-select"
+                  value={filterRole}
+                  onChange={(e) => setFilterRole(e.target.value)}
+                >
+                  <option value="all">All Roles</option>
+                  <option value="Main Admin">Main Admin</option>
+                  <option value="Processor">Processor</option>
+                </select>
+              </div>
+              <div className="col-md-3">
+                <select
+                  className="form-select"
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                >
+                  <option value="all">All Status</option>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
               </div>
             </div>
 
@@ -270,32 +322,45 @@ function MainAdmins() {
                     <th>Username</th>
                     <th>Role</th>
                     <th>Status</th>
+                    <th>Created At</th>
                     <th>Action</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {admins.length === 0 ? (
+                  {fetchLoading ? (
                     <tr>
-                      <td colSpan="7" className="text-center text-muted">
-                        No admins found
+                      <td colSpan="8" className="text-center py-4">
+                        <div className="spinner-border text-primary" role="status">
+                          <span className="visually-hidden">Loading...</span>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : filteredAdmins.length === 0 ? (
+                    <tr>
+                      <td colSpan="8" className="text-center text-muted py-4">
+                        {searchName || filterRole !== "all" || filterStatus !== "all"
+                          ? "No admins found matching your filters"
+                          : "No admins registered yet"}
                       </td>
                     </tr>
                   ) : (
-                    admins.map((admin, index) => (
+                    filteredAdmins.map((admin, index) => (
                       <tr key={admin.admin_id}>
                         <td>{index + 1}</td>
-                        <td>{admin.fullname}</td>
+                        <td className="fw-semibold">{admin.fullname}</td>
                         <td>{admin.email}</td>
                         <td>{admin.username}</td>
                         <td>
                           <span
                             className={`badge ${
-                              admin.role === "Superadmin"
+                              admin.role === "Main Admin"
+                                ? "bg-primary"
+                                : admin.role === "Superadmin"
                                 ? "bg-primary"
                                 : "bg-info"
                             }`}
                           >
-                            {admin.role || "Processor"}
+                            {admin.role === "Superadmin" ? "Main Admin" : admin.role || "Processor"}
                           </span>
                         </td>
                         <td>
@@ -309,18 +374,29 @@ function MainAdmins() {
                             {admin.status || "active"}
                           </span>
                         </td>
+                        <td className="text-muted small">
+                          {admin.created_at
+                            ? new Date(admin.created_at).toLocaleDateString("en-US", {
+                                year: "numeric",
+                                month: "short",
+                                day: "numeric",
+                              })
+                            : "N/A"}
+                        </td>
                         <td>
                           <button
                             className="btn btn-sm"
                             onClick={() => handleEditModalOpen(admin)}
+                            title="Edit"
                           >
-                            <Pencil className="text-primary" />
+                            <Pencil size={16} className="text-primary" />
                           </button>
                           <button
                             className="btn btn-sm"
                             onClick={() => handleDeleteModalOpen(admin)}
+                            title="Delete"
                           >
-                            <Trash className="text-danger" />
+                            <Trash size={16} className="text-danger" />
                           </button>
                         </td>
                       </tr>
@@ -329,6 +405,13 @@ function MainAdmins() {
                 </tbody>
               </table>
             </div>
+
+            {/* Total Count */}
+            {!fetchLoading && filteredAdmins.length > 0 && (
+              <div className="text-muted mt-3 text-start">
+                Showing {filteredAdmins.length} of {admins.length} admin(s)
+              </div>
+            )}
           </div>
         </div>
 
@@ -437,7 +520,7 @@ function MainAdmins() {
                         disabled={loading}
                       >
                         <option value="Processor">Processor</option>
-                        <option value="Superadmin">Superadmin</option>
+                        <option value="Main Admin">Main Admin</option>
                       </select>
                     </div>
 
@@ -574,7 +657,7 @@ function MainAdmins() {
                         disabled={loading}
                       >
                         <option value="Processor">Processor</option>
-                        <option value="Superadmin">Superadmin</option>
+                        <option value="Main Admin">Main Admin</option>
                       </select>
                     </div>
 
