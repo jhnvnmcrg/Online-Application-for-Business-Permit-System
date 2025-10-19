@@ -292,7 +292,7 @@ function MainAdmins() {
                   onChange={(e) => setFilterRole(e.target.value)}
                 >
                   <option value="all">All Roles</option>
-                  <option value="Main Admin">Main Admin</option>
+                  <option value="Superadmin">Superadmin</option>
                   <option value="Processor">Processor</option>
                 </select>
               </div>
@@ -353,14 +353,12 @@ function MainAdmins() {
                         <td>
                           <span
                             className={`badge ${
-                              admin.role === "Main Admin"
-                                ? "bg-primary"
-                                : admin.role === "Superadmin"
+                              admin.role === "Superadmin"
                                 ? "bg-primary"
                                 : "bg-info"
                             }`}
                           >
-                            {admin.role === "Superadmin" ? "Main Admin" : admin.role || "Processor"}
+                            {admin.role || "Processor"}
                           </span>
                         </td>
                         <td>
@@ -520,7 +518,7 @@ function MainAdmins() {
                         disabled={loading}
                       >
                         <option value="Processor">Processor</option>
-                        <option value="Main Admin">Main Admin</option>
+                        <option value="Superadmin">Superadmin</option>
                       </select>
                     </div>
 
@@ -657,7 +655,7 @@ function MainAdmins() {
                         disabled={loading}
                       >
                         <option value="Processor">Processor</option>
-                        <option value="Main Admin">Main Admin</option>
+                        <option value="Superadmin">Superadmin</option>
                       </select>
                     </div>
 

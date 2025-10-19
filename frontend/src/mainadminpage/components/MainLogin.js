@@ -29,6 +29,12 @@ function MainLogin() {
       });
 
       if (response.data.success) {
+        // Verify user role is Superadmin
+        if (response.data.user.role !== "Superadmin") {
+          setError("Access denied. Only Superadmins can login here.");
+          return;
+        }
+
         // Store user data in localStorage
         localStorage.setItem("main", JSON.stringify(response.data.user));
         localStorage.setItem("token", response.data.token);

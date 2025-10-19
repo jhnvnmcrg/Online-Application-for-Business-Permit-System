@@ -278,17 +278,27 @@ app.post("/api/main/login", async (req, res) => {
       });
     }
 
-    // Find user by username or email
+    // Find user by username or email and verify role is Superadmin
     const { data: user, error } = await supabase
       .from("Admins")
       .select("*")
       .or(`username.eq.${username},email.eq.${username}`)
+      .eq("role", "Superadmin")
       .single();
 
     if (error || !user) {
       return res.status(401).json({
         success: false,
-        error: "Invalid username/email or password",
+        error: "Invalid username/email or password, or you are not a superadmin",
+      });
+    }
+
+    // Check if account is active
+    if (user.status !== "active") {
+      return res.status(401).json({
+        success: false,
+        error: "Your account is inactive. Please contact the administrator.",
+        admin_id: user.admin_id,
       });
     }
 
@@ -316,6 +326,8 @@ app.post("/api/main/login", async (req, res) => {
         fullname: user.fullname,
         email: user.email,
         username: user.username,
+        role: user.role,
+        status: user.status,
         created_at: user.created_at,
       },
     });
