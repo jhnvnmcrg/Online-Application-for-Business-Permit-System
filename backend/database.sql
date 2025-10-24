@@ -42,14 +42,14 @@ DROP TABLE IF EXISTS public."Blacklist" CASCADE;
 -- CREATE TABLES (in correct order of dependencies)
 -- =====================================================
 
--- 1. Admins Table (Main Admin and Processors)
+-- 1. Admins Table (Superadmin and Processors)
 CREATE TABLE public."Admins" (
   admin_id BIGINT GENERATED ALWAYS AS IDENTITY NOT NULL,
   fullname TEXT NOT NULL,
   email TEXT UNIQUE NOT NULL,
   username TEXT UNIQUE NOT NULL,
   password TEXT NOT NULL,
-  role TEXT NOT NULL CHECK (role IN ('Main Admin', 'Processor')),
+  role TEXT NOT NULL CHECK (role IN ('Superadmin', 'Processor')),
   status TEXT DEFAULT 'Active' CHECK (status IN ('Active', 'Inactive')),
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
   last_login_at TIMESTAMP WITHOUT TIME ZONE,

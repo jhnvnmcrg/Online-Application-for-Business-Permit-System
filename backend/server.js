@@ -294,7 +294,7 @@ app.post("/api/main/login", async (req, res) => {
     }
 
     // Check if account is active
-    if (user.status !== "active") {
+    if (user.status !== "Active") {
       return res.status(401).json({
         success: false,
         error: "Your account is inactive. Please contact the administrator.",
@@ -870,7 +870,7 @@ app.post("/api/processor/login", async (req, res) => {
     }
 
     // Check if account is active
-    if (user.status !== "active") {
+    if (user.status !== "Active") {
       return res.status(401).json({
         success: false,
         error: "Your account is inactive. Please contact the administrator.",
