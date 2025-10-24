@@ -233,7 +233,7 @@ app.post("/api/main/register", async (req, res) => {
           username,
           password: hashedPassword,
           role: role || "Processor",
-          status: status || "active",
+          status: status || "Active",
         },
       ])
       .select();
@@ -3418,13 +3418,8 @@ app.post("/api/payment/add", async (req, res) => {
       amount,
       paymentType,
       description,
-      receiverName,
-      receiverNumber,
-      receiverAccount,
       paymentMethod,
       createdBy,
-      paymentDeadline,
-      deadlineDays,
     } = req.body;
 
     // Validation
@@ -3662,11 +3657,6 @@ app.put("/api/payment/submit-proof/:paymentId", upload.single("proofPayment"), a
       });
     }
 
-    // Get public URL
-    const { data: publicUrlData } = supabase.storage
-      .from("documents")
-      .getPublicUrl(filePath);
-
     // Update payment (over-the-counter payment - no proof upload)
     const { data, error } = await supabase
       .from("Payments")
@@ -3807,13 +3797,8 @@ app.put("/api/payment/update/:paymentId", async (req, res) => {
       amount,
       paymentType,
       description,
-      receiverName,
-      receiverNumber,
-      receiverAccount,
       paymentMethod,
       updatedBy,
-      paymentDeadline,
-      deadlineDays,
     } = req.body;
 
     // Validation
