@@ -232,7 +232,7 @@ app.post("/api/main/register", async (req, res) => {
           email,
           username,
           password: hashedPassword,
-          role: role || "Processor",
+          role: role || "Superadmin",
           status: status || "Active",
         },
       ])
