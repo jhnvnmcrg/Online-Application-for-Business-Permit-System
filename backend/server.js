@@ -3449,14 +3449,6 @@ app.post("/api/payment/add", async (req, res) => {
       });
     }
 
-    // Calculate payment deadline if deadlineDays is provided
-    let calculatedDeadline = paymentDeadline;
-    if (!paymentDeadline && deadlineDays) {
-      const deadline = new Date();
-      deadline.setDate(deadline.getDate() + parseInt(deadlineDays));
-      calculatedDeadline = deadline.toISOString();
-    }
-
     // Insert payment
     const { data, error } = await supabase
       .from("Payments")
@@ -3466,12 +3458,8 @@ app.post("/api/payment/add", async (req, res) => {
           amount: parseFloat(amount),
           payment_type: paymentType || "Permit Fee",
           description: description || null,
-          receiver_name: receiverName || null,
-          receiver_number: receiverNumber || null,
-          receiver_account: receiverAccount || null,
           payment_method: paymentMethod || null,
-          payment_deadline: calculatedDeadline || null,
-          created_by: createdBy,
+          processed_by: createdBy,
           status: "Pending",
         },
       ])
@@ -3539,12 +3527,7 @@ app.get("/api/payment/request/:requestId", async (req, res) => {
       .from("Payments")
       .select(`
         *,
-        CreatedBy:created_by (
-          admin_id,
-          fullname,
-          username
-        ),
-        VerifiedBy:verified_by (
+        ProcessedBy:processed_by (
           admin_id,
           fullname,
           username
@@ -3594,11 +3577,7 @@ app.get("/api/payment/all", async (req, res) => {
             category_name
           )
         ),
-        CreatedBy:created_by (
-          fullname,
-          username
-        ),
-        VerifiedBy:verified_by (
+        ProcessedBy:processed_by (
           fullname,
           username
         )
@@ -3688,15 +3667,14 @@ app.put("/api/payment/submit-proof/:paymentId", upload.single("proofPayment"), a
       .from("documents")
       .getPublicUrl(filePath);
 
-    // Update payment
+    // Update payment (over-the-counter payment - no proof upload)
     const { data, error } = await supabase
       .from("Payments")
       .update({
-        sender_number: senderNumber,
         reference_number: referenceNumber,
-        proof_payment: publicUrlData.publicUrl,
         payment_date: paymentDate || new Date().toISOString(),
-        status: "Submitted",
+        status: "Verified", // Auto-verified for over-the-counter
+        remarks: "Over-the-counter payment received",
       })
       .eq("payment_id", paymentId)
       .select();
@@ -3767,7 +3745,7 @@ app.put("/api/payment/verify/:paymentId", async (req, res) => {
       .from("Payments")
       .update({
         status: status,
-        verified_by: verifiedBy,
+        processed_by: verifiedBy,
         remarks: remarks || null,
       })
       .eq("payment_id", paymentId)
@@ -3853,14 +3831,6 @@ app.put("/api/payment/update/:paymentId", async (req, res) => {
       .eq("payment_id", paymentId)
       .single();
 
-    // Calculate payment deadline if deadlineDays is provided
-    let calculatedDeadline = paymentDeadline;
-    if (!paymentDeadline && deadlineDays) {
-      const deadline = new Date();
-      deadline.setDate(deadline.getDate() + parseInt(deadlineDays));
-      calculatedDeadline = deadline.toISOString();
-    }
-
     // Update payment
     const { data, error } = await supabase
       .from("Payments")
@@ -3868,11 +3838,7 @@ app.put("/api/payment/update/:paymentId", async (req, res) => {
         amount: parseFloat(amount),
         payment_type: paymentType || "Permit Fee",
         description: description || null,
-        receiver_name: receiverName || null,
-        receiver_number: receiverNumber || null,
-        receiver_account: receiverAccount || null,
         payment_method: paymentMethod || null,
-        payment_deadline: calculatedDeadline !== undefined ? calculatedDeadline : currentPayment?.payment_deadline,
       })
       .eq("payment_id", paymentId)
       .select();
@@ -4035,7 +4001,7 @@ app.get("/api/dashboard/admin/stats", async (req, res) => {
     // Get total payments by status
     const { data: payments, error: paymentsError } = await supabase
       .from("Payments")
-      .select("status, payment_deadline");
+      .select("status");
 
     if (paymentsError) throw paymentsError;
 
@@ -4073,12 +4039,8 @@ app.get("/api/dashboard/admin/stats", async (req, res) => {
       payments: {
         total: payments.length,
         pending: payments.filter(p => p.status === "Pending").length,
-        submitted: payments.filter(p => p.status === "Submitted").length,
         verified: payments.filter(p => p.status === "Verified").length,
-        overdue: payments.filter(p => {
-          if (!p.payment_deadline || p.status === "Verified") return false;
-          return new Date(p.payment_deadline) < new Date();
-        }).length,
+        rejected: payments.filter(p => p.status === "Rejected").length,
       },
       users: {
         owners: ownersCount || 0,
@@ -4121,7 +4083,7 @@ app.get("/api/dashboard/user/stats/:ownerId", async (req, res) => {
     if (requestIds.length > 0) {
       const { data: paymentsData, error: paymentsError } = await supabase
         .from("Payments")
-        .select("status, payment_deadline, amount")
+        .select("status, amount")
         .in("request_id", requestIds);
 
       if (paymentsError) throw paymentsError;
@@ -4141,12 +4103,8 @@ app.get("/api/dashboard/user/stats/:ownerId", async (req, res) => {
       payments: {
         total: payments.length,
         pending: payments.filter(p => p.status === "Pending").length,
-        submitted: payments.filter(p => p.status === "Submitted").length,
         verified: payments.filter(p => p.status === "Verified").length,
-        overdue: payments.filter(p => {
-          if (!p.payment_deadline || p.status === "Verified") return false;
-          return new Date(p.payment_deadline) < new Date();
-        }).length,
+        rejected: payments.filter(p => p.status === "Rejected").length,
         totalAmount: payments.reduce((sum, p) => sum + parseFloat(p.amount || 0), 0),
       },
     };

@@ -40,7 +40,6 @@ function ProcessorPayments() {
   const [stats, setStats] = useState({
     total: 0,
     pending: 0,
-    submitted: 0,
     verified: 0,
     rejected: 0,
   });
@@ -99,7 +98,6 @@ function ProcessorPayments() {
           setStats({
             total: 0,
             pending: 0,
-            submitted: 0,
             verified: 0,
             rejected: 0,
           });
@@ -128,7 +126,6 @@ function ProcessorPayments() {
           setStats({
             total: filteredPaymentsData.length,
             pending: filteredPaymentsData.filter((p) => p.status === "Pending").length,
-            submitted: filteredPaymentsData.filter((p) => p.status === "Submitted").length,
             verified: filteredPaymentsData.filter((p) => p.status === "Verified").length,
             rejected: filteredPaymentsData.filter((p) => p.status === "Rejected").length,
           });
@@ -234,31 +231,6 @@ function ProcessorPayments() {
     setShowLightbox(true);
   };
 
-  const getDeadlineInfo = (payment) => {
-    if (!payment.payment_deadline) {
-      return null;
-    }
-
-    const now = new Date();
-    const deadline = new Date(payment.payment_deadline);
-    const diffTime = deadline - now;
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-    if (diffDays < 0) {
-      return {
-        text: `Overdue by ${Math.abs(diffDays)} day${Math.abs(diffDays) > 1 ? "s" : ""}`,
-        color: "danger",
-        isOverdue: true,
-      };
-    } else if (diffDays === 0) {
-      return { text: "Due today!", color: "danger", isOverdue: false };
-    } else if (diffDays <= 3) {
-      return { text: `${diffDays} days left`, color: "warning", isOverdue: false };
-    } else {
-      return { text: `${diffDays} days left`, color: "info", isOverdue: false };
-    }
-  };
-
   // Pagination
   const indexOfLastEntry = currentPage * entriesPerPage;
   const indexOfFirstEntry = indexOfLastEntry - entriesPerPage;
@@ -287,7 +259,6 @@ function ProcessorPayments() {
   const getStatusBadge = (status) => {
     const badges = {
       Pending: { color: "warning", icon: <Clock size={14} /> },
-      Submitted: { color: "info", icon: <Upload size={14} /> },
       Verified: { color: "success", icon: <CheckCircle size={14} /> },
       Rejected: { color: "danger", icon: <XCircle size={14} /> },
     };
@@ -335,12 +306,12 @@ function ProcessorPayments() {
                 <div className="card-body">
                   <div className="d-flex justify-content-between align-items-start">
                     <div>
-                      <p className="text-muted mb-1 small">To Verify</p>
-                      <h3 className="mb-0 fw-bold text-info">{stats.submitted}</h3>
-                      <small className="text-muted">Needs attention</small>
+                      <p className="text-muted mb-1 small">Pending</p>
+                      <h3 className="mb-0 fw-bold text-warning">{stats.pending}</h3>
+                      <small className="text-muted">Awaiting payment</small>
                     </div>
-                    <div className="bg-info bg-opacity-10 p-2 rounded">
-                      <Upload size={24} className="text-info" />
+                    <div className="bg-warning bg-opacity-10 p-2 rounded">
+                      <Clock size={24} className="text-warning" />
                     </div>
                   </div>
                 </div>
@@ -417,7 +388,6 @@ function ProcessorPayments() {
                 >
                   <option value="All">All Status</option>
                   <option value="Pending">Pending</option>
-                  <option value="Submitted">Submitted</option>
                   <option value="Verified">Verified</option>
                   <option value="Rejected">Rejected</option>
                 </select>
@@ -444,15 +414,14 @@ function ProcessorPayments() {
                     <th>Amount</th>
                     <th>Payment Type</th>
                     <th>Status</th>
-                    <th>Deadline</th>
-                    <th>Date Submitted</th>
+                    <th>Payment Date</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {loading ? (
                     <tr>
-                      <td colSpan="9" className="text-center py-4">
+                      <td colSpan="8" className="text-center py-4">
                         <div className="spinner-border text-primary" role="status">
                           <span className="visually-hidden">Loading...</span>
                         </div>
@@ -460,37 +429,25 @@ function ProcessorPayments() {
                     </tr>
                   ) : currentEntries.length === 0 ? (
                     <tr>
-                      <td colSpan="9" className="text-center text-muted py-4">
+                      <td colSpan="8" className="text-center text-muted py-4">
                         No payments found in your assigned categories
                       </td>
                     </tr>
                   ) : (
-                    currentEntries.map((payment, index) => {
-                      const deadlineInfo = getDeadlineInfo(payment);
-                      return (
-                        <tr key={payment.payment_id} className={deadlineInfo?.isOverdue ? 'table-danger' : ''}>
-                          <td>{indexOfFirstEntry + index + 1}</td>
-                          <td>
-                            <span className="badge bg-secondary">
-                              {payment.Requests?.tracking_code || "N/A"}
-                            </span>
-                          </td>
-                          <td>{payment.Requests?.Owners?.fullname || "N/A"}</td>
-                          <td className="fw-bold">₱{parseFloat(payment.amount).toFixed(2)}</td>
-                          <td>{payment.payment_type}</td>
-                          <td>{getStatusBadge(payment.status)}</td>
-                          <td>
-                            {deadlineInfo ? (
-                              <span className={`badge bg-${deadlineInfo.color}`}>
-                                <Clock size={12} className="me-1" />
-                                {deadlineInfo.text}
-                              </span>
-                            ) : (
-                              <span className="text-muted">-</span>
-                            )}
-                          </td>
-                          <td>{formatDate(payment.payment_date)}</td>
-                          <td>
+                    currentEntries.map((payment, index) => (
+                      <tr key={payment.payment_id}>
+                        <td>{indexOfFirstEntry + index + 1}</td>
+                        <td>
+                          <span className="badge bg-secondary">
+                            {payment.Requests?.tracking_code || "N/A"}
+                          </span>
+                        </td>
+                        <td>{payment.Requests?.Owners?.fullname || "N/A"}</td>
+                        <td className="fw-bold">₱{parseFloat(payment.amount).toFixed(2)}</td>
+                        <td>{payment.payment_type}</td>
+                        <td>{getStatusBadge(payment.status)}</td>
+                        <td>{formatDate(payment.payment_date)}</td>
+                        <td>
                           <button
                             className="btn btn-sm btn-info me-1"
                             onClick={() => handleViewDetails(payment)}
@@ -498,19 +455,18 @@ function ProcessorPayments() {
                           >
                             <Eye size={16} />
                           </button>
-                          {payment.status === "Submitted" && (
+                          {payment.status === "Pending" && (
                             <button
                               className="btn btn-sm btn-success"
                               onClick={() => handleOpenVerifyModal(payment)}
-                              title="Verify Payment"
+                              title="Process Payment"
                             >
                               <CheckCircle size={16} />
                             </button>
                           )}
                         </td>
                       </tr>
-                      );
-                    })
+                    ))
                   )}
                 </tbody>
               </table>
@@ -653,48 +609,25 @@ function ProcessorPayments() {
                   </div>
                 </div>
 
-                {/* Payment Receiver Details */}
-                {selectedPayment.receiver_name && (
-                  <div className="mb-4">
-                    <h6 className="text-primary border-bottom pb-2">
-                      Payment Receiver Details
-                    </h6>
-                    <div className="row">
-                      <div className="col-md-6 mb-3">
-                        <label className="text-muted small">Receiver Name</label>
-                        <p className="mb-0">{selectedPayment.receiver_name}</p>
-                      </div>
+                {/* Payment Method & Reference */}
+                <div className="mb-4">
+                  <h6 className="text-primary border-bottom pb-2">
+                    Payment Details
+                  </h6>
+                  <div className="row">
+                    {selectedPayment.payment_method && (
                       <div className="col-md-6 mb-3">
                         <label className="text-muted small">Payment Method</label>
-                        <p className="mb-0">{selectedPayment.payment_method || "N/A"}</p>
+                        <p className="mb-0">{selectedPayment.payment_method}</p>
                       </div>
-                      <div className="col-md-6 mb-3">
-                        <label className="text-muted small">Receiver Number</label>
-                        <p className="mb-0">{selectedPayment.receiver_number || "N/A"}</p>
-                      </div>
-                      <div className="col-md-6 mb-3">
-                        <label className="text-muted small">Bank Account</label>
-                        <p className="mb-0">{selectedPayment.receiver_account || "N/A"}</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Payment Proof (if submitted) */}
-                {selectedPayment.proof_payment && (
-                  <div className="mb-4">
-                    <h6 className="text-primary border-bottom pb-2">
-                      Payment Proof Details
-                    </h6>
-                    <div className="row">
-                      <div className="col-md-6 mb-3">
-                        <label className="text-muted small">Sender Number</label>
-                        <p className="mb-0">{selectedPayment.sender_number || "N/A"}</p>
-                      </div>
+                    )}
+                    {selectedPayment.reference_number && (
                       <div className="col-md-6 mb-3">
                         <label className="text-muted small">Reference Number</label>
-                        <p className="mb-0">{selectedPayment.reference_number || "N/A"}</p>
+                        <p className="mb-0">{selectedPayment.reference_number}</p>
                       </div>
+                    )}
+                    {selectedPayment.payment_date && (
                       <div className="col-md-6 mb-3">
                         <label className="text-muted small">Payment Date</label>
                         <p className="mb-0 d-flex align-items-center gap-1">
@@ -702,41 +635,31 @@ function ProcessorPayments() {
                           {formatDate(selectedPayment.payment_date)}
                         </p>
                       </div>
-                      <div className="col-md-12 mb-3">
-                        <label className="text-muted small d-block mb-2">
-                          Proof of Payment
-                        </label>
-                        <img
-                          src={selectedPayment.proof_payment}
-                          alt="Payment Proof"
-                          className="img-fluid border rounded shadow-sm"
-                          style={{ maxHeight: "400px", cursor: "zoom-in" }}
-                          onClick={() => handleImageClick(selectedPayment.proof_payment)}
-                        />
-                        <p className="text-muted small mt-2">
-                          <Eye size={14} className="me-1" />
-                          Click image to zoom
-                        </p>
+                    )}
+                    {selectedPayment.receipt_number && (
+                      <div className="col-md-6 mb-3">
+                        <label className="text-muted small">Receipt Number</label>
+                        <p className="mb-0">{selectedPayment.receipt_number}</p>
                       </div>
-                    </div>
+                    )}
                   </div>
-                )}
+                </div>
 
-                {/* Verification Details */}
-                {selectedPayment.verified_by && (
+                {/* Processing Details */}
+                {selectedPayment.ProcessedBy && (
                   <div className="mb-4">
                     <h6 className="text-primary border-bottom pb-2">
-                      Verification Details
+                      Processing Details
                     </h6>
                     <div className="row">
                       <div className="col-md-6 mb-3">
-                        <label className="text-muted small">Verified By</label>
+                        <label className="text-muted small">Processed By</label>
                         <p className="mb-0">
-                          {selectedPayment.VerifiedBy?.fullname || "N/A"}
+                          {selectedPayment.ProcessedBy?.fullname || selectedPayment.ProcessedBy?.username || "N/A"}
                         </p>
                       </div>
                       <div className="col-md-6 mb-3">
-                        <label className="text-muted small">Verification Date</label>
+                        <label className="text-muted small">Processed Date</label>
                         <p className="mb-0">{formatDate(selectedPayment.updated_at)}</p>
                       </div>
                       {selectedPayment.remarks && (
@@ -757,7 +680,7 @@ function ProcessorPayments() {
                 >
                   Close
                 </button>
-                {selectedPayment.status === "Submitted" && (
+                {selectedPayment.status === "Pending" && (
                   <button
                     type="button"
                     className="btn btn-success"
@@ -767,7 +690,7 @@ function ProcessorPayments() {
                     }}
                   >
                     <CheckCircle size={16} className="me-2" />
-                    Verify Payment
+                    Process Payment
                   </button>
                 )}
               </div>
@@ -791,7 +714,7 @@ function ProcessorPayments() {
               <div className="modal-header bg-success text-white">
                 <h5 className="modal-title d-flex align-items-center gap-2">
                   <CheckCircle size={20} />
-                  Verify Payment - {selectedPayment.Requests?.tracking_code}
+                  Process Payment - {selectedPayment.Requests?.tracking_code}
                 </h5>
                 <button
                   type="button"
@@ -807,30 +730,15 @@ function ProcessorPayments() {
                       <strong>Amount:</strong> ₱{parseFloat(selectedPayment.amount).toFixed(2)}
                     </div>
                     <div className="col-md-6">
-                      <strong>Reference:</strong> {selectedPayment.reference_number || "N/A"}
+                      <strong>Type:</strong> {selectedPayment.payment_type || "N/A"}
                     </div>
+                  </div>
+                  <div className="mt-2">
+                    <small className="text-muted">
+                      <strong>Note:</strong> This is an over-the-counter payment. Verify that payment has been received before processing.
+                    </small>
                   </div>
                 </div>
-
-                {/* Proof Preview */}
-                {selectedPayment.proof_payment && (
-                  <div className="mb-4">
-                    <label className="form-label fw-bold">Payment Proof:</label>
-                    <div className="text-center">
-                      <img
-                        src={selectedPayment.proof_payment}
-                        alt="Payment Proof"
-                        className="img-fluid border rounded shadow-sm"
-                        style={{ maxHeight: "300px", cursor: "zoom-in" }}
-                        onClick={() => handleImageClick(selectedPayment.proof_payment)}
-                      />
-                      <p className="text-muted small mt-2">
-                        <Eye size={14} className="me-1" />
-                        Click to zoom
-                      </p>
-                    </div>
-                  </div>
-                )}
 
                 <form onSubmit={handleVerifyPayment}>
                   <div className="mb-3">

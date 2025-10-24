@@ -125,11 +125,8 @@ function ProcessorDashboard() {
 
               statsData.payments = {
                 total: filteredPayments.length,
-                overdue: filteredPayments.filter((p) => {
-                  if (!p.payment_deadline || p.status === "Verified") return false;
-                  return new Date(p.payment_deadline) < new Date();
-                }).length,
-                submitted: filteredPayments.filter((p) => p.status === "Submitted").length,
+                pending: filteredPayments.filter((p) => p.status === "Pending").length,
+                verified: filteredPayments.filter((p) => p.status === "Verified").length,
               };
             }
           } catch (paymentError) {
@@ -304,16 +301,16 @@ function ProcessorDashboard() {
                 <div className="card-body">
                   <div className="d-flex justify-content-between align-items-start">
                     <div>
-                      <p className="text-muted mb-1 small">Payment Overdue</p>
-                      <h3 className="mb-0 fw-bold text-danger">
-                        {stats?.payments?.overdue || 0}
+                      <p className="text-muted mb-1 small">Pending Payments</p>
+                      <h3 className="mb-0 fw-bold text-warning">
+                        {stats?.payments?.pending || 0}
                       </h3>
-                      <small className="text-danger">
-                        {stats?.payments?.overdue > 0 ? "Requires action" : "All on track"}
+                      <small className="text-muted">
+                        Awaiting payment
                       </small>
                     </div>
-                    <div className="bg-danger bg-opacity-10 p-3 rounded">
-                      <AlertCircle size={24} className="text-danger" />
+                    <div className="bg-warning bg-opacity-10 p-3 rounded">
+                      <Clock size={24} className="text-warning" />
                     </div>
                   </div>
                 </div>
@@ -399,17 +396,17 @@ function ProcessorDashboard() {
               <div className="card h-100 border-0 shadow-sm">
                 <div className="card-body">
                   <div className="d-flex justify-content-between align-items-center mb-2">
-                    <span className="text-muted small">Payments to Verify</span>
-                    <span className="badge bg-warning">{stats?.payments?.submitted || 0}</span>
+                    <span className="text-muted small">Verified Payments</span>
+                    <span className="badge bg-success">{stats?.payments?.verified || 0}</span>
                   </div>
                   <div className="progress" style={{ height: "6px" }}>
                     <div
-                      className="progress-bar bg-warning"
+                      className="progress-bar bg-success"
                       role="progressbar"
                       style={{
                         width: `${
                           stats?.payments?.total > 0
-                            ? (stats.payments.submitted / stats.payments.total) * 100
+                            ? (stats.payments.verified / stats.payments.total) * 100
                             : 0
                         }%`,
                       }}

@@ -16,13 +16,8 @@ function UserPayments() {
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [showSubmitModal, setShowSubmitModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState(null);
-  const [senderNumber, setSenderNumber] = useState("");
-  const [referenceNumber, setReferenceNumber] = useState("");
-  const [paymentDate, setPaymentDate] = useState("");
-  const [proofFile, setProofFile] = useState(null);
-  const [submitting, setSubmitting] = useState(false);
 
   const API_URL = "https://oabs-f7by.onrender.com";
   // const API_URL = "http://localhost:3000";
@@ -80,71 +75,14 @@ function UserPayments() {
     }
   };
 
-  const handleOpenSubmitModal = (payment) => {
+  const handleViewPayment = (payment) => {
     setSelectedPayment(payment);
-    setShowSubmitModal(true);
-    // Set current date as default
-    setPaymentDate(new Date().toISOString().split("T")[0]);
-  };
-
-  const handleSubmitProof = async (e) => {
-    e.preventDefault();
-
-    if (!proofFile) {
-      setError("Please upload proof of payment");
-      return;
-    }
-
-    try {
-      setSubmitting(true);
-      setError("");
-
-      const formData = new FormData();
-      formData.append("senderNumber", senderNumber);
-      formData.append("referenceNumber", referenceNumber);
-      formData.append("paymentDate", paymentDate);
-      formData.append("proofPayment", proofFile);
-
-      const response = await axios.put(
-        `${API_URL}/api/payment/submit-proof/${selectedPayment.payment_id}`,
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
-
-      if (response.data.success) {
-        await fetchPayments();
-        setShowSubmitModal(false);
-        // Reset form
-        setSenderNumber("");
-        setReferenceNumber("");
-        setPaymentDate("");
-        setProofFile(null);
-        alert("Payment proof submitted successfully");
-      } else {
-        setError(response.data.message || "Failed to submit payment proof");
-      }
-    } catch (err) {
-      console.error("Submit payment proof error:", err);
-      setError(
-        err.response?.data?.message ||
-          "An error occurred while submitting payment proof"
-      );
-    } finally {
-      setSubmitting(false);
-    }
+    setShowPaymentModal(true);
   };
 
   const closeModal = () => {
-    setShowSubmitModal(false);
+    setShowPaymentModal(false);
     setSelectedPayment(null);
-    setSenderNumber("");
-    setReferenceNumber("");
-    setPaymentDate("");
-    setProofFile(null);
     setError("");
   };
 
@@ -161,7 +99,6 @@ function UserPayments() {
   const getStatusBadge = (status) => {
     const badges = {
       Pending: { color: "warning", icon: <Clock size={14} /> },
-      Submitted: { color: "info", icon: <Upload size={14} /> },
       Verified: { color: "success", icon: <CheckCircle size={14} /> },
       Rejected: { color: "danger", icon: <XCircle size={14} /> },
     };
@@ -173,76 +110,6 @@ function UserPayments() {
         {badge.icon}
         {status}
       </span>
-    );
-  };
-
-  const getDeadlineInfo = (payment) => {
-    if (!payment.payment_deadline) {
-      return { text: "No deadline set", color: "secondary", isOverdue: false, daysLeft: null };
-    }
-
-    const now = new Date();
-    const deadline = new Date(payment.payment_deadline);
-    const diffTime = deadline - now;
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-    if (diffDays < 0) {
-      return {
-        text: `Overdue by ${Math.abs(diffDays)} day${Math.abs(diffDays) > 1 ? 's' : ''}`,
-        color: "danger",
-        isOverdue: true,
-        daysLeft: diffDays,
-      };
-    } else if (diffDays === 0) {
-      return {
-        text: "Due today!",
-        color: "danger",
-        isOverdue: false,
-        daysLeft: 0,
-      };
-    } else if (diffDays === 1) {
-      return {
-        text: "Due tomorrow",
-        color: "warning",
-        isOverdue: false,
-        daysLeft: 1,
-      };
-    } else if (diffDays <= 3) {
-      return {
-        text: `${diffDays} days left`,
-        color: "warning",
-        isOverdue: false,
-        daysLeft: diffDays,
-      };
-    } else {
-      return {
-        text: `${diffDays} days left`,
-        color: "info",
-        isOverdue: false,
-        daysLeft: diffDays,
-      };
-    }
-  };
-
-  const renderDeadlineBadge = (payment) => {
-    // Only show deadline for Pending or Rejected payments
-    if (payment.status !== "Pending" && payment.status !== "Rejected") {
-      return null;
-    }
-
-    const deadlineInfo = getDeadlineInfo(payment);
-
-    if (deadlineInfo.text === "No deadline set") {
-      return null;
-    }
-
-    return (
-      <div className="d-flex align-items-center gap-1">
-        <Clock size={14} />
-        <span className={`badge bg-${deadlineInfo.color}`}>
-          {deadlineInfo.text}
-        </span>
-      </div>
     );
   };
 
@@ -283,7 +150,6 @@ function UserPayments() {
                           <th>Amount</th>
                           <th>Payment Type</th>
                           <th>Status</th>
-                          <th>Deadline</th>
                           <th>Date Created</th>
                           <th>Action</th>
                         </tr>
@@ -291,7 +157,7 @@ function UserPayments() {
                       <tbody>
                         {loading ? (
                           <tr>
-                            <td colSpan="9" className="text-center py-4">
+                            <td colSpan="8" className="text-center py-4">
                               <div className="spinner-border text-primary" role="status">
                                 <span className="visually-hidden">Loading...</span>
                               </div>
@@ -299,45 +165,35 @@ function UserPayments() {
                           </tr>
                         ) : payments.length === 0 ? (
                           <tr>
-                            <td colSpan="9" className="text-center text-muted py-4">
+                            <td colSpan="8" className="text-center text-muted py-4">
                               No payment requirements yet
                             </td>
                           </tr>
                         ) : (
-                          payments.map((payment, index) => {
-                            const deadlineInfo = getDeadlineInfo(payment);
-                            return (
-                              <tr key={payment.payment_id} className={deadlineInfo.isOverdue ? "table-danger" : ""}>
-                                <td>{index + 1}</td>
-                                <td>
-                                  <span className="badge bg-secondary">
-                                    {payment.tracking_code}
-                                  </span>
-                                </td>
-                                <td>{payment.category_name || "N/A"}</td>
-                                <td>₱{parseFloat(payment.amount).toFixed(2)}</td>
-                                <td>{payment.payment_type}</td>
-                                <td>{getStatusBadge(payment.status)}</td>
-                                <td>{renderDeadlineBadge(payment) || <span className="text-muted">-</span>}</td>
-                                <td>{formatDate(payment.created_at)}</td>
-                                <td>
-                                  {payment.status === "Pending" || payment.status === "Rejected" ? (
-                                    <button
-                                      className="btn btn-sm btn-success d-flex align-items-center gap-1"
-                                      onClick={() => handleOpenSubmitModal(payment)}
-                                    >
-                                      <Upload size={14} />
-                                      Submit Proof
-                                    </button>
-                                  ) : payment.status === "Submitted" ? (
-                                    <span className="text-muted small">Waiting for verification</span>
-                                  ) : payment.status === "Verified" ? (
-                                    <span className="text-success small">Payment verified</span>
-                                  ) : null}
-                                </td>
-                              </tr>
-                            );
-                          })
+                          payments.map((payment, index) => (
+                            <tr key={payment.payment_id}>
+                              <td>{index + 1}</td>
+                              <td>
+                                <span className="badge bg-secondary">
+                                  {payment.tracking_code}
+                                </span>
+                              </td>
+                              <td>{payment.category_name || "N/A"}</td>
+                              <td className="fw-bold">₱{parseFloat(payment.amount).toFixed(2)}</td>
+                              <td>{payment.payment_type}</td>
+                              <td>{getStatusBadge(payment.status)}</td>
+                              <td>{formatDate(payment.created_at)}</td>
+                              <td>
+                                <button
+                                  className="btn btn-sm btn-info d-flex align-items-center gap-1"
+                                  onClick={() => handleViewPayment(payment)}
+                                >
+                                  <FileText size={14} />
+                                  View Details
+                                </button>
+                              </td>
+                            </tr>
+                          ))
                         )}
                       </tbody>
                     </table>
@@ -349,8 +205,8 @@ function UserPayments() {
         </div>
       </UserSideBAr>
 
-      {/* Submit Proof Modal */}
-      {showSubmitModal && selectedPayment && (
+      {/* Payment Details Modal */}
+      {showPaymentModal && selectedPayment && (
         <div
           className="modal show d-block"
           style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
