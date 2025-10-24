@@ -6,7 +6,6 @@ import {
   Clock,
   CheckCircle,
   XCircle,
-  Upload,
   AlertCircle,
   FileText,
   Calendar,
@@ -219,11 +218,11 @@ function UserPayments() {
             <div className="modal-content">
               <div
                 className="modal-header text-white"
-                style={{ backgroundColor: "#28a745" }}
+                style={{ backgroundColor: "#dc3545" }}
               >
                 <h5 className="modal-title d-flex align-items-center gap-2">
                   <DollarSign size={20} />
-                  Submit Payment Proof - {selectedPayment.tracking_code}
+                  Payment Details - {selectedPayment.tracking_code}
                 </h5>
                 <button
                   type="button"
@@ -232,34 +231,9 @@ function UserPayments() {
                 ></button>
               </div>
               <div className="modal-body">
-                {/* Deadline Warning */}
-                {selectedPayment.payment_deadline && (
-                  (() => {
-                    const deadlineInfo = getDeadlineInfo(selectedPayment);
-                    if (deadlineInfo.isOverdue || deadlineInfo.daysLeft <= 3) {
-                      return (
-                        <div className={`alert alert-${deadlineInfo.isOverdue ? 'danger' : 'warning'} mb-3`}>
-                          <div className="d-flex align-items-center gap-2">
-                            <AlertCircle size={20} />
-                            <div>
-                              <strong>
-                                {deadlineInfo.isOverdue ? 'Payment Overdue!' : 'Payment Deadline Approaching!'}
-                              </strong>
-                              <p className="mb-0">
-                                {deadlineInfo.text} - Deadline: {formatDate(selectedPayment.payment_deadline)}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    }
-                    return null;
-                  })()
-                )}
-
                 {/* Payment Details */}
                 <div className="alert alert-info mb-4">
-                  <h6 className="mb-3">Payment Details</h6>
+                  <h6 className="mb-3">Payment Information</h6>
                   <div className="row">
                     <div className="col-md-6 mb-2">
                       <strong>Amount:</strong> ₱{parseFloat(selectedPayment.amount).toFixed(2)}
@@ -267,14 +241,12 @@ function UserPayments() {
                     <div className="col-md-6 mb-2">
                       <strong>Payment Type:</strong> {selectedPayment.payment_type}
                     </div>
-                    {selectedPayment.payment_deadline && (
-                      <div className="col-md-12 mb-2">
-                        <strong>Deadline:</strong>{" "}
-                        <span className={getDeadlineInfo(selectedPayment).isOverdue ? 'text-danger fw-bold' : ''}>
-                          {formatDate(selectedPayment.payment_deadline)}
-                        </span>
-                      </div>
-                    )}
+                    <div className="col-md-6 mb-2">
+                      <strong>Status:</strong> {getStatusBadge(selectedPayment.status)}
+                    </div>
+                    <div className="col-md-6 mb-2">
+                      <strong>Date Created:</strong> {formatDate(selectedPayment.created_at)}
+                    </div>
                     <div className="col-md-12 mb-2">
                       <strong>Description:</strong>{" "}
                       {selectedPayment.description || "N/A"}
@@ -282,141 +254,86 @@ function UserPayments() {
                   </div>
                 </div>
 
-                {/* Receiver Details */}
-                {selectedPayment.receiver_name && (
-                  <div className="alert alert-secondary mb-4">
-                    <h6 className="mb-3">Payment Instructions</h6>
+                {/* Payment Instructions for Pending Status */}
+                {selectedPayment.status === "Pending" && (
+                  <div className="alert alert-warning mb-4">
+                    <h6 className="mb-3 d-flex align-items-center gap-2">
+                      <AlertCircle size={20} />
+                      Payment Instructions
+                    </h6>
                     <p className="mb-2">
-                      <strong>Pay to:</strong> {selectedPayment.receiver_name}
+                      <strong>Please pay at the office counter.</strong>
                     </p>
-                    {selectedPayment.payment_method && (
+                    <p className="mb-2">
+                      Accepted payment methods: Cash, Check
+                    </p>
+                    <p className="mb-0">
+                      A receipt will be issued upon payment. Your payment will be immediately verified once received by our office.
+                    </p>
+                  </div>
+                )}
+
+                {/* Success Message for Verified Status */}
+                {selectedPayment.status === "Verified" && (
+                  <div className="alert alert-success mb-4">
+                    <h6 className="mb-3 d-flex align-items-center gap-2">
+                      <CheckCircle size={20} />
+                      Payment Verified
+                    </h6>
+                    <p className="mb-2">
+                      Your payment has been successfully verified and processed.
+                    </p>
+                    {selectedPayment.reference_number && (
                       <p className="mb-2">
-                        <strong>Method:</strong> {selectedPayment.payment_method}
+                        <strong>Receipt Number:</strong> {selectedPayment.reference_number}
                       </p>
                     )}
-                    {selectedPayment.receiver_number && (
+                    {selectedPayment.payment_date && (
                       <p className="mb-2">
-                        <strong>Number/Account:</strong> {selectedPayment.receiver_number}
+                        <strong>Payment Date:</strong> {formatDate(selectedPayment.payment_date)}
                       </p>
                     )}
-                    {selectedPayment.receiver_account && (
+                    {selectedPayment.remarks && (
                       <p className="mb-0">
-                        <strong>Bank Account:</strong> {selectedPayment.receiver_account}
+                        <strong>Remarks:</strong> {selectedPayment.remarks}
                       </p>
                     )}
                   </div>
                 )}
 
-                {/* Submit Form */}
-                <form onSubmit={handleSubmitProof}>
-                  <div className="row">
-                    <div className="col-md-6 mb-3">
-                      <label className="form-label">
-                        Your Payment Number/Account <span className="text-danger">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        placeholder="e.g., 09171234567"
-                        value={senderNumber}
-                        onChange={(e) => setSenderNumber(e.target.value)}
-                        required
-                      />
-                      <small className="text-muted">
-                        Enter your GCash/PayMaya/Bank number used for payment
-                      </small>
-                    </div>
-
-                    <div className="col-md-6 mb-3">
-                      <label className="form-label">
-                        Reference Number <span className="text-danger">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        placeholder="e.g., REF123456789"
-                        value={referenceNumber}
-                        onChange={(e) => setReferenceNumber(e.target.value)}
-                        required
-                      />
-                      <small className="text-muted">
-                        Transaction reference number from your receipt
-                      </small>
-                    </div>
-                  </div>
-
-                  <div className="mb-3">
-                    <label className="form-label">
-                      Payment Date <span className="text-danger">*</span>
-                    </label>
-                    <input
-                      type="date"
-                      className="form-control"
-                      value={paymentDate}
-                      onChange={(e) => setPaymentDate(e.target.value)}
-                      required
-                    />
-                  </div>
-
-                  <div className="mb-3">
-                    <label className="form-label">
-                      Proof of Payment <span className="text-danger">*</span>
-                    </label>
-                    <input
-                      type="file"
-                      className="form-control"
-                      accept="image/*"
-                      onChange={(e) => setProofFile(e.target.files[0])}
-                      required
-                    />
-                    {proofFile && (
-                      <small className="text-success d-flex align-items-center gap-1 mt-1">
-                        <FileText size={14} />
-                        {proofFile.name}
-                      </small>
+                {/* Error Message for Rejected Status */}
+                {selectedPayment.status === "Rejected" && (
+                  <div className="alert alert-danger mb-4">
+                    <h6 className="mb-3 d-flex align-items-center gap-2">
+                      <XCircle size={20} />
+                      Payment Rejected
+                    </h6>
+                    <p className="mb-2">
+                      Your payment has been rejected. Please contact the office for more information.
+                    </p>
+                    {selectedPayment.remarks && (
+                      <p className="mb-0">
+                        <strong>Reason:</strong> {selectedPayment.remarks}
+                      </p>
                     )}
-                    <small className="text-muted d-block mt-1">
-                      Upload a screenshot or photo of your payment receipt (JPG, PNG)
-                    </small>
                   </div>
+                )}
 
-                  {error && (
-                    <div className="alert alert-danger">
-                      {error}
-                    </div>
-                  )}
-
-                  <div className="d-flex justify-content-end gap-2 mt-4">
-                    <button
-                      type="button"
-                      className="btn btn-secondary"
-                      onClick={closeModal}
-                      disabled={submitting}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      className="btn btn-success"
-                      disabled={submitting}
-                    >
-                      {submitting ? (
-                        <>
-                          <span
-                            className="spinner-border spinner-border-sm me-2"
-                            role="status"
-                          ></span>
-                          Submitting...
-                        </>
-                      ) : (
-                        <>
-                          <Upload size={16} className="me-2" />
-                          Submit Proof
-                        </>
-                      )}
-                    </button>
+                {error && (
+                  <div className="alert alert-danger">
+                    {error}
                   </div>
-                </form>
+                )}
+
+                <div className="d-flex justify-content-end gap-2 mt-4">
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={closeModal}
+                  >
+                    Close
+                  </button>
+                </div>
               </div>
             </div>
           </div>
