@@ -102,10 +102,10 @@ async function notifyAdminNewRequest(requestId, trackingCode, categoryName) {
 async function notifyUserStatusChange(requestId, ownerId, trackingCode, newStatus) {
   const statusMessages = {
     'Pending': 'Your request has been received and is pending review.',
-    'Processing': 'Your request is now being processed by our team.',
+    'Under Review': 'Your request is now being reviewed by our team.',
     'Approved': 'Congratulations! Your request has been approved.',
     'Rejected': 'Your request has been rejected. Please check the remarks for details.',
-    'Released': 'Your document is ready! You can now download it from the Downloadables section.',
+    'Completed': 'Your document is ready! You can now download it from the Downloadables section.',
     'Cancelled': 'Your request has been cancelled.'
   };
 
@@ -2969,7 +2969,7 @@ app.put("/api/request/update-status/:requestId", upload.single("attachmentFile")
     }
 
     // Validate status
-    const validStatuses = ["Pending", "Processing", "Approved", "Rejected", "Released", "Cancelled"];
+    const validStatuses = ["Pending", "Under Review", "Approved", "Rejected", "Completed", "Cancelled"];
     if (!validStatuses.includes(status)) {
       return res.status(400).json({
         success: false,
@@ -2977,11 +2977,11 @@ app.put("/api/request/update-status/:requestId", upload.single("attachmentFile")
       });
     }
 
-    // If status is Released, file is required
-    if (status === "Released" && !file) {
+    // If status is Completed, file is required
+    if (status === "Completed" && !file) {
       return res.status(400).json({
         success: false,
-        message: "File attachment is required when releasing a request",
+        message: "File attachment is required when completing a request",
       });
     }
 
@@ -2997,8 +2997,8 @@ app.put("/api/request/update-status/:requestId", upload.single("attachmentFile")
     if (processedBy) updateData.processed_by = processedBy;
     if (remarks !== undefined) updateData.remarks = remarks;
 
-    // Auto-set date_release when status is Released
-    if (status === "Released") {
+    // Auto-set date_release when status is Completed
+    if (status === "Completed") {
       updateData.date_release = new Date().toISOString();
     }
 
@@ -3023,8 +3023,8 @@ app.put("/api/request/update-status/:requestId", upload.single("attachmentFile")
       });
     }
 
-    // Handle file upload if status is Released and file provided
-    if (status === "Released" && file) {
+    // Handle file upload if status is Completed and file provided
+    if (status === "Completed" && file) {
       // Generate unique filename
       const timestamp = Date.now();
       const randomString = Math.random().toString(36).substring(2, 15);
@@ -4016,10 +4016,10 @@ app.get("/api/dashboard/admin/stats", async (req, res) => {
       requests: {
         total: requests.length,
         pending: requests.filter(r => r.status === "Pending").length,
-        processing: requests.filter(r => r.status === "Processing").length,
+        underReview: requests.filter(r => r.status === "Under Review").length,
         approved: requests.filter(r => r.status === "Approved").length,
         rejected: requests.filter(r => r.status === "Rejected").length,
-        released: requests.filter(r => r.status === "Released").length,
+        completed: requests.filter(r => r.status === "Completed").length,
       },
       payments: {
         total: payments.length,
@@ -4080,10 +4080,10 @@ app.get("/api/dashboard/user/stats/:ownerId", async (req, res) => {
       requests: {
         total: requests.length,
         pending: requests.filter(r => r.status === "Pending").length,
-        processing: requests.filter(r => r.status === "Processing").length,
+        underReview: requests.filter(r => r.status === "Under Review").length,
         approved: requests.filter(r => r.status === "Approved").length,
         rejected: requests.filter(r => r.status === "Rejected").length,
-        released: requests.filter(r => r.status === "Released").length,
+        completed: requests.filter(r => r.status === "Completed").length,
       },
       payments: {
         total: payments.length,
@@ -4225,15 +4225,15 @@ app.get("/api/request/timeline/:requestId", async (req, res) => {
     });
 
     // Step 2: Under Review
-    const isUnderReview = ["Processing", "Approved", "Rejected", "Released"].includes(request.status);
+    const isUnderReview = ["Under Review", "Approved", "Rejected", "Completed"].includes(request.status);
     timeline.push({
       step: 2,
-      status: "Processing",
+      status: "Under Review",
       label: "Under Review",
       description: "Application is being reviewed by our team",
       date: request.updated_at && isUnderReview ? request.updated_at : null,
       completed: isUnderReview,
-      current: request.status === "Processing",
+      current: request.status === "Under Review",
       icon: "Clock",
     });
 
@@ -4251,7 +4251,7 @@ app.get("/api/request/timeline/:requestId", async (req, res) => {
         isRejected: true,
       });
     } else {
-      const isApproved = ["Approved", "Released"].includes(request.status);
+      const isApproved = ["Approved", "Completed"].includes(request.status);
       timeline.push({
         step: 3,
         status: "Approved",
@@ -4263,16 +4263,16 @@ app.get("/api/request/timeline/:requestId", async (req, res) => {
         icon: "CheckCircle",
       });
 
-      // Step 4: Released (only if approved)
+      // Step 4: Completed (only if approved)
       if (isApproved) {
         timeline.push({
           step: 4,
-          status: "Released",
-          label: "Permit Released",
+          status: "Completed",
+          label: "Permit Completed",
           description: "Your permit is ready for download",
           date: request.date_release,
-          completed: request.status === "Released",
-          current: request.status === "Released",
+          completed: request.status === "Completed",
+          current: request.status === "Completed",
           icon: "Download",
         });
       }
@@ -4291,7 +4291,7 @@ app.get("/api/request/timeline/:requestId", async (req, res) => {
           action: "Wait for our team to start processing your request",
         };
         break;
-      case "Processing":
+      case "Under Review":
         whatsNext = {
           message: "Your application is currently being reviewed",
           action: "Our team is evaluating your submitted documents",
@@ -4303,7 +4303,7 @@ app.get("/api/request/timeline/:requestId", async (req, res) => {
           action: "Complete the payment to receive your permit",
         };
         break;
-      case "Released":
+      case "Completed":
         whatsNext = {
           message: "Your permit is ready!",
           action: "Download your permit from the attachments section",

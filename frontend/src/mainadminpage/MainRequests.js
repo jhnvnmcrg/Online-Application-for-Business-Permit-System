@@ -91,9 +91,9 @@ function MainRequests() {
       const response = await axios.get(`${API_URL}/api/request/all`);
 
       if (response.data.success) {
-        // Filter to show only Pending, Processing, and Approved
+        // Filter to show only Pending, Under Review, and Approved
         const activeRequests = response.data.requests.filter(
-          (req) => req.status === "Pending" || req.status === "Processing" || req.status === "Approved"
+          (req) => req.status === "Pending" || req.status === "Under Review" || req.status === "Approved"
         );
         setRequests(activeRequests);
         setFilteredRequests(activeRequests);
@@ -179,9 +179,9 @@ function MainRequests() {
   const handleUpdateStatus = async (e) => {
     e.preventDefault();
 
-    // Validate file if status is Released
-    if (newStatus === "Released" && !attachmentFile) {
-      setError("Please upload the document file for release");
+    // Validate file if status is Completed
+    if (newStatus === "Completed" && !attachmentFile) {
+      setError("Please upload the document file for completion");
       return;
     }
 
@@ -481,10 +481,10 @@ function MainRequests() {
   const getStatusBadge = (status) => {
     const badges = {
       Pending: { color: "warning", icon: <Clock size={14} /> },
-      Processing: { color: "info", icon: <AlertTriangle size={14} /> },
+      "Under Review": { color: "info", icon: <AlertTriangle size={14} /> },
       Approved: { color: "success", icon: <CheckCircle size={14} /> },
       Rejected: { color: "danger", icon: <XCircle size={14} /> },
-      Released: { color: "primary", icon: <CheckCircle size={14} /> },
+      Completed: { color: "primary", icon: <CheckCircle size={14} /> },
       Cancelled: { color: "secondary", icon: <Ban size={14} /> },
     };
 
@@ -534,7 +534,7 @@ function MainRequests() {
                 >
                   <option value="All">All Status</option>
                   <option value="Pending">Pending</option>
-                  <option value="Processing">Processing</option>
+                  <option value="Under Review">Under Review</option>
                   <option value="Approved">Approved</option>
                 </select>
               </div>
@@ -560,7 +560,7 @@ function MainRequests() {
                     <th>Owner</th>
                     <th>Date Requested</th>
                     <th>Status</th>
-                    <th>Processor</th>
+                    <th>ProcessedBy</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
@@ -870,10 +870,11 @@ function MainRequests() {
                     >
                       <option value="">-- Select Status --</option>
                       <option value="Pending">Pending</option>
-                      <option value="Processing">Processing</option>
+                      <option value="Under Review">Under Review</option>
                       <option value="Approved">Approved</option>
                       <option value="Rejected">Rejected</option>
-                      <option value="Released">Released</option>
+                      <option value="Completed">Completed</option>
+                      <option value="Cancelled">Cancelled</option>
                     </select>
                   </div>
 
@@ -923,11 +924,11 @@ function MainRequests() {
                     </div>
                   )}
 
-                  {/* Show File Upload for Released status */}
-                  {newStatus === "Released" && (
+                  {/* Show File Upload for Completed status */}
+                  {newStatus === "Completed" && (
                     <>
                       <div className="alert alert-info mb-3">
-                        <strong>Note:</strong> Release date will be set automatically. Please upload the processed document.
+                        <strong>Note:</strong> Completion date will be set automatically. Please upload the processed document.
                       </div>
 
                       <div className="mb-3">

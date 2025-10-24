@@ -21,7 +21,7 @@ function MainAdmins() {
   const [adminUsername, setAdminUsername] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("Processor");
-  const [status, setStatus] = useState("active");
+  const [status, setStatus] = useState("Active");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -33,7 +33,7 @@ function MainAdmins() {
   const [editUsername, setEditUsername] = useState("");
   const [editPassword, setEditPassword] = useState("");
   const [editRole, setEditRole] = useState("Processor");
-  const [editStatus, setEditStatus] = useState("active");
+  const [editStatus, setEditStatus] = useState("Active");
   const [showEditPassword, setShowEditPassword] = useState(false);
 
   // Delete Admin Modal States
@@ -166,7 +166,7 @@ function MainAdmins() {
     setAdminUsername("");
     setPassword("");
     setRole("Processor");
-    setStatus("active");
+    setStatus("Active");
     setShowPassword(false);
     setShowAddModal(true);
   };
@@ -179,7 +179,7 @@ function MainAdmins() {
     setAdminUsername("");
     setPassword("");
     setRole("Processor");
-    setStatus("active");
+    setStatus("Active");
     setShowPassword(false);
   };
 
@@ -224,7 +224,7 @@ function MainAdmins() {
     setEditUsername(admin.username);
     setEditPassword("");
     setEditRole(admin.role || "Processor");
-    setEditStatus(admin.status || "active");
+    setEditStatus(admin.status || "Active");
     setShowEditPassword(false);
     setShowEditModal(true);
   };
@@ -238,7 +238,7 @@ function MainAdmins() {
     setEditUsername("");
     setEditPassword("");
     setEditRole("Processor");
-    setEditStatus("active");
+    setEditStatus("Active");
     setShowEditPassword(false);
   };
 
@@ -367,8 +367,8 @@ function MainAdmins() {
                   onChange={(e) => setFilterStatus(e.target.value)}
                 >
                   <option value="all">All Status</option>
-                  <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
+                  <option value="Active">Active</option>
+                  <option value="Inactive">Inactive</option>
                 </select>
               </div>
               <div className="col-md-3">
@@ -443,12 +443,12 @@ function MainAdmins() {
                         <td>
                           <span
                             className={`badge ${
-                              admin.status === "active"
+                              admin.status === "Active"
                                 ? "bg-success"
                                 : "bg-secondary"
                             }`}
                           >
-                            {admin.status || "active"}
+                            {admin.status || "Active"}
                           </span>
                         </td>
                         <td className="text-muted small">
@@ -795,8 +795,8 @@ function MainAdmins() {
                         onChange={(e) => setEditStatus(e.target.value)}
                         disabled={loading}
                       >
-                        <option value="active">Active</option>
-                        <option value="inactive">Inactive</option>
+                        <option value="Active">Active</option>
+                        <option value="Inactive">Inactive</option>
                       </select>
                     </div>
                   </div>
