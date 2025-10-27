@@ -40,6 +40,7 @@ import UserTransaction from './userpages/UserTransaction'
 import UserPayments from './userpages/UserPayments'
 import UserForms from './userpages/UserForms'
 import UserDownloadables from './userpages/UserDownloadables'
+import UserSettings from './userpages/UserSettings'
 
 // --------------------------------------------------------
 
@@ -98,6 +99,7 @@ function App() {
         <Route path='/oabps/user/payments' element={<UserPayments/>}></Route>
         <Route path='/oabps/user/forms' element={<UserForms/>}></Route>
         <Route path='/oabps/user/downloadables' element={<UserDownloadables/>}></Route>
+        <Route path='/oabps/user/settings' element={<UserSettings/>}></Route>
 
         {/* ----------------------------------------------------------- */}
 

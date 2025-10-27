@@ -812,6 +812,162 @@ app.post("/api/user/forgot-password", async (req, res) => {
   }
 });
 
+// Update user profile endpoint
+app.put("/api/user/update-profile/:ownerId", async (req, res) => {
+  try {
+    const { ownerId } = req.params;
+    const { fullname, email, phoneNumber, businessName, businessAddress } = req.body;
+
+    // Validation
+    if (!fullname || !email) {
+      return res.status(400).json({
+        success: false,
+        message: "Full name and email are required",
+      });
+    }
+
+    // Check if email is already used by another user
+    const { data: existingUser } = await supabase
+      .from("Owners")
+      .select("owner_id")
+      .eq("email", email)
+      .neq("owner_id", ownerId)
+      .single();
+
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        message: "Email is already in use by another account",
+      });
+    }
+
+    // Update profile
+    const { data, error } = await supabase
+      .from("Owners")
+      .update({
+        fullname: fullname,
+        email: email,
+        phone_number: phoneNumber || null,
+        business_name: businessName || null,
+        business_address: businessAddress || null,
+      })
+      .eq("owner_id", ownerId)
+      .select();
+
+    if (error) {
+      console.error("Supabase error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to update profile",
+      });
+    }
+
+    if (!data || data.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // Return updated user data (exclude password)
+    res.status(200).json({
+      success: true,
+      message: "Profile updated successfully",
+      user: {
+        owner_id: data[0].owner_id,
+        fullname: data[0].fullname,
+        email: data[0].email,
+        username: data[0].username,
+        phone_number: data[0].phone_number,
+        business_name: data[0].business_name,
+        business_address: data[0].business_address,
+      },
+    });
+  } catch (err) {
+    console.error("Update profile error:", err);
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while updating profile",
+    });
+  }
+});
+
+// Change user password endpoint
+app.put("/api/user/change-password/:ownerId", async (req, res) => {
+  try {
+    const { ownerId } = req.params;
+    const { currentPassword, newPassword } = req.body;
+
+    // Validation
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "Current password and new password are required",
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: "New password must be at least 6 characters long",
+      });
+    }
+
+    // Get user
+    const { data: user, error: fetchError } = await supabase
+      .from("Owners")
+      .select("password")
+      .eq("owner_id", ownerId)
+      .single();
+
+    if (fetchError || !user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // Verify current password
+    const passwordMatch = await bcrypt.compare(currentPassword, user.password);
+
+    if (!passwordMatch) {
+      return res.status(401).json({
+        success: false,
+        message: "Current password is incorrect",
+      });
+    }
+
+    // Hash new password
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+
+    // Update password
+    const { error: updateError } = await supabase
+      .from("Owners")
+      .update({ password: hashedPassword })
+      .eq("owner_id", ownerId);
+
+    if (updateError) {
+      console.error("Supabase error:", updateError);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to change password",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Password changed successfully",
+    });
+  } catch (err) {
+    console.error("Change password error:", err);
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while changing password",
+    });
+  }
+});
+
 // Get all owners (for admin view)
 app.get("/api/owners/all", async (req, res) => {
   try {

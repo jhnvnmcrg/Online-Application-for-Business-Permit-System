@@ -58,17 +58,8 @@ function UserForms() {
       );
 
       if (response.data.success) {
-        // Group fields by group_id
-        const groupedFields = {};
-        response.data.forms.forEach((field) => {
-          const groupName = field.group_name || 'General Information';
-          if (!groupedFields[groupName]) {
-            groupedFields[groupName] = [];
-          }
-          groupedFields[groupName].push(field);
-        });
-
-        setFormFields(groupedFields);
+        // Store form fields as array (will be grouped in render)
+        setFormFields(response.data.forms || []);
       }
     } catch (err) {
       console.error('Fetch form fields error:', err);
@@ -84,18 +75,124 @@ function UserForms() {
     setFormFields([]);
   };
 
-  const getFieldTypeLabel = (type) => {
-    const types = {
-      text: 'Text Input',
-      textarea: 'Long Text',
-      number: 'Number',
-      date: 'Date',
-      email: 'Email',
-      select: 'Dropdown',
-      radio: 'Radio Button',
-      checkbox: 'Checkbox',
+  // Group fields by group name
+  const groupFieldsByGroup = (fields) => {
+    const grouped = {};
+    const ungrouped = [];
+
+    fields.forEach((field) => {
+      if (field.group_name) {
+        if (!grouped[field.group_name]) {
+          grouped[field.group_name] = [];
+        }
+        grouped[field.group_name].push(field);
+      } else {
+        ungrouped.push(field);
+      }
+    });
+
+    return { grouped, ungrouped };
+  };
+
+  // Render form field based on type (preview only - not functional)
+  const renderPreviewField = (field) => {
+    const commonProps = {
+      className: 'form-control form-control-lg',
+      placeholder: field.placeholder || '',
+      disabled: true, // Preview only
     };
-    return types[type] || type;
+
+    switch (field.field_type?.toLowerCase()) {
+      case 'text':
+        return <input type="text" {...commonProps} />;
+      case 'textarea':
+        return <textarea {...commonProps} rows="3"></textarea>;
+      case 'number':
+        return <input type="number" {...commonProps} />;
+      case 'date':
+        return <input type="date" {...commonProps} />;
+      case 'email':
+        return <input type="email" {...commonProps} />;
+      case 'select':
+        return (
+          <select {...commonProps}>
+            <option value="">Select an option</option>
+            {(field.options || []).map((option, idx) => (
+              <option key={idx} value={option.option_value}>
+                {option.option_value}
+              </option>
+            ))}
+          </select>
+        );
+      case 'radio':
+        return (
+          <div>
+            {(field.options || []).map((option, idx) => (
+              <div key={idx} className="form-check">
+                <input
+                  className="form-check-input"
+                  type="radio"
+                  name={`radio-${field.form_id}`}
+                  id={`radio-${field.form_id}-${idx}`}
+                  disabled
+                />
+                <label className="form-check-label" htmlFor={`radio-${field.form_id}-${idx}`}>
+                  {option.option_value}
+                </label>
+              </div>
+            ))}
+          </div>
+        );
+      case 'checkbox':
+        return (
+          <div className="form-check">
+            <input className="form-check-input" type="checkbox" disabled />
+            <label className="form-check-label">
+              {field.placeholder || 'Checkbox option'}
+            </label>
+          </div>
+        );
+      default:
+        return <input type="text" {...commonProps} />;
+    }
+  };
+
+  // Render fields in row with column layout
+  const renderFieldsInRow = (fields) => {
+    const rows = [];
+    let currentRow = [];
+
+    fields.forEach((field, index) => {
+      const fieldWidth = field.field_width || 12;
+
+      currentRow.push({ field, width: fieldWidth });
+
+      const totalWidth = currentRow.reduce((sum, item) => sum + item.width, 0);
+
+      if (totalWidth >= 12 || index === fields.length - 1) {
+        rows.push([...currentRow]);
+        currentRow = [];
+      }
+    });
+
+    return rows.map((row, rowIndex) => (
+      <div key={rowIndex} className="row mb-3 text-start">
+        {row.map(({ field, width }) => (
+          <div key={field.form_id} className={`col-md-${width}`}>
+            <label className="form-label text-muted ">
+              {field.field_label?.toUpperCase() || field.field_name?.toUpperCase()}
+              {field.is_required && <span className="text-danger"> *</span>}
+            </label>
+            {renderPreviewField(field)}
+            {field.validation_rule && (
+              <small className="text-muted d-block mt-1">
+                Validation: {field.validation_rule}
+              </small>
+            )}
+          </div>
+        ))}
+      </div>
+    ));
   };
 
   return (
@@ -210,7 +307,7 @@ function UserForms() {
                     <Loader size={48} className="text-primary mb-3 spinner-border" />
                     <p className="text-muted">Loading form fields...</p>
                   </div>
-                ) : Object.keys(formFields).length === 0 ? (
+                ) : formFields.length === 0 ? (
                   <div className="alert alert-info">
                     <AlertCircle size={20} className="me-2" />
                     No form fields configured for this category yet.
@@ -219,74 +316,48 @@ function UserForms() {
                   <>
                     {/* Category Description */}
                     {selectedCategory.description && (
-                      <div className="alert alert-secondary mb-4">
+                      <div className="alert alert-info mb-4">
                         <strong>About this permit:</strong> {selectedCategory.description}
                       </div>
                     )}
 
-                    {/* Form Field Groups */}
-                    {Object.entries(formFields).map(([groupName, fields], index) => (
-                      <div key={index} className="mb-4">
-                        <h6 className="text-primary border-bottom pb-2 mb-3">
-                          {groupName}
-                        </h6>
-                        <div className="row">
-                          {fields
-                            .sort((a, b) => a.field_order - b.field_order)
-                            .map((field) => (
-                              <div key={field.form_id} className="col-md-6 mb-3">
-                                <div className="card border-0 bg-light">
-                                  <div className="card-body p-3">
-                                    <div className="d-flex justify-content-between align-items-start mb-2">
-                                      <label className="fw-bold mb-1">
-                                        {field.field_label}
-                                        {field.is_required && (
-                                          <span className="text-danger ms-1">*</span>
-                                        )}
-                                      </label>
-                                      <span className="badge bg-secondary small">
-                                        {getFieldTypeLabel(field.field_type)}
-                                      </span>
-                                    </div>
-                                    {field.placeholder && (
-                                      <p className="text-muted small mb-2">
-                                        <em>Placeholder: {field.placeholder}</em>
-                                      </p>
-                                    )}
-                                    {field.field_type === 'select' && field.options && (
-                                      <div className="mt-2">
-                                        <small className="text-muted">Options:</small>
-                                        <ul className="small mb-0 ps-3">
-                                          {field.options.map((opt, idx) => (
-                                            <li key={idx}>{opt.option_value}</li>
-                                          ))}
-                                        </ul>
-                                      </div>
-                                    )}
-                                    {field.field_type === 'radio' && field.options && (
-                                      <div className="mt-2">
-                                        <small className="text-muted">Options:</small>
-                                        <ul className="small mb-0 ps-3">
-                                          {field.options.map((opt, idx) => (
-                                            <li key={idx}>{opt.option_value}</li>
-                                          ))}
-                                        </ul>
-                                      </div>
-                                    )}
-                                    <div className="mt-2 d-flex align-items-center gap-2">
-                                      {field.is_required ? (
-                                        <span className="badge bg-danger small">Required</span>
-                                      ) : (
-                                        <span className="badge bg-secondary small">Optional</span>
-                                      )}
-                                    </div>
-                                  </div>
-                                </div>
+                    {/* Form Preview with Actual Fields */}
+                    <div className="bg-white p-4 rounded border">
+                      <h5 className="mb-4 text-primary">
+                        {selectedCategory.category_name} - Dynamic Form Preview
+                      </h5>
+
+                      {(() => {
+                        const { grouped, ungrouped } = groupFieldsByGroup(formFields);
+
+                        return (
+                          <>
+                            {/* Ungrouped Fields */}
+                            {ungrouped.length > 0 && (
+                              <div className="mb-4">
+                                {renderFieldsInRow(ungrouped)}
                               </div>
-                            ))}
-                        </div>
-                      </div>
-                    ))}
+                            )}
+
+                            {/* Grouped Fields */}
+                            {Object.keys(grouped).length > 0 &&
+                              Object.keys(grouped).map((groupName) => (
+                                <div
+                                  key={groupName}
+                                  className="mb-4 border rounded p-3 bg-light"
+                                >
+                                  <h6 className="text-secondary mb-3 fw-bold">
+                                    {groupName}
+                                  </h6>
+                                  {renderFieldsInRow(grouped[groupName])}
+                                </div>
+                              ))}
+                          </>
+                        );
+                      })()}
+
+                      
+                    </div>
 
                     {/* Requirements */}
                     {selectedCategory.requirements && (
@@ -295,6 +366,14 @@ function UserForms() {
                         <p className="mb-0 mt-2">{selectedCategory.requirements}</p>
                       </div>
                     )}
+
+                    {/* Info Note */}
+                    <div className="alert alert-secondary mt-4 mb-0">
+                      <small>
+                        <strong>Note:</strong> This is a preview of the form fields you will need to fill when applying for this document.
+                        All fields marked with <span className="text-danger">*</span> are required.
+                      </small>
+                    </div>
                   </>
                 )}
               </div>
