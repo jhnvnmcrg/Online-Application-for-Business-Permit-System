@@ -798,13 +798,12 @@ function MainPayments() {
                         </label>
                         <input
                           type="text"
-                          className="form-control"
+                          className="form-control bg-light"
                           value={receiptNumber}
-                          onChange={(e) => setReceiptNumber(e.target.value)}
-                          placeholder="OR-YYYY-NNNNN"
-                          required
+                          readOnly
+                          disabled
                         />
-                        <small className="text-muted">Auto-generated receipt number (editable)</small>
+                        <small className="text-muted">Auto-generated receipt number</small>
                       </div>
 
                       <div className="mb-3">
@@ -813,12 +812,12 @@ function MainPayments() {
                         </label>
                         <input
                           type="date"
-                          className="form-control"
+                          className="form-control bg-light"
                           value={paymentDate}
-                          onChange={(e) => setPaymentDate(e.target.value)}
-                          required
+                          readOnly
+                          disabled
                         />
-                        <small className="text-muted">Date payment was received at counter</small>
+                        <small className="text-muted">Current date (auto-set to today)</small>
                       </div>
 
                       <div className="alert alert-success mb-3">
@@ -1063,23 +1062,7 @@ function MainPayments() {
                     </div>
                   )}
 
-                  {/* Footer - Authorized Signature */}
-                  <div className="row mt-5 pt-4">
-                    <div className="col-md-6">
-                      <div className="text-center">
-                        <div className="border-top border-dark pt-2 mt-5" style={{width: "200px", margin: "0 auto"}}>
-                          <p className="mb-0 small">Payor's Signature</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="col-md-6">
-                      <div className="text-center">
-                        <div className="border-top border-dark pt-2 mt-5" style={{width: "200px", margin: "0 auto"}}>
-                          <p className="mb-0 small">Authorized Signature</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  
 
                   {/* Footer Notice */}
                   <div className="text-center mt-5 pt-3 border-top">

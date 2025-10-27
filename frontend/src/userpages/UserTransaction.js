@@ -926,6 +926,37 @@ function UserTransaction() {
                         </div>
                       )}
                     </div>
+                    <div className="list-group mb-4">
+                            {requestDetails.attachments.map((attachment) => (
+                              <div
+                                key={attachment.attachment_id}
+                                className="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
+                              >
+                                <div className="flex-grow-1">
+                                  <h6 className="mb-1">{attachment.file_name}</h6>
+                                  {attachment.remarks && (
+                                    <p className="mb-1 small text-muted">
+                                      {attachment.remarks}
+                                    </p>
+                                  )}
+                                  <small className="text-muted">
+                                    Uploaded by: {attachment.Admins?.fullname || "Admin"} on{" "}
+                                    {formatDate(attachment.created_at)}
+                                  </small>
+                                </div>
+                                <a
+                                  href={attachment.file_path}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="btn btn-success btn-sm d-flex align-items-center gap-1 ms-3"
+                                  download
+                                >
+                                  <Download size={16} />
+                                  Download
+                                </a>
+                              </div>
+                            ))}
+                          </div>
 
                     {/* Form Data */}
                     {requestDetails.formData &&
@@ -971,49 +1002,7 @@ function UserTransaction() {
                         </div>
                       )}
 
-                    {/* Released Documents (Attachments) */}
-                    {requestDetails.attachments &&
-                      requestDetails.attachments.length > 0 && (
-                        <div className="mb-4">
-                          <h6 className="text-success border-bottom pb-2">
-                            Released Documents
-                          </h6>
-                          <div className="alert alert-success">
-                            <strong>Your documents are ready!</strong> Download them below.
-                          </div>
-                          <div className="list-group">
-                            {requestDetails.attachments.map((attachment) => (
-                              <div
-                                key={attachment.attachment_id}
-                                className="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
-                              >
-                                <div className="flex-grow-1">
-                                  <h6 className="mb-1">{attachment.file_name}</h6>
-                                  {attachment.remarks && (
-                                    <p className="mb-1 small text-muted">
-                                      {attachment.remarks}
-                                    </p>
-                                  )}
-                                  <small className="text-muted">
-                                    Uploaded by: {attachment.Admins?.fullname || "Admin"} on{" "}
-                                    {formatDate(attachment.created_at)}
-                                  </small>
-                                </div>
-                                <a
-                                  href={attachment.file_path}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="btn btn-success btn-sm d-flex align-items-center gap-1 ms-3"
-                                  download
-                                >
-                                  <Download size={16} />
-                                  Download
-                                </a>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
+                    
                   </>
                 ) : (
                   <div className="alert alert-warning">
@@ -1028,7 +1017,7 @@ function UserTransaction() {
                     <div className="alert alert-warning mb-3">
                       <strong>Are you sure you want to cancel this request?</strong>
                       <p className="mb-0 mt-2 small">
-                        This action cannot be undone. Only pending requests can be cancelled.
+                        This action cannot be undone.
                       </p>
                     </div>
                     <div className="d-flex justify-content-end gap-2">
@@ -1135,9 +1124,7 @@ function UserTransaction() {
                   </div>
                 )}
 
-                <div className="alert alert-info">
-                  <strong>Note:</strong> You can update the form fields below. Only "Pending" requests can be updated.
-                </div>
+                
 
                 <form onSubmit={handleUpdateSubmit}>
                   {/* Render form fields dynamically */}

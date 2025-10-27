@@ -180,7 +180,7 @@ function UserPayments() {
                           <th>Amount</th>
                           <th>Payment Type</th>
                           <th>Status</th>
-                          <th>Date Created</th>
+                          
                           <th>Action</th>
                         </tr>
                       </thead>
@@ -212,16 +212,10 @@ function UserPayments() {
                               <td className="fw-bold">₱{parseFloat(payment.amount).toFixed(2)}</td>
                               <td>{payment.payment_type}</td>
                               <td>{getStatusBadge(payment.status)}</td>
-                              <td>{formatDate(payment.created_at)}</td>
+                              
                               <td>
                                 <div className="d-flex gap-1">
-                                  <button
-                                    className="btn btn-sm btn-info d-flex align-items-center gap-1"
-                                    onClick={() => handleViewPayment(payment)}
-                                    title="View Details"
-                                  >
-                                    <FileText size={14} />
-                                  </button>
+                                  
                                   {payment.status === "Pending" && (
                                     <button
                                       className="btn btn-sm btn-primary d-flex align-items-center gap-1"
@@ -316,7 +310,7 @@ function UserPayments() {
                       <strong>Please pay at the office counter.</strong>
                     </p>
                     <p className="mb-2">
-                      Accepted payment methods: Cash, Check
+                      Accepted payment methods: Cash
                     </p>
                     <p className="mb-0">
                       A receipt will be issued upon payment. Your payment will be immediately verified once received by our office.
@@ -495,12 +489,12 @@ function UserPayments() {
                     <ol className="mb-2 ps-3">
                       <li>Present this payment slip to the cashier at the office counter</li>
                       <li>Payment must be made in full amount (₱{parseFloat(selectedPayment.amount).toFixed(2)})</li>
-                      <li>Accepted payment methods: Cash, Check</li>
+                      <li>Accepted payment methods: Cash</li>
                       <li>Official receipt will be issued upon payment</li>
                       <li>Keep your official receipt for your records</li>
                     </ol>
                     <p className="mb-0 small text-muted">
-                      <strong>Note:</strong> Partial payments are not accepted. Payment must be made during office hours: Mon-Fri, 8:00 AM - 5:00 PM
+                      <strong>Note:</strong> Payment must be made during office hours: Mon-Fri, 8:00 AM - 5:00 PM
                     </p>
                   </div>
 
@@ -677,23 +671,7 @@ function UserPayments() {
                     </div>
                   )}
 
-                  {/* Footer - Authorized Signature */}
-                  <div className="row mt-5 pt-4">
-                    <div className="col-md-6">
-                      <div className="text-center">
-                        <div className="border-top border-dark pt-2 mt-5" style={{width: "200px", margin: "0 auto"}}>
-                          <p className="mb-0 small">Payor's Signature</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="col-md-6">
-                      <div className="text-center">
-                        <div className="border-top border-dark pt-2 mt-5" style={{width: "200px", margin: "0 auto"}}>
-                          <p className="mb-0 small">Authorized Signature</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  
 
                   {/* Footer Notice */}
                   <div className="text-center mt-5 pt-3 border-top">

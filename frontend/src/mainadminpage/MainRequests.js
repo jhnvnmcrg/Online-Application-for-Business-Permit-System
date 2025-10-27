@@ -995,10 +995,7 @@ function MainRequests() {
                         </p>
                       </div>
 
-                      <div className="col-md-6 mb-3">
-                        <label className="text-muted small">Payment Method</label>
-                        <p className="mb-0">Cash (Over-the-Counter)</p>
-                      </div>
+                      
 
                       {existingPayment?.payment_date && (
                         <div className="col-md-6 mb-3">
@@ -1032,8 +1029,8 @@ function MainRequests() {
                 ) : (
                   <form onSubmit={handleAddPayment}>
                     <div className="alert alert-info">
-                      <strong>Note:</strong> {isUpdatingPayment ? "Update" : "Add"} payment requirement for over-the-counter payment.
-                      The owner will be notified to pay at the office counter.
+                      <strong>Note:</strong> {isUpdatingPayment ? "Update" : "Add"} payment requirement for payment.
+                      
                     </div>
 
                     <div className="row">
@@ -1081,9 +1078,7 @@ function MainRequests() {
                       />
                     </div>
 
-                    <div className="alert alert-secondary mb-3">
-                      <strong>Payment Method:</strong> Cash (Over-the-Counter)
-                    </div>
+                   
 
                   
 

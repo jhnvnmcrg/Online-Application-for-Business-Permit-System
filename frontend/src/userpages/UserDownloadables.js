@@ -50,7 +50,7 @@ function UserDownloadables() {
 
       if (response.data.success) {
         const releasedRequests = response.data.requests.filter(
-          (req) => req.status === "Released"
+          (req) => req.status === "Completed"
         );
 
         // For each released request, fetch attachments

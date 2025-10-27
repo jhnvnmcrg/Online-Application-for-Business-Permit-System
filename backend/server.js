@@ -4392,8 +4392,8 @@ app.get("/api/request/timeline/:requestId", async (req, res) => {
         break;
       case "Completed":
         whatsNext = {
-          message: "Your permit is ready!",
-          action: "Download your permit from the attachments section",
+          message: "Your document is ready!",
+          action: "Download your document from the attachments section",
         };
         break;
       case "Rejected":
