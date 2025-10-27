@@ -3566,7 +3566,9 @@ app.get("/api/payment/all", async (req, res) => {
           Owners:owner_id (
             owner_id,
             fullname,
-            username
+            username,
+            email,
+            phone_number
           ),
           DocumentCategories:category_id (
             category_name
