@@ -4688,7 +4688,7 @@ app.get("/api/notifications/:userType/:userId", async (req, res) => {
     }
 
     if (unreadOnly === 'true') {
-      query = query.neq('status', 'Read');
+      query = query.is('read_at', null);
     }
 
     const { data, error } = await query;
@@ -4723,7 +4723,7 @@ app.get("/api/notifications/:userType/:userId/unread-count", async (req, res) =>
     let query = supabase
       .from('Notifications')
       .select('*', { count: 'exact', head: true })
-      .neq('status', 'Read');
+      .is('read_at', null);
 
     // Filter by user type using admin_id or owner_id
     if (userType === 'Admin') {
@@ -4768,7 +4768,7 @@ app.put("/api/notifications/:notificationId/read", async (req, res) => {
     // Mark as read
     const { data, error } = await supabase
       .from('Notifications')
-      .update({ status: 'Read' })
+      .update({ read_at: new Date().toISOString() })
       .eq('notification_id', notificationId)
       .select();
 
@@ -4801,8 +4801,8 @@ app.put("/api/notifications/:userType/:userId/read-all", async (req, res) => {
     // Build query based on user type using proper foreign keys
     let query = supabase
       .from('Notifications')
-      .update({ status: 'Read' })
-      .neq('status', 'Read');
+      .update({ read_at: new Date().toISOString() })
+      .is('read_at', null);
 
     // Filter by user type using admin_id or owner_id
     if (userType === 'Admin') {
