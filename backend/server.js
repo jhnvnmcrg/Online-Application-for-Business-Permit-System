@@ -1552,6 +1552,77 @@ app.get("/api/form/all", async (req, res) => {
   }
 });
 
+// Get form fields by category ID (for form preview)
+app.get("/api/form/category/:categoryId", async (req, res) => {
+  try {
+    const { categoryId } = req.params;
+
+    // Fetch form fields for this category
+    const { data, error } = await supabase
+      .from("Document Forms")
+      .select("*")
+      .eq("category_id", categoryId)
+      .order("field_order", { ascending: true });
+
+    if (error) {
+      console.error("Supabase error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to fetch form fields for category",
+      });
+    }
+
+    // For each field, fetch group info and options if needed
+    const formsWithDetails = await Promise.all(
+      data.map(async (field) => {
+        let groupName = null;
+
+        // Fetch group name if field has a group_id
+        if (field.group_id) {
+          const { data: groupData } = await supabase
+            .from("Form Field Groups")
+            .select("group_name")
+            .eq("group_id", field.group_id)
+            .single();
+
+          if (groupData) {
+            groupName = groupData.group_name;
+          }
+        }
+
+        // Fetch options for select/radio fields
+        let options = [];
+        if (field.field_type === "select" || field.field_type === "radio") {
+          const { data: optionsData } = await supabase
+            .from("Form Field Options")
+            .select("*")
+            .eq("form_id", field.form_id)
+            .order("option_order", { ascending: true });
+
+          options = optionsData || [];
+        }
+
+        return {
+          ...field,
+          group_name: groupName,
+          options: options,
+        };
+      })
+    );
+
+    res.status(200).json({
+      success: true,
+      forms: formsWithDetails,
+    });
+  } catch (err) {
+    console.error("Fetch form fields by category error:", err);
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while fetching form fields",
+    });
+  }
+});
+
 // Update form field endpoint
 app.put("/api/form/update/:id", async (req, res) => {
   try {

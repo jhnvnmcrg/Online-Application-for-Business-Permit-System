@@ -767,7 +767,7 @@ function MainPayments() {
                   </div>
                   <div className="mt-2">
                     <small className="text-muted">
-                      <strong>Note:</strong> This is an over-the-counter payment. Verify that payment has been received before processing.
+                      <strong>Note:</strong> Verify that payment has been received before processing.
                     </small>
                   </div>
                 </div>
@@ -822,7 +822,7 @@ function MainPayments() {
 
                       <div className="alert alert-success mb-3">
                         <small>
-                          <strong>Full Payment Only:</strong> Verify that the full amount of ₱{parseFloat(selectedPayment.amount).toFixed(2)} has been received. Partial payments are not accepted.
+                          <strong>Full Payment Only:</strong> Verify that the full amount of ₱{parseFloat(selectedPayment.amount).toFixed(2)} has been received.
                         </small>
                       </div>
                     </>
