@@ -1,18 +1,28 @@
 import React, { useState } from 'react';
 import UserSideBAr from '../includes/UserSideBar';
+import { CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 
 function UserRenewal() {
     const [accountNumber, setAccountNumber] = useState('');
           const [businessPlate, setBusinessPlate] = useState('');
-        
+          const [messageModal, setMessageModal] = useState({ show: false, type: '', message: '' });
+
+          const showMessage = (type, message) => {
+            setMessageModal({ show: true, type, message });
+          };
+
+          const closeMessageModal = () => {
+            setMessageModal({ show: false, type: '', message: '' });
+          };
+
           const handleSearch = () => {
             if (!accountNumber.trim() || !businessPlate.trim()) {
-              alert('Please fill in both Account Number and Business Plate fields.');
+              showMessage('error', 'Please fill in both Account Number and Business Plate fields.');
               return;
             }
-            alert(`Searching for Account Number: ${accountNumber}, Business Plate: ${businessPlate}`);
+            showMessage('info', `Searching for Account Number: ${accountNumber}, Business Plate: ${businessPlate}`);
           };
-        
+
           const handleCancel = () => {
             setAccountNumber('');
             setBusinessPlate('');
@@ -78,6 +88,57 @@ function UserRenewal() {
                 </div>
             </div>
         </UserSideBAr>
+
+        {/* Message Modal */}
+        {messageModal.show && (
+          <div
+            className="modal show d-block"
+            style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+            onClick={closeMessageModal}
+          >
+            <div
+              className="modal-dialog modal-dialog-centered"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="modal-content">
+                <div className={`modal-header ${
+                  messageModal.type === 'success' ? 'bg-success' :
+                  messageModal.type === 'error' ? 'bg-danger' :
+                  messageModal.type === 'warning' ? 'bg-warning' :
+                  'bg-info'
+                } text-white`}>
+                  <h5 className="modal-title d-flex align-items-center gap-2">
+                    {messageModal.type === 'success' && <CheckCircle size={24} />}
+                    {messageModal.type === 'error' && <XCircle size={24} />}
+                    {messageModal.type === 'warning' && <AlertCircle size={24} />}
+                    {messageModal.type === 'info' && <AlertCircle size={24} />}
+                    {messageModal.type === 'success' ? 'Success' :
+                     messageModal.type === 'error' ? 'Error' :
+                     messageModal.type === 'warning' ? 'Warning' :
+                     'Information'}
+                  </h5>
+                  <button
+                    type="button"
+                    className="btn-close btn-close-white"
+                    onClick={closeMessageModal}
+                  ></button>
+                </div>
+                <div className="modal-body">
+                  <p className="mb-0">{messageModal.message}</p>
+                </div>
+                <div className="modal-footer">
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={closeMessageModal}
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
     </>
   )
 }

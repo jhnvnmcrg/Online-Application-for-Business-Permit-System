@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, CheckCircle, XCircle, AlertCircle } from "lucide-react";
 
 function UserRegister() {
   const navigate = useNavigate();
@@ -17,6 +17,19 @@ function UserRegister() {
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showRetypePassword, setShowRetypePassword] = useState(false);
+  const [messageModal, setMessageModal] = useState({
+    isOpen: false,
+    message: "",
+    type: "info",
+  });
+
+  const showMessage = (message, type = "info") => {
+    setMessageModal({ isOpen: true, message, type });
+  };
+
+  const closeMessageModal = () => {
+    setMessageModal({ isOpen: false, message: "", type: "info" });
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -71,8 +84,8 @@ function UserRegister() {
       );
 
       if (response.data.success) {
-        alert("Account created successfully! Please log in.");
-        navigate("/oabps/user/login");
+        showMessage("Account created successfully! Please log in.", "success");
+        setTimeout(() => navigate("/oabps/user/login"), 2000);
       }
     } catch (err) {
       if (err.response?.data?.error) {
@@ -229,7 +242,7 @@ function UserRegister() {
                       style={{ color: "#dc3545" }}
                       onClick={(e) => {
                         e.preventDefault();
-                        alert("Privacy Policy would be displayed here.");
+                        showMessage("Privacy Policy would be displayed here.", "info");
                       }}
                     >
                       PRIVACY POLICY
@@ -275,6 +288,58 @@ function UserRegister() {
           </div>
         </div>
       </div>
+
+      {messageModal.isOpen && (
+        <div
+          className="modal fade show"
+          style={{
+            display: "block",
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
+          }}
+          tabIndex="-1"
+        >
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header border-0">
+                <button
+                  type="button"
+                  className="btn-close"
+                  onClick={closeMessageModal}
+                ></button>
+              </div>
+              <div className="modal-body text-center py-4">
+                <div className="mb-3">
+                  {messageModal.type === "success" && (
+                    <CheckCircle size={64} className="text-success" />
+                  )}
+                  {messageModal.type === "error" && (
+                    <XCircle size={64} className="text-danger" />
+                  )}
+                  {messageModal.type === "info" && (
+                    <AlertCircle size={64} className="text-primary" />
+                  )}
+                </div>
+                <h5 className="modal-title mb-3">
+                  {messageModal.type === "success" && "Success"}
+                  {messageModal.type === "error" && "Error"}
+                  {messageModal.type === "info" && "Information"}
+                </h5>
+                <p className="text-muted">{messageModal.message}</p>
+              </div>
+              <div className="modal-footer border-0 justify-content-center">
+                <button
+                  type="button"
+                  className="btn text-white px-4"
+                  style={{ backgroundColor: "#dc3545" }}
+                  onClick={closeMessageModal}
+                >
+                  OK
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

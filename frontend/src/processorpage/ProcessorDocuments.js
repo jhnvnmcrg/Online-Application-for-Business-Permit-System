@@ -1,4 +1,4 @@
-import { Plus, Trash, Pencil, Download } from "lucide-react";
+import { Plus, Trash, Pencil, Download, CheckCircle, XCircle, AlertCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import ProcessorSideBar from "../includes/ProcessorSideBar";
@@ -20,11 +20,26 @@ function ProcessorDocuments() {
   const [error, setError] = useState("");
   const [editingDocument, setEditingDocument] = useState(null);
   const [assignedCategories, setAssignedCategories] = useState([]);
+  const [showMessageModal, setShowMessageModal] = useState(false);
+  const [messageContent, setMessageContent] = useState("");
+  const [messageType, setMessageType] = useState("success");
 
   const navigate = useNavigate();
   const [username, setUsername] = useState("User");
   const [createdBy, setCreatedBy] = useState("");
   const [adminId, setAdminId] = useState(null);
+
+  const showMessage = (message, type = "success") => {
+    setMessageContent(message);
+    setMessageType(type);
+    setShowMessageModal(true);
+  };
+
+  const closeMessageModal = () => {
+    setShowMessageModal(false);
+    setMessageContent("");
+    setMessageType("success");
+  };
 
   useEffect(() => {
     // Get user data from localStorage
@@ -164,7 +179,7 @@ function ProcessorDocuments() {
       );
 
       if (response.data.success) {
-        alert("Document added successfully!");
+        showMessage("Document added successfully!", "success");
         handleCloseModal();
         fetchDocuments(); // Refresh the documents list
       } else {
@@ -220,7 +235,7 @@ function ProcessorDocuments() {
       );
 
       if (response.data.success) {
-        alert("Document updated successfully!");
+        showMessage("Document updated successfully!", "success");
         handleCloseEditModal();
         fetchDocuments(); // Refresh the documents list
       } else {
@@ -247,13 +262,13 @@ function ProcessorDocuments() {
       );
 
       if (response.data.success) {
-        alert("Document deleted successfully!");
+        showMessage("Document deleted successfully!", "success");
         fetchDocuments(); // Refresh the documents list
       } else {
-        alert(response.data.message || "Failed to delete document");
+        showMessage(response.data.message || "Failed to delete document", "error");
       }
     } catch (err) {
-      alert(err.response?.data?.message || "Error deleting document");
+      showMessage(err.response?.data?.message || "Error deleting document", "error");
     }
   };
 
@@ -537,6 +552,51 @@ function ProcessorDocuments() {
                     </button>
                   </div>
                 </form>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Message Modal */}
+        {showMessageModal && (
+          <div
+            className="modal show d-block"
+            tabIndex="-1"
+            style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+          >
+            <div className="modal-dialog modal-dialog-centered">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title">
+                    {messageType === "success" && (
+                      <CheckCircle className="text-success me-2" />
+                    )}
+                    {messageType === "error" && (
+                      <XCircle className="text-danger me-2" />
+                    )}
+                    {messageType === "info" && (
+                      <AlertCircle className="text-info me-2" />
+                    )}
+                    {messageType === "success" ? "Success" : messageType === "error" ? "Error" : "Information"}
+                  </h5>
+                  <button
+                    type="button"
+                    className="btn-close"
+                    onClick={closeMessageModal}
+                  ></button>
+                </div>
+                <div className="modal-body">
+                  <p className="mb-0">{messageContent}</p>
+                </div>
+                <div className="modal-footer">
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={closeMessageModal}
+                  >
+                    OK
+                  </button>
+                </div>
               </div>
             </div>
           </div>

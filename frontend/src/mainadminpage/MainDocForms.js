@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import MainSideBar from "../includes/MainSideBar";
-import { Plus, Trash, Pencil, Eye } from "lucide-react";
+import { Plus, Trash, Pencil, Eye, CheckCircle, XCircle, AlertCircle } from "lucide-react";
 import axios from "axios";
 
 function MainDocForms() {
@@ -56,7 +56,25 @@ function MainDocForms() {
   const [optionsPage, setOptionsPage] = useState(1);
   const itemsPerPage = 5;
 
+  // Message modal states
+  const [showMessageModal, setShowMessageModal] = useState(false);
+  const [messageContent, setMessageContent] = useState("");
+  const [messageType, setMessageType] = useState("success");
+
   const navigate = useNavigate();
+
+  // Helper functions for message modal
+  const showMessage = (message, type = "success") => {
+    setMessageContent(message);
+    setMessageType(type);
+    setShowMessageModal(true);
+  };
+
+  const closeMessageModal = () => {
+    setShowMessageModal(false);
+    setMessageContent("");
+    setMessageType("success");
+  };
 
   useEffect(() => {
     // Get user data from localStorage
@@ -153,7 +171,7 @@ function MainDocForms() {
       );
 
       if (response.data.success) {
-        alert("Group added successfully!");
+        showMessage("Group added successfully!", "success");
         handleCloseGroupModal();
         await fetchGroups();
         await fetchFormFields();
@@ -200,7 +218,7 @@ function MainDocForms() {
       );
 
       if (response.data.success) {
-        alert("Group updated successfully!");
+        showMessage("Group updated successfully!", "success");
         handleCloseEditGroupModal();
         await fetchGroups();
         await fetchFormFields();
@@ -227,16 +245,16 @@ function MainDocForms() {
       );
 
       if (response.data.success) {
-        alert("Group deleted successfully!");
+        showMessage("Group deleted successfully!", "success");
         await fetchGroups();
         await fetchFormFields();
         await filterDataByCategory(selectedCategory.category_id);
         await refreshFormPreview(selectedCategory.category_id);
       } else {
-        alert(response.data.message || "Failed to delete group");
+        showMessage(response.data.message || "Failed to delete group", "error");
       }
     } catch (err) {
-      alert(err.response?.data?.message || "Error deleting group");
+      showMessage(err.response?.data?.message || "Error deleting group", "error");
     }
   };
 
@@ -265,7 +283,7 @@ function MainDocForms() {
       );
 
       if (response.data.success) {
-        alert("Option added successfully!");
+        showMessage("Option added successfully!", "success");
         handleCloseOptionModal();
         await fetchFormFields();
         await filterDataByCategory(selectedCategory.category_id);
@@ -313,7 +331,7 @@ function MainDocForms() {
       );
 
       if (response.data.success) {
-        alert("Option updated successfully!");
+        showMessage("Option updated successfully!", "success");
         handleCloseEditOptionModal();
         await fetchFormFields();
         await filterDataByCategory(selectedCategory.category_id);
@@ -339,15 +357,15 @@ function MainDocForms() {
       );
 
       if (response.data.success) {
-        alert("Option deleted successfully!");
+        showMessage("Option deleted successfully!", "success");
         await fetchFormFields();
         await filterDataByCategory(selectedCategory.category_id);
         await refreshFormPreview(selectedCategory.category_id);
       } else {
-        alert(response.data.message || "Failed to delete option");
+        showMessage(response.data.message || "Failed to delete option", "error");
       }
     } catch (err) {
-      alert(err.response?.data?.message || "Error deleting option");
+      showMessage(err.response?.data?.message || "Error deleting option", "error");
     }
   };
 
@@ -389,7 +407,7 @@ function MainDocForms() {
       );
 
       if (response.data.success) {
-        alert("Form field added successfully!");
+        showMessage("Form field added successfully!", "success");
         handleCloseModal();
         await fetchFormFields(); // Refresh the form fields list
         if (selectedCategory) {
@@ -460,7 +478,7 @@ function MainDocForms() {
       );
 
       if (response.data.success) {
-        alert("Form field updated successfully!");
+        showMessage("Form field updated successfully!", "success");
         handleCloseEditModal();
         await fetchFormFields(); // Refresh the form fields list
         if (selectedCategory) {
@@ -488,17 +506,17 @@ function MainDocForms() {
       );
 
       if (response.data.success) {
-        alert("Form field deleted successfully!");
+        showMessage("Form field deleted successfully!", "success");
         await fetchFormFields(); // Refresh the form fields list
         if (selectedCategory) {
           await filterDataByCategory(selectedCategory.category_id);
           await refreshFormPreview(selectedCategory.category_id);
         }
       } else {
-        alert(response.data.message || "Failed to delete form field");
+        showMessage(response.data.message || "Failed to delete form field", "error");
       }
     } catch (err) {
-      alert(err.response?.data?.message || "Error deleting form field");
+      showMessage(err.response?.data?.message || "Error deleting form field", "error");
     }
   };
 
@@ -616,7 +634,7 @@ function MainDocForms() {
       }
     } catch (err) {
       console.error("Error loading form preview:", err);
-      alert("Error loading form preview");
+      showMessage("Error loading form preview", "error");
     }
   };
 
@@ -2114,6 +2132,68 @@ function MainDocForms() {
                     </button>
                   </div>
                 </form>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Message Modal */}
+        {showMessageModal && (
+          <div
+            className="modal show d-block"
+            tabIndex="-1"
+            style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+            onClick={closeMessageModal}
+          >
+            <div
+              className="modal-dialog modal-dialog-centered"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="modal-content">
+                <div className="modal-header border-0 pb-0">
+                  <button
+                    type="button"
+                    className="btn-close"
+                    onClick={closeMessageModal}
+                  ></button>
+                </div>
+                <div className="modal-body text-center pt-0">
+                  <div className="mb-3">
+                    {messageType === "success" && (
+                      <CheckCircle
+                        size={64}
+                        className="text-success"
+                        strokeWidth={1.5}
+                      />
+                    )}
+                    {messageType === "error" && (
+                      <XCircle
+                        size={64}
+                        className="text-danger"
+                        strokeWidth={1.5}
+                      />
+                    )}
+                    {messageType === "info" && (
+                      <AlertCircle
+                        size={64}
+                        className="text-info"
+                        strokeWidth={1.5}
+                      />
+                    )}
+                  </div>
+                  <h5 className="mb-3">
+                    {messageType === "success" && "Success"}
+                    {messageType === "error" && "Error"}
+                    {messageType === "info" && "Information"}
+                  </h5>
+                  <p className="text-muted mb-4">{messageContent}</p>
+                  <button
+                    className="btn btn-primary"
+                    onClick={closeMessageModal}
+                  >
+                    OK
+                  </button>
+                </div>
               </div>
             </div>
           </div>

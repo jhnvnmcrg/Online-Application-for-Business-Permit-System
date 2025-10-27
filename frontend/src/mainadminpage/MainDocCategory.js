@@ -1,4 +1,4 @@
-import { Plus, Trash, Pencil } from "lucide-react";
+import { Plus, Trash, Pencil, CheckCircle, XCircle, AlertCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import MainSideBar from "../includes/MainSideBar";
@@ -14,12 +14,30 @@ function MainDocCategory() {
   const [categories, setCategories] = useState([]);
   const [editingCategory, setEditingCategory] = useState(null);
 
+  // Message modal states
+  const [showMessageModal, setShowMessageModal] = useState(false);
+  const [messageContent, setMessageContent] = useState("");
+  const [messageType, setMessageType] = useState("success");
+
   const navigate = useNavigate();
   const [username, setUsername] = useState("User");
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  // Helper functions for message modal
+  const showMessage = (message, type = "success") => {
+    setMessageContent(message);
+    setMessageType(type);
+    setShowMessageModal(true);
+  };
+
+  const closeMessageModal = () => {
+    setShowMessageModal(false);
+    setMessageContent("");
+    setMessageType("success");
+  };
 
   useEffect(() => {
     // Get user data from localStorage
@@ -83,7 +101,7 @@ function MainDocCategory() {
       );
 
       if (response.data.success) {
-        alert("Category added successfully!");
+        showMessage("Category added successfully!", "success");
         handleCloseModal();
         fetchCategories(); // Refresh the categories list
       } else {
@@ -126,7 +144,7 @@ function MainDocCategory() {
       );
 
       if (response.data.success) {
-        alert("Category updated successfully!");
+        showMessage("Category updated successfully!", "success");
         handleCloseEditModal();
         fetchCategories(); // Refresh the categories list
       } else {
@@ -150,13 +168,13 @@ function MainDocCategory() {
       );
 
       if (response.data.success) {
-        alert("Category deleted successfully!");
+        showMessage("Category deleted successfully!", "success");
         fetchCategories(); // Refresh the categories list
       } else {
-        alert(response.data.message || "Failed to delete category");
+        showMessage(response.data.message || "Failed to delete category", "error");
       }
     } catch (err) {
-      alert(err.response?.data?.message || "Error deleting category");
+      showMessage(err.response?.data?.message || "Error deleting category", "error");
     }
   };
 
@@ -490,6 +508,41 @@ function MainDocCategory() {
                     </button>
                   </div>
                 </form>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Message Modal */}
+        {showMessageModal && (
+          <div
+            className="modal show d-block"
+            tabIndex="-1"
+            style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+          >
+            <div className="modal-dialog modal-dialog-centered">
+              <div className="modal-content">
+                <div className="modal-body text-center py-4">
+                  {messageType === "success" && (
+                    <CheckCircle className="text-success mb-3" size={48} />
+                  )}
+                  {messageType === "error" && (
+                    <XCircle className="text-danger mb-3" size={48} />
+                  )}
+                  {messageType === "info" && (
+                    <AlertCircle className="text-info mb-3" size={48} />
+                  )}
+                  <p className="mb-0">{messageContent}</p>
+                </div>
+                <div className="modal-footer justify-content-center">
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={closeMessageModal}
+                  >
+                    OK
+                  </button>
+                </div>
               </div>
             </div>
           </div>

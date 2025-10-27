@@ -1,5 +1,5 @@
 import MainSideBar from "../includes/MainSideBar";
-import { Plus, Trash, Pencil } from "lucide-react";
+import { Plus, Trash, Pencil, CheckCircle, XCircle, AlertCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -33,6 +33,25 @@ function MainAssign() {
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  // Message Modal States
+  const [showMessageModal, setShowMessageModal] = useState(false);
+  const [messageContent, setMessageContent] = useState("");
+  const [messageType, setMessageType] = useState("success"); // "success", "error", "info"
+
+  // Helper function to show message modal
+  const showMessage = (message, type = "success") => {
+    setMessageContent(message);
+    setMessageType(type);
+    setShowMessageModal(true);
+  };
+
+  // Helper function to close message modal
+  const closeMessageModal = () => {
+    setShowMessageModal(false);
+    setMessageContent("");
+    setMessageType("success");
+  };
 
   useEffect(() => {
     // Get user data from localStorage
@@ -132,15 +151,15 @@ function MainAssign() {
       );
 
       if (response.data.success) {
-        alert("Assignment added successfully!");
+        showMessage("Assignment added successfully!", "success");
         handleAddModalClose();
         fetchAssignments(); // Refresh assignments list
       } else {
-        alert(response.data.message || "Failed to add assignment");
+        showMessage(response.data.message || "Failed to add assignment", "error");
       }
     } catch (error) {
       console.error("Error adding assignment:", error);
-      alert(error.response?.data?.error || "Error adding assignment");
+      showMessage(error.response?.data?.error || "Error adding assignment", "error");
     } finally {
       setLoading(false);
     }
@@ -177,15 +196,15 @@ function MainAssign() {
       );
 
       if (response.data.success) {
-        alert("Assignment updated successfully!");
+        showMessage("Assignment updated successfully!", "success");
         handleEditModalClose();
         fetchAssignments(); // Refresh assignments list
       } else {
-        alert(response.data.message || "Failed to update assignment");
+        showMessage(response.data.message || "Failed to update assignment", "error");
       }
     } catch (error) {
       console.error("Error updating assignment:", error);
-      alert(error.response?.data?.error || "Error updating assignment");
+      showMessage(error.response?.data?.error || "Error updating assignment", "error");
     } finally {
       setLoading(false);
     }
@@ -217,15 +236,15 @@ function MainAssign() {
       );
 
       if (response.data.success) {
-        alert("Assignment deleted successfully!");
+        showMessage("Assignment deleted successfully!", "success");
         handleDeleteModalClose();
         fetchAssignments(); // Refresh assignments list
       } else {
-        alert(response.data.message || "Failed to delete assignment");
+        showMessage(response.data.message || "Failed to delete assignment", "error");
       }
     } catch (error) {
       console.error("Error deleting assignment:", error);
-      alert(error.response?.data?.error || "Error deleting assignment");
+      showMessage(error.response?.data?.error || "Error deleting assignment", "error");
     } finally {
       setLoading(false);
     }
@@ -636,6 +655,53 @@ function MainAssign() {
                     disabled={loading}
                   >
                     {loading ? "Deleting..." : "Delete Assignment"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Message Modal */}
+        {showMessageModal && (
+          <div
+            className="modal show d-block"
+            tabIndex="-1"
+            style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+          >
+            <div className="modal-dialog modal-dialog-centered">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title d-flex align-items-center gap-2">
+                    {messageType === "success" && (
+                      <CheckCircle className="text-success" />
+                    )}
+                    {messageType === "error" && (
+                      <XCircle className="text-danger" />
+                    )}
+                    {messageType === "info" && (
+                      <AlertCircle className="text-info" />
+                    )}
+                    {messageType === "success" && "Success"}
+                    {messageType === "error" && "Error"}
+                    {messageType === "info" && "Information"}
+                  </h5>
+                  <button
+                    type="button"
+                    className="btn-close"
+                    onClick={closeMessageModal}
+                  ></button>
+                </div>
+                <div className="modal-body">
+                  <p className="mb-0">{messageContent}</p>
+                </div>
+                <div className="modal-footer">
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={closeMessageModal}
+                  >
+                    OK
                   </button>
                 </div>
               </div>

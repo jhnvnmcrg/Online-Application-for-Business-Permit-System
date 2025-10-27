@@ -38,6 +38,8 @@ function UserTransaction() {
   const [timeline, setTimeline] = useState([]);
   const [whatsNext, setWhatsNext] = useState(null);
   const [loadingTimeline, setLoadingTimeline] = useState(false);
+  const [showMessageModal, setShowMessageModal] = useState(false);
+  const [messageModal, setMessageModal] = useState({ title: "", message: "", type: "success" });
 
   // API Base URL
   const API_URL = "https://oabs-f7by.onrender.com";
@@ -165,6 +167,15 @@ function UserTransaction() {
     }
   };
 
+  const showMessage = (title, message, type = "success") => {
+    setMessageModal({ title, message, type });
+    setShowMessageModal(true);
+  };
+
+  const closeMessageModal = () => {
+    setShowMessageModal(false);
+  };
+
   const handleViewDetails = async (request) => {
     setSelectedRequest(request);
     setShowModal(true);
@@ -197,7 +208,7 @@ function UserTransaction() {
         // Close modal
         closeModal();
         // Show success message (optional - you can add a success state)
-        alert("Request cancelled successfully");
+        showMessage("Success", "Request cancelled successfully", "success");
       } else {
         setError(response.data.message || "Failed to cancel request");
         setShowCancelConfirm(false);
@@ -341,7 +352,7 @@ function UserTransaction() {
         await fetchRequests();
         setShowUpdateModal(false);
         closeModal();
-        alert("Request updated successfully");
+        showMessage("Success", "Request updated successfully", "success");
       } else {
         setError(response.data.message || "Failed to update request");
       }
@@ -1266,6 +1277,48 @@ function UserTransaction() {
                     </div>
                   )}
                 </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Message Modal */}
+      {showMessageModal && (
+        <div
+          className="modal show d-block"
+          style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+          onClick={closeMessageModal}
+        >
+          <div
+            className="modal-dialog modal-dialog-centered"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-content">
+              <div className={`modal-header text-white ${messageModal.type === "success" ? "bg-success" : messageModal.type === "error" ? "bg-danger" : "bg-info"}`}>
+                <h5 className="modal-title d-flex align-items-center gap-2">
+                  {messageModal.type === "success" && <CheckCircle size={20} />}
+                  {messageModal.type === "error" && <XCircle size={20} />}
+                  {messageModal.type === "info" && <AlertCircle size={20} />}
+                  {messageModal.title}
+                </h5>
+                <button
+                  type="button"
+                  className="btn-close btn-close-white"
+                  onClick={closeMessageModal}
+                ></button>
+              </div>
+              <div className="modal-body">
+                <p className="mb-0">{messageModal.message}</p>
+              </div>
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={closeMessageModal}
+                >
+                  Close
+                </button>
               </div>
             </div>
           </div>

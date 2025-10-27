@@ -39,6 +39,8 @@ function ProcessorPayments() {
   const [showLightbox, setShowLightbox] = useState(false);
   const [lightboxImage, setLightboxImage] = useState("");
   const [showReceipt, setShowReceipt] = useState(false);
+  const [showMessageModal, setShowMessageModal] = useState(false);
+  const [messageModal, setMessageModal] = useState({ title: "", message: "", type: "success" });
 
   // Statistics
   const [stats, setStats] = useState({
@@ -284,13 +286,13 @@ function ProcessorPayments() {
               }
             } catch (err) {
               console.error("Error fetching payment for receipt:", err);
-              alert("Payment verified successfully! Please click the Print button in the table to print the receipt.");
+              showMessage("Success", "Payment verified successfully! Please click the Print button in the table to print the receipt.", "success");
             }
           } else {
-            alert("Payment verified successfully!");
+            showMessage("Success", "Payment verified successfully!", "success");
           }
         } else {
-          alert(`Payment ${verifyStatus.toLowerCase()} successfully`);
+          showMessage("Success", `Payment ${verifyStatus.toLowerCase()} successfully`, "success");
         }
       } else {
         setError(response.data.message || "Failed to verify payment");
@@ -324,6 +326,15 @@ function ProcessorPayments() {
 
   const printReceipt = () => {
     window.print();
+  };
+
+  const showMessage = (title, message, type = "success") => {
+    setMessageModal({ title, message, type });
+    setShowMessageModal(true);
+  };
+
+  const closeMessageModal = () => {
+    setShowMessageModal(false);
   };
 
   const handleImageClick = (imageUrl) => {
@@ -1174,6 +1185,48 @@ function ProcessorPayments() {
                 >
                   <Printer size={16} />
                   Print Receipt
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Message Modal */}
+      {showMessageModal && (
+        <div
+          className="modal show d-block"
+          style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+          onClick={closeMessageModal}
+        >
+          <div
+            className="modal-dialog modal-dialog-centered"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-content">
+              <div className={`modal-header text-white ${messageModal.type === "success" ? "bg-success" : messageModal.type === "error" ? "bg-danger" : "bg-info"}`}>
+                <h5 className="modal-title d-flex align-items-center gap-2">
+                  {messageModal.type === "success" && <CheckCircle size={20} />}
+                  {messageModal.type === "error" && <XCircle size={20} />}
+                  {messageModal.type === "info" && <AlertCircle size={20} />}
+                  {messageModal.title}
+                </h5>
+                <button
+                  type="button"
+                  className="btn-close btn-close-white"
+                  onClick={closeMessageModal}
+                ></button>
+              </div>
+              <div className="modal-body">
+                <p className="mb-0">{messageModal.message}</p>
+              </div>
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={closeMessageModal}
+                >
+                  Close
                 </button>
               </div>
             </div>

@@ -1,5 +1,5 @@
 import MainSideBar from "../includes/MainSideBar";
-import { Plus, Trash, Pencil, Eye, EyeOff } from "lucide-react";
+import { Plus, Trash, Pencil, Eye, EyeOff, CheckCircle, XCircle, AlertCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -41,6 +41,10 @@ function MainAdmins() {
   const [deleteAdminId, setDeleteAdminId] = useState(null);
   const [deleteAdminName, setDeleteAdminName] = useState("");
 
+  // Message Modal States
+  const [showMessageModal, setShowMessageModal] = useState(false);
+  const [messageModal, setMessageModal] = useState({ title: "", message: "", type: "success" });
+
   // Admins List State
   const [admins, setAdmins] = useState([]);
 
@@ -72,6 +76,16 @@ function MainAdmins() {
     // Fetch admins list
     fetchAdmins();
   }, [navigate]);
+
+  // Message Modal Helper Functions
+  const showMessage = (title, message, type = "success") => {
+    setMessageModal({ title, message, type });
+    setShowMessageModal(true);
+  };
+
+  const closeMessageModal = () => {
+    setShowMessageModal(false);
+  };
 
   // Fetch all admins
   const fetchAdmins = async () => {
@@ -202,15 +216,15 @@ function MainAdmins() {
       );
 
       if (response.data.success) {
-        alert("Admin added successfully!");
+        showMessage("Success", "Admin added successfully!", "success");
         handleAddModalClose();
         fetchAdmins(); // Refresh admins list
       } else {
-        alert(response.data.message || "Failed to add admin");
+        showMessage("Error", response.data.message || "Failed to add admin", "error");
       }
     } catch (error) {
       console.error("Error adding admin:", error);
-      alert(error.response?.data?.error || "Error adding admin");
+      showMessage("Error", error.response?.data?.error || "Error adding admin", "error");
     } finally {
       setLoading(false);
     }
@@ -267,15 +281,15 @@ function MainAdmins() {
       );
 
       if (response.data.success) {
-        alert("Admin updated successfully!");
+        showMessage("Success", "Admin updated successfully!", "success");
         handleEditModalClose();
         fetchAdmins(); // Refresh admins list
       } else {
-        alert(response.data.message || "Failed to update admin");
+        showMessage("Error", response.data.message || "Failed to update admin", "error");
       }
     } catch (error) {
       console.error("Error updating admin:", error);
-      alert(error.response?.data?.error || "Error updating admin");
+      showMessage("Error", error.response?.data?.error || "Error updating admin", "error");
     } finally {
       setLoading(false);
     }
@@ -305,15 +319,15 @@ function MainAdmins() {
       );
 
       if (response.data.success) {
-        alert("Admin deleted successfully!");
+        showMessage("Success", "Admin deleted successfully!", "success");
         handleDeleteModalClose();
         fetchAdmins(); // Refresh admins list
       } else {
-        alert(response.data.message || "Failed to delete admin");
+        showMessage("Error", response.data.message || "Failed to delete admin", "error");
       }
     } catch (error) {
       console.error("Error deleting admin:", error);
-      alert(error.response?.data?.error || "Error deleting admin");
+      showMessage("Error", error.response?.data?.error || "Error deleting admin", "error");
     } finally {
       setLoading(false);
     }
@@ -866,6 +880,51 @@ function MainAdmins() {
                     disabled={loading}
                   >
                     {loading ? "Deleting..." : "Delete Admin"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Message Modal */}
+        {showMessageModal && (
+          <div
+            className="modal show d-block"
+            tabIndex="-1"
+            style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+          >
+            <div className="modal-dialog modal-dialog-centered">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title d-flex align-items-center">
+                    {messageModal.type === "success" && (
+                      <CheckCircle size={24} className="text-success me-2" />
+                    )}
+                    {messageModal.type === "error" && (
+                      <XCircle size={24} className="text-danger me-2" />
+                    )}
+                    {messageModal.type === "warning" && (
+                      <AlertCircle size={24} className="text-warning me-2" />
+                    )}
+                    {messageModal.title}
+                  </h5>
+                  <button
+                    type="button"
+                    className="btn-close"
+                    onClick={closeMessageModal}
+                  ></button>
+                </div>
+                <div className="modal-body">
+                  <p className="mb-0">{messageModal.message}</p>
+                </div>
+                <div className="modal-footer">
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={closeMessageModal}
+                  >
+                    OK
                   </button>
                 </div>
               </div>

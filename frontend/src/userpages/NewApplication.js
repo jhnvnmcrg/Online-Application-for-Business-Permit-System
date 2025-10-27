@@ -1,6 +1,7 @@
   import { Link, useLocation } from "react-router-dom";
 import React, { useState } from "react";
 import UserTopBar from "../includes/UserTopBar";
+import { CheckCircle, XCircle, AlertCircle } from "lucide-react";
 
 function NewApplication() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -28,7 +29,7 @@ function NewApplication() {
       const file = e.target.files[0];
       if (file) {
         if (file.size > 5 * 1024 * 1024) {
-          alert("File size exceeds 5MB limit");
+          showMessage("error", "File size exceeds 5MB limit");
           return;
         }
         // Simulate successful upload
@@ -36,7 +37,7 @@ function NewApplication() {
           ...prev,
           [documentNumber]: true,
         }));
-        alert(`${file.name} uploaded successfully`);
+        showMessage("success", `${file.name} uploaded successfully`);
       }
     };
     input.click();
@@ -57,7 +58,7 @@ function NewApplication() {
       const file = e.target.files[0];
       if (file) {
         if (file.size > 5 * 1024 * 1024) {
-          alert("File size exceeds 5MB limit");
+          showMessage("error", "File size exceeds 5MB limit");
           return;
         }
         const newDocument = {
@@ -66,7 +67,7 @@ function NewApplication() {
           file: file,
         };
         setOtherDocuments((prev) => [...prev, newDocument]);
-        alert(`${file.name} uploaded successfully`);
+        showMessage("success", `${file.name} uploaded successfully`);
       }
     };
     input.click();
@@ -77,7 +78,7 @@ function NewApplication() {
       const url = URL.createObjectURL(doc.file);
       window.open(url, "_blank");
     } else {
-      alert(`Viewing ${doc.name}`);
+      showMessage("info", `Viewing ${doc.name}`);
     }
   };
 
@@ -139,6 +140,22 @@ function NewApplication() {
   const [capitalAmount, setCapitalAmount] = useState("0.00");
   const [isMainLine, setIsMainLine] = useState(false);
   const [editingActivityId, setEditingActivityId] = useState(null);
+
+  // Message modal state
+  const [messageModal, setMessageModal] = useState({
+    show: false,
+    type: "",
+    message: "",
+  });
+
+  // Helper functions for message modal
+  const showMessage = (type, message) => {
+    setMessageModal({ show: true, type, message });
+  };
+
+  const closeMessageModal = () => {
+    setMessageModal({ show: false, type: "", message: "" });
+  };
 
   const businessOptions = [
     { nature: "", line: "DEALER OF COMPUTER & ACCESSORIES", unitBased: "NO" },
@@ -217,7 +234,7 @@ function NewApplication() {
       setIsMainLine(false);
       setEditingActivityId(null);
     } else {
-      alert("Capital should be greater than or equal to 50,000.00");
+      showMessage("error", "Capital should be greater than or equal to 50,000.00");
     }
   };
 
@@ -1278,7 +1295,64 @@ function NewApplication() {
                 </div>
               </div>
             )}
-          
+
+            {/* Message Modal */}
+            {messageModal.show && (
+              <div
+                className="modal d-block"
+                style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+              >
+                <div className="modal-dialog modal-dialog-centered">
+                  <div className="modal-content">
+                    <div className="modal-header border-0 pb-0">
+                      <button
+                        type="button"
+                        className="btn-close"
+                        onClick={closeMessageModal}
+                      ></button>
+                    </div>
+                    <div className="modal-body text-center pt-0">
+                      <div className="mb-3">
+                        {messageModal.type === "success" && (
+                          <CheckCircle
+                            size={64}
+                            className="text-success"
+                            strokeWidth={1.5}
+                          />
+                        )}
+                        {messageModal.type === "error" && (
+                          <XCircle
+                            size={64}
+                            className="text-danger"
+                            strokeWidth={1.5}
+                          />
+                        )}
+                        {messageModal.type === "info" && (
+                          <AlertCircle
+                            size={64}
+                            className="text-primary"
+                            strokeWidth={1.5}
+                          />
+                        )}
+                      </div>
+                      <h5 className="mb-3">
+                        {messageModal.type === "success" && "Success"}
+                        {messageModal.type === "error" && "Error"}
+                        {messageModal.type === "info" && "Information"}
+                      </h5>
+                      <p className="text-muted mb-4">{messageModal.message}</p>
+                      <button
+                        className="btn btn-primary px-4"
+                        onClick={closeMessageModal}
+                      >
+                        OK
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
       </UserTopBar>
     </>
   );

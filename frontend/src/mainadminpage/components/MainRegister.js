@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, CheckCircle, XCircle, AlertCircle } from "lucide-react";
 
 function MainRegister() {
 
@@ -18,6 +18,19 @@ function MainRegister() {
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showRetypePassword, setShowRetypePassword] = useState(false);
+  const [messageModal, setMessageModal] = useState({
+    isOpen: false,
+    message: "",
+    type: "info",
+  });
+
+  const showMessage = (message, type = "info") => {
+    setMessageModal({ isOpen: true, message, type });
+  };
+
+  const closeMessageModal = () => {
+    setMessageModal({ isOpen: false, message: "", type: "info" });
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -72,8 +85,10 @@ function MainRegister() {
       );
 
       if (response.data.success) {
-        alert("Account created successfully! Please log in.");
-        navigate("/oabps/main/login");
+        showMessage("Account created successfully! Please log in.", "success");
+        setTimeout(() => {
+          navigate("/oabps/main/login");
+        }, 1500);
       }
     } catch (err) {
       if (err.response?.data?.error) {
@@ -230,7 +245,7 @@ function MainRegister() {
                       style={{ color: "#dc3545" }}
                       onClick={(e) => {
                         e.preventDefault();
-                        alert("Privacy Policy would be displayed here.");
+                        showMessage("Privacy Policy would be displayed here.", "info");
                       }}
                     >
                       PRIVACY POLICY
@@ -276,6 +291,43 @@ function MainRegister() {
           </div>
         </div>
       </div>
+
+      {messageModal.isOpen && (
+        <div
+          className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
+          style={{
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
+            zIndex: 9999,
+          }}
+          onClick={closeMessageModal}
+        >
+          <div
+            className="bg-white rounded shadow-lg p-4"
+            style={{ maxWidth: "400px", width: "90%" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="d-flex flex-column align-items-center text-center">
+              {messageModal.type === "success" && (
+                <CheckCircle size={48} className="text-success mb-3" />
+              )}
+              {messageModal.type === "error" && (
+                <XCircle size={48} className="text-danger mb-3" />
+              )}
+              {messageModal.type === "info" && (
+                <AlertCircle size={48} className="text-primary mb-3" />
+              )}
+              <p className="mb-4">{messageModal.message}</p>
+              <button
+                className="btn text-white px-4"
+                style={{ backgroundColor: "#dc3545" }}
+                onClick={closeMessageModal}
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }
