@@ -51,12 +51,6 @@ function MainRequests() {
   const [paymentAmount, setPaymentAmount] = useState("");
   const [paymentType, setPaymentType] = useState("Permit Fee");
   const [paymentDescription, setPaymentDescription] = useState("");
-  const [receiverName, setReceiverName] = useState("");
-  const [receiverNumber, setReceiverNumber] = useState("");
-  const [receiverAccount, setReceiverAccount] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState("GCash");
-  const [paymentDeadlineDays, setPaymentDeadlineDays] = useState("7");
-  const [paymentDeadline, setPaymentDeadline] = useState("");
   const [addingPayment, setAddingPayment] = useState(false);
   const [existingPayment, setExistingPayment] = useState(null);
   const [isUpdatingPayment, setIsUpdatingPayment] = useState(false);
@@ -261,28 +255,13 @@ function MainRequests() {
       const response = await axios.get(`${API_URL}/api/payment/request/${request.request_id}`);
 
       if (response.data.success && response.data.payments.length > 0) {
-        // Payment exists, populate form with existing data
+        // Payment exists, populate form with existing data (OTC model - Cash only)
         const payment = response.data.payments[0];
         setExistingPayment(payment);
         setIsUpdatingPayment(true);
         setPaymentAmount(payment.amount.toString());
         setPaymentType(payment.payment_type || "Permit Fee");
         setPaymentDescription(payment.description || "");
-        setReceiverName(payment.receiver_name || "");
-        setReceiverNumber(payment.receiver_number || "");
-        setReceiverAccount(payment.receiver_account || "");
-        setPaymentMethod(payment.payment_method || "GCash");
-
-        // Handle deadline - if payment has a deadline, convert to local date format
-        if (payment.payment_deadline) {
-          const deadlineDate = new Date(payment.payment_deadline);
-          const formattedDate = deadlineDate.toISOString().split('T')[0];
-          setPaymentDeadline(formattedDate);
-          setPaymentDeadlineDays("");
-        } else {
-          setPaymentDeadline("");
-          setPaymentDeadlineDays("7");
-        }
 
         // Fetch payment history
         await fetchPaymentHistory(payment.payment_id);
@@ -293,12 +272,6 @@ function MainRequests() {
         setPaymentAmount("");
         setPaymentType("Permit Fee");
         setPaymentDescription("");
-        setReceiverName("");
-        setReceiverNumber("");
-        setReceiverAccount("");
-        setPaymentMethod("GCash");
-        setPaymentDeadlineDays("7");
-        setPaymentDeadline("");
         setPaymentHistory([]);
       }
     } catch (err) {
@@ -306,8 +279,6 @@ function MainRequests() {
       // If error, assume no payment exists
       setExistingPayment(null);
       setIsUpdatingPayment(false);
-      setPaymentDeadlineDays("7");
-      setPaymentDeadline("");
       setPaymentHistory([]);
     }
 
@@ -322,16 +293,6 @@ function MainRequests() {
 
       let response;
 
-      // Prepare deadline data
-      const deadlineData = {};
-      if (paymentDeadline) {
-        // If specific date is set, use it
-        deadlineData.paymentDeadline = new Date(paymentDeadline).toISOString();
-      } else if (paymentDeadlineDays) {
-        // If days is set, let backend calculate
-        deadlineData.deadlineDays = parseInt(paymentDeadlineDays);
-      }
-
       if (isUpdatingPayment && existingPayment) {
         // Update existing payment
         response = await axios.put(
@@ -340,27 +301,19 @@ function MainRequests() {
             amount: parseFloat(paymentAmount),
             paymentType,
             description: paymentDescription,
-            receiverName,
-            receiverNumber,
-            receiverAccount,
-            paymentMethod,
+            paymentMethod: "Cash",
             updatedBy: adminId,
-            ...deadlineData,
           }
         );
       } else {
-        // Add new payment
+        // Add new payment (OTC model - Cash only)
         response = await axios.post(`${API_URL}/api/payment/add`, {
           requestId: selectedRequest.request_id,
           amount: parseFloat(paymentAmount),
           paymentType,
           description: paymentDescription,
-          receiverName,
-          receiverNumber,
-          receiverAccount,
-          paymentMethod,
+          paymentMethod: "Cash",
           createdBy: adminId,
-          ...deadlineData,
         });
       }
 
@@ -370,12 +323,6 @@ function MainRequests() {
         setPaymentAmount("");
         setPaymentType("Permit Fee");
         setPaymentDescription("");
-        setReceiverName("");
-        setReceiverNumber("");
-        setReceiverAccount("");
-        setPaymentMethod("GCash");
-        setPaymentDeadlineDays("7");
-        setPaymentDeadline("");
         setExistingPayment(null);
         setIsUpdatingPayment(false);
         alert(
@@ -418,16 +365,10 @@ function MainRequests() {
 
       if (response.data.success) {
         setShowPaymentModal(false);
-        // Reset form
+        // Reset form (OTC model)
         setPaymentAmount("");
         setPaymentType("Permit Fee");
         setPaymentDescription("");
-        setReceiverName("");
-        setReceiverNumber("");
-        setReceiverAccount("");
-        setPaymentMethod("GCash");
-        setPaymentDeadlineDays("7");
-        setPaymentDeadline("");
         setExistingPayment(null);
         setIsUpdatingPayment(false);
         alert("Payment requirement removed successfully");
@@ -1017,10 +958,10 @@ function MainRequests() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="modal-content">
-              <div className="modal-header bg-success text-white">
+              <div className={`modal-header text-white ${existingPayment?.status === "Verified" ? "bg-info" : "bg-success"}`}>
                 <h5 className="modal-title d-flex align-items-center gap-2">
                   <DollarSign size={20} />
-                  {isUpdatingPayment ? "Update" : "Add"} Payment Requirement - {selectedRequest?.tracking_code}
+                  {existingPayment?.status === "Verified" ? "Payment Details" : (isUpdatingPayment ? "Update" : "Add") + " Payment Requirement"} - {selectedRequest?.tracking_code}
                 </h5>
                 <button
                   type="button"
@@ -1029,288 +970,197 @@ function MainRequests() {
                 ></button>
               </div>
               <div className="modal-body">
-                <form onSubmit={handleAddPayment}>
-                  <div className="alert alert-info">
-                    <strong>Note:</strong> {isUpdatingPayment ? "Update" : "Add"} payment details that the owner needs to pay.
-                    The owner will see these details and upload proof of payment.
-                  </div>
-
-                  <div className="row">
-                    <div className="col-md-6 mb-3">
-                      <label className="form-label">
-                        Amount <span className="text-danger">*</span>
-                      </label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        className="form-control"
-                        placeholder="0.00"
-                        value={paymentAmount}
-                        onChange={(e) => setPaymentAmount(e.target.value)}
-                        required
-                      />
+                {/* Show Read-Only Details if Payment is Verified */}
+                {existingPayment?.status === "Verified" ? (
+                  <>
+                    <div className="alert alert-success">
+                      <strong>Payment Verified!</strong> This payment has been successfully verified and processed.
                     </div>
 
-                    <div className="col-md-6 mb-3">
-                      <label className="form-label">
-                        Payment Type <span className="text-danger">*</span>
-                      </label>
-                      <select
-                        className="form-select"
-                        value={paymentType}
-                        onChange={(e) => setPaymentType(e.target.value)}
-                        required
-                      >
-                        <option value="Permit Fee">Permit Fee</option>
-                        <option value="Processing Fee">Processing Fee</option>
-                        <option value="Renewal Fee">Renewal Fee</option>
-                        <option value="Other">Other</option>
-                      </select>
-                    </div>
-                  </div>
+                    <div className="row">
+                      <div className="col-md-6 mb-3">
+                        <label className="text-muted small">Amount</label>
+                        <p className="mb-0 fw-bold fs-5">₱{parseFloat(paymentAmount).toFixed(2)}</p>
+                      </div>
 
-                  <div className="mb-3">
-                    <label className="form-label">Description</label>
-                    <textarea
-                      className="form-control"
-                      rows={2}
-                      value={paymentDescription}
-                      onChange={(e) => setPaymentDescription(e.target.value)}
-                      placeholder="Payment description or instructions..."
-                    />
-                  </div>
+                      <div className="col-md-6 mb-3">
+                        <label className="text-muted small">Payment Type</label>
+                        <p className="mb-0">{paymentType}</p>
+                      </div>
 
-                  <hr />
-                  <h6 className="mb-3">Payment Deadline</h6>
+                      <div className="col-md-6 mb-3">
+                        <label className="text-muted small">Status</label>
+                        <p className="mb-0">
+                          <span className="badge bg-success">Verified</span>
+                        </p>
+                      </div>
 
-                  <div className="row">
-                    <div className="col-md-6 mb-3">
-                      <label className="form-label">Deadline (Days from now)</label>
-                      <select
-                        className="form-select"
-                        value={paymentDeadlineDays}
-                        onChange={(e) => {
-                          setPaymentDeadlineDays(e.target.value);
-                          if (e.target.value) setPaymentDeadline("");
-                        }}
-                        disabled={paymentDeadline !== ""}
-                      >
-                        <option value="">Custom date...</option>
-                        <option value="3">3 days</option>
-                        <option value="5">5 days</option>
-                        <option value="7">7 days (default)</option>
-                        <option value="10">10 days</option>
-                        <option value="14">14 days</option>
-                        <option value="30">30 days</option>
-                      </select>
-                      <small className="text-muted">
-                        Quick select deadline in days from today
-                      </small>
-                    </div>
+                      <div className="col-md-6 mb-3">
+                        <label className="text-muted small">Payment Method</label>
+                        <p className="mb-0">Cash (Over-the-Counter)</p>
+                      </div>
 
-                    <div className="col-md-6 mb-3">
-                      <label className="form-label">Or Specific Date</label>
-                      <input
-                        type="date"
-                        className="form-control"
-                        value={paymentDeadline}
-                        onChange={(e) => {
-                          setPaymentDeadline(e.target.value);
-                          if (e.target.value) setPaymentDeadlineDays("");
-                        }}
-                        min={new Date().toISOString().split('T')[0]}
-                      />
-                      <small className="text-muted">
-                        Choose a specific deadline date
-                      </small>
-                    </div>
-                  </div>
-
-                  <hr />
-                  <h6 className="mb-3">Payment Receiver Details</h6>
-
-                  <div className="row">
-                    <div className="col-md-6 mb-3">
-                      <label className="form-label">Receiver Name</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        value={receiverName}
-                        onChange={(e) => setReceiverName(e.target.value)}
-                        placeholder="e.g., Municipal Office"
-                      />
-                    </div>
-
-                    <div className="col-md-6 mb-3">
-                      <label className="form-label">Payment Method</label>
-                      <select
-                        className="form-select"
-                        value={paymentMethod}
-                        onChange={(e) => setPaymentMethod(e.target.value)}
-                      >
-                        <option value="GCash">GCash</option>
-                        <option value="PayMaya">PayMaya</option>
-                        <option value="Bank Transfer">Bank Transfer</option>
-                        <option value="Over the Counter">Over the Counter</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="row">
-                    <div className="col-md-6 mb-3">
-                      <label className="form-label">
-                        Receiver Number/Account
-                      </label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        value={receiverNumber}
-                        onChange={(e) => setReceiverNumber(e.target.value)}
-                        placeholder="e.g., 09171234567"
-                      />
-                    </div>
-
-                    <div className="col-md-6 mb-3">
-                      <label className="form-label">
-                        Bank Account (if applicable)
-                      </label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        value={receiverAccount}
-                        onChange={(e) => setReceiverAccount(e.target.value)}
-                        placeholder="e.g., BPI 1234567890"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Payment History Section - Only show when updating */}
-                  {isUpdatingPayment && (
-                    <>
-                      <hr className="my-4" />
-                      <h6 className="mb-3">Payment History</h6>
-
-                      {loadingHistory ? (
-                        <div className="text-center py-3">
-                          <div className="spinner-border spinner-border-sm text-primary" role="status">
-                            <span className="visually-hidden">Loading history...</span>
-                          </div>
+                      {existingPayment?.payment_date && (
+                        <div className="col-md-6 mb-3">
+                          <label className="text-muted small">Payment Date</label>
+                          <p className="mb-0">{formatDate(existingPayment.payment_date)}</p>
                         </div>
-                      ) : paymentHistory.length > 0 ? (
-                        <div className="table-responsive">
-                          <table className="table table-sm table-bordered">
-                            <thead className="table-light">
-                              <tr>
-                                <th>Date</th>
-                                <th>Previous Status</th>
-                                <th>New Status</th>
-                                <th>Changed By</th>
-                                <th>Remarks</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {paymentHistory.map((history) => (
-                                <tr key={history.history_id}>
-                                  <td className="small">
-                                    {new Date(history.created_at).toLocaleString("en-US", {
-                                      month: "short",
-                                      day: "2-digit",
-                                      year: "numeric",
-                                      hour: "2-digit",
-                                      minute: "2-digit",
-                                    })}
-                                  </td>
-                                  <td>
-                                    {history.previous_status ? (
-                                      <span className="badge bg-secondary">{history.previous_status}</span>
-                                    ) : (
-                                      <span className="text-muted">-</span>
-                                    )}
-                                  </td>
-                                  <td>
-                                    <span className={`badge bg-${
-                                      history.new_status === "Pending" ? "warning" :
-                                      history.new_status === "Paid" ? "success" :
-                                      history.new_status === "Verified" ? "primary" :
-                                      history.new_status === "Deleted" ? "danger" :
-                                      "secondary"
-                                    }`}>
-                                      {history.new_status}
-                                    </span>
-                                  </td>
-                                  <td className="small">
-                                    {history.Admins?.fullname || "System"}
-                                  </td>
-                                  <td className="small">{history.remarks || "-"}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      ) : (
-                        <p className="text-muted small mb-0">No history available</p>
                       )}
-                    </>
-                  )}
 
-                  <div className="d-flex justify-content-between gap-2 mt-3">
-                    {/* Left side - Remove Payment button (only show when updating) */}
-                    <div>
-                      {isUpdatingPayment && (
+                      {existingPayment?.receipt_number && (
+                        <div className="col-md-6 mb-3">
+                          <label className="text-muted small">Receipt Number</label>
+                          <p className="mb-0">{existingPayment.receipt_number}</p>
+                        </div>
+                      )}
+
+                      {paymentDescription && (
+                        <div className="col-md-12 mb-3">
+                          <label className="text-muted small">Description</label>
+                          <p className="mb-0">{paymentDescription}</p>
+                        </div>
+                      )}
+
+                      {existingPayment?.remarks && (
+                        <div className="col-md-12 mb-3">
+                          <label className="text-muted small">Remarks</label>
+                          <p className="mb-0">{existingPayment.remarks}</p>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <form onSubmit={handleAddPayment}>
+                    <div className="alert alert-info">
+                      <strong>Note:</strong> {isUpdatingPayment ? "Update" : "Add"} payment requirement for over-the-counter payment.
+                      The owner will be notified to pay at the office counter.
+                    </div>
+
+                    <div className="row">
+                      <div className="col-md-6 mb-3">
+                        <label className="form-label">
+                          Amount <span className="text-danger">*</span>
+                        </label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          className="form-control"
+                          placeholder="0.00"
+                          value={paymentAmount}
+                          onChange={(e) => setPaymentAmount(e.target.value)}
+                          required
+                        />
+                      </div>
+
+                      <div className="col-md-6 mb-3">
+                        <label className="form-label">
+                          Payment Type <span className="text-danger">*</span>
+                        </label>
+                        <select
+                          className="form-select"
+                          value={paymentType}
+                          onChange={(e) => setPaymentType(e.target.value)}
+                          required
+                        >
+                          <option value="Permit Fee">Permit Fee</option>
+                          <option value="Processing Fee">Processing Fee</option>
+                          <option value="Renewal Fee">Renewal Fee</option>
+                          <option value="Other">Other</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="mb-3">
+                      <label className="form-label">Description</label>
+                      <textarea
+                        className="form-control"
+                        rows={2}
+                        value={paymentDescription}
+                        onChange={(e) => setPaymentDescription(e.target.value)}
+                        placeholder="Payment description or instructions..."
+                      />
+                    </div>
+
+                    <div className="alert alert-secondary mb-3">
+                      <strong>Payment Method:</strong> Cash (Over-the-Counter)
+                    </div>
+
+                  
+
+                    <div className="d-flex justify-content-between gap-2 mt-3">
+                      {/* Left side - Remove Payment button (only show when updating and not verified) */}
+                      <div>
+                        {isUpdatingPayment && (
+                          <button
+                            type="button"
+                            className="btn btn-danger"
+                            onClick={handleRemovePayment}
+                            disabled={addingPayment || removingPayment}
+                          >
+                            {removingPayment ? (
+                              <>
+                                <span
+                                  className="spinner-border spinner-border-sm me-2"
+                                  role="status"
+                                ></span>
+                                Removing...
+                              </>
+                            ) : (
+                              <>
+                                <Trash2 size={16} className="me-1" />
+                                Remove Payment
+                              </>
+                            )}
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Right side - Cancel and Save buttons */}
+                      <div className="d-flex gap-2">
                         <button
                           type="button"
-                          className="btn btn-danger"
-                          onClick={handleRemovePayment}
+                          className="btn btn-secondary"
+                          onClick={closeModals}
                           disabled={addingPayment || removingPayment}
                         >
-                          {removingPayment ? (
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          className="btn btn-success"
+                          disabled={addingPayment || removingPayment}
+                        >
+                          {addingPayment ? (
                             <>
                               <span
                                 className="spinner-border spinner-border-sm me-2"
                                 role="status"
                               ></span>
-                              Removing...
+                              {isUpdatingPayment ? "Updating..." : "Adding..."}
                             </>
                           ) : (
-                            <>
-                              <Trash2 size={16} className="me-1" />
-                              Remove Payment
-                            </>
+                            isUpdatingPayment ? "Update Payment" : "Add Payment"
                           )}
                         </button>
-                      )}
+                      </div>
                     </div>
+                  </form>
+                )}
 
-                    {/* Right side - Cancel and Save buttons */}
-                    <div className="d-flex gap-2">
-                      <button
-                        type="button"
-                        className="btn btn-secondary"
-                        onClick={closeModals}
-                        disabled={addingPayment || removingPayment}
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="submit"
-                        className="btn btn-success"
-                        disabled={addingPayment || removingPayment}
-                      >
-                        {addingPayment ? (
-                          <>
-                            <span
-                              className="spinner-border spinner-border-sm me-2"
-                              role="status"
-                            ></span>
-                            {isUpdatingPayment ? "Updating..." : "Adding..."}
-                          </>
-                        ) : (
-                          isUpdatingPayment ? "Update Payment" : "Add Payment"
-                        )}
-                      </button>
-                    </div>
+                
+
+                {/* Close button for Verified payments */}
+                {existingPayment?.status === "Verified" && (
+                  <div className="d-flex justify-content-end mt-3">
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={closeModals}
+                    >
+                      Close
+                    </button>
                   </div>
-                </form>
+                )}
               </div>
             </div>
           </div>

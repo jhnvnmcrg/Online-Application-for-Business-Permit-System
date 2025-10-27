@@ -57,9 +57,9 @@ function MainTransactions() {
       const response = await axios.get(`${API_URL}/api/request/all`);
 
       if (response.data.success) {
-        // Filter to show only Rejected, Released, and Cancelled
+        // Filter to show only Rejected, Completed, and Cancelled
         const completedRequests = response.data.requests.filter(
-          (req) => req.status === "Rejected" || req.status === "Released" || req.status === "Cancelled"
+          (req) => req.status === "Rejected" || req.status === "Completed" || req.status === "Cancelled"
         );
         setRequests(completedRequests);
         setFilteredRequests(completedRequests);
@@ -156,7 +156,7 @@ function MainTransactions() {
   const getStatusBadge = (status) => {
     const badges = {
       Rejected: { color: "danger", icon: <XCircle size={14} /> },
-      Released: { color: "success", icon: <CheckCircle size={14} /> },
+      Completed: { color: "success", icon: <CheckCircle size={14} /> },
       Cancelled: { color: "secondary", icon: <Ban size={14} /> },
     };
 
@@ -206,7 +206,7 @@ function MainTransactions() {
                 >
                   <option value="All">All Status</option>
                   <option value="Rejected">Rejected</option>
-                  <option value="Released">Released</option>
+                  <option value="Completed">Completed</option>
                   <option value="Cancelled">Cancelled</option>
                 </select>
               </div>

@@ -31,6 +31,8 @@ function MainPayments() {
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [verifyStatus, setVerifyStatus] = useState("");
   const [verifyRemarks, setVerifyRemarks] = useState("");
+  const [receiptNumber, setReceiptNumber] = useState("");
+  const [paymentDate, setPaymentDate] = useState("");
   const [verifying, setVerifying] = useState(false);
   const [showLightbox, setShowLightbox] = useState(false);
   const [lightboxImage, setLightboxImage] = useState("");
@@ -118,10 +120,29 @@ function MainPayments() {
     setShowViewModal(true);
   };
 
-  const handleOpenVerifyModal = (payment) => {
+  const handleOpenVerifyModal = async (payment) => {
     setSelectedPayment(payment);
     setVerifyStatus("");
     setVerifyRemarks("");
+
+    // Set today's date as default payment date
+    const today = new Date().toISOString().split('T')[0];
+    setPaymentDate(today);
+
+    // Generate receipt number - OR-YYYY-NNNNN
+    try {
+      const response = await axios.get(`${API_URL}/api/payment/generate-receipt-number`);
+      if (response.data.success) {
+        setReceiptNumber(response.data.receiptNumber);
+      }
+    } catch (err) {
+      console.error("Failed to generate receipt number:", err);
+      // Fallback if API fails
+      const year = new Date().getFullYear();
+      const random = Math.floor(Math.random() * 100000).toString().padStart(5, '0');
+      setReceiptNumber(`OR-${year}-${random}`);
+    }
+
     setShowVerifyModal(true);
   };
 
@@ -133,17 +154,37 @@ function MainPayments() {
       return;
     }
 
+    // For OTC payments being verified, require receipt number and payment date
+    if (verifyStatus === "Verified") {
+      if (!receiptNumber) {
+        setError("Receipt number is required for verified payments");
+        return;
+      }
+      if (!paymentDate) {
+        setError("Payment date is required for verified payments");
+        return;
+      }
+    }
+
     try {
       setVerifying(true);
       setError("");
 
+      const requestData = {
+        status: verifyStatus,
+        processedBy: adminId,
+        remarks: verifyRemarks || null,
+      };
+
+      // Only include receipt_number and payment_date if status is Verified
+      if (verifyStatus === "Verified") {
+        requestData.receiptNumber = receiptNumber;
+        requestData.paymentDate = paymentDate;
+      }
+
       const response = await axios.put(
         `${API_URL}/api/payment/verify/${selectedPayment.payment_id}`,
-        {
-          status: verifyStatus,
-          verifiedBy: adminId,
-          remarks: verifyRemarks || null,
-        }
+        requestData
       );
 
       if (response.data.success) {
@@ -151,6 +192,8 @@ function MainPayments() {
         setShowVerifyModal(false);
         setVerifyStatus("");
         setVerifyRemarks("");
+        setReceiptNumber("");
+        setPaymentDate("");
         alert(`Payment ${verifyStatus.toLowerCase()} successfully`);
       } else {
         setError(response.data.message || "Failed to verify payment");
@@ -698,19 +741,60 @@ function MainPayments() {
                       required
                     >
                       <option value="">-- Select Status --</option>
-                      <option value="Verified">✅ Verified (Approve Payment)</option>
-                      <option value="Rejected">❌ Rejected (Deny Payment)</option>
+                      <option value="Verified">✅ Verified (Payment Received)</option>
+                      <option value="Rejected">❌ Rejected (Payment Not Received)</option>
                     </select>
                   </div>
 
+                  {/* Show receipt and payment date fields only for Verified status */}
+                  {verifyStatus === "Verified" && (
+                    <>
+                      <div className="mb-3">
+                        <label className="form-label">
+                          Official Receipt Number <span className="text-danger">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          className="form-control"
+                          value={receiptNumber}
+                          onChange={(e) => setReceiptNumber(e.target.value)}
+                          placeholder="OR-YYYY-NNNNN"
+                          required
+                        />
+                        <small className="text-muted">Auto-generated receipt number (editable)</small>
+                      </div>
+
+                      <div className="mb-3">
+                        <label className="form-label">
+                          Payment Date <span className="text-danger">*</span>
+                        </label>
+                        <input
+                          type="date"
+                          className="form-control"
+                          value={paymentDate}
+                          onChange={(e) => setPaymentDate(e.target.value)}
+                          required
+                        />
+                        <small className="text-muted">Date payment was received at counter</small>
+                      </div>
+
+                      <div className="alert alert-success mb-3">
+                        <small>
+                          <strong>Full Payment Only:</strong> Verify that the full amount of ₱{parseFloat(selectedPayment.amount).toFixed(2)} has been received. Partial payments are not accepted.
+                        </small>
+                      </div>
+                    </>
+                  )}
+
                   <div className="mb-3">
-                    <label className="form-label">Remarks (Optional)</label>
+                    <label className="form-label">Remarks {verifyStatus === "Rejected" ? <span className="text-danger">*</span> : "(Optional)"}</label>
                     <textarea
                       className="form-control"
                       rows={3}
                       value={verifyRemarks}
                       onChange={(e) => setVerifyRemarks(e.target.value)}
-                      placeholder="Add verification notes or reason for rejection..."
+                      placeholder={verifyStatus === "Rejected" ? "Please provide reason for rejection..." : "Add verification notes (e.g., 'Paid in full', 'Cash payment received')..."}
+                      required={verifyStatus === "Rejected"}
                     />
                   </div>
 
@@ -734,7 +818,7 @@ function MainPayments() {
                       className={`btn ${
                         verifyStatus === "Verified" ? "btn-success" : "btn-danger"
                       }`}
-                      disabled={verifying}
+                      disabled={verifying || !verifyStatus}
                     >
                       {verifying ? (
                         <>
@@ -751,7 +835,7 @@ function MainPayments() {
                           ) : (
                             <XCircle size={16} className="me-2" />
                           )}
-                          {verifyStatus === "Verified" ? "Verify Payment" : "Reject Payment"}
+                          {verifyStatus === "Verified" ? "Receive & Verify Payment" : "Reject Payment"}
                         </>
                       )}
                     </button>

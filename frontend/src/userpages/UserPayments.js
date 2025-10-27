@@ -9,6 +9,7 @@ import {
   AlertCircle,
   FileText,
   Calendar,
+  Printer,
 } from "lucide-react";
 
 function UserPayments() {
@@ -17,6 +18,7 @@ function UserPayments() {
   const [error, setError] = useState("");
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState(null);
+  const [showPrintSlip, setShowPrintSlip] = useState(false);
 
   const API_URL = "https://oabs-f7by.onrender.com";
   // const API_URL = "http://localhost:3000";
@@ -83,6 +85,20 @@ function UserPayments() {
     setShowPaymentModal(false);
     setSelectedPayment(null);
     setError("");
+  };
+
+  const handlePrintSlip = (payment) => {
+    setSelectedPayment(payment);
+    setShowPrintSlip(true);
+  };
+
+  const closePrintSlip = () => {
+    setShowPrintSlip(false);
+    setSelectedPayment(null);
+  };
+
+  const printSlip = () => {
+    window.print();
   };
 
   const formatDate = (dateString) => {
@@ -183,13 +199,24 @@ function UserPayments() {
                               <td>{getStatusBadge(payment.status)}</td>
                               <td>{formatDate(payment.created_at)}</td>
                               <td>
-                                <button
-                                  className="btn btn-sm btn-info d-flex align-items-center gap-1"
-                                  onClick={() => handleViewPayment(payment)}
-                                >
-                                  <FileText size={14} />
-                                  View Details
-                                </button>
+                                <div className="d-flex gap-1">
+                                  <button
+                                    className="btn btn-sm btn-info d-flex align-items-center gap-1"
+                                    onClick={() => handleViewPayment(payment)}
+                                    title="View Details"
+                                  >
+                                    <FileText size={14} />
+                                  </button>
+                                  {payment.status === "Pending" && (
+                                    <button
+                                      className="btn btn-sm btn-primary d-flex align-items-center gap-1"
+                                      onClick={() => handlePrintSlip(payment)}
+                                      title="Print Payment Slip"
+                                    >
+                                      <Printer size={14} />
+                                    </button>
+                                  )}
+                                </div>
                               </td>
                             </tr>
                           ))
@@ -334,6 +361,148 @@ function UserPayments() {
                     Close
                   </button>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Print Payment Slip Modal */}
+      {showPrintSlip && selectedPayment && (
+        <div
+          className="modal show d-block"
+          style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+          onClick={closePrintSlip}
+        >
+          <div
+            className="modal-dialog modal-lg"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-content">
+              <div
+                className="modal-header text-white d-print-none"
+                style={{ backgroundColor: "#0d6efd" }}
+              >
+                <h5 className="modal-title d-flex align-items-center gap-2">
+                  <Printer size={20} />
+                  Payment Slip - {selectedPayment.tracking_code}
+                </h5>
+                <button
+                  type="button"
+                  className="btn-close btn-close-white"
+                  onClick={closePrintSlip}
+                ></button>
+              </div>
+              <div className="modal-body">
+                {/* Printable Payment Slip */}
+                <div className="payment-slip p-4 border">
+                  {/* Header */}
+                  <div className="text-center mb-4">
+                    <h4 className="mb-2">PAYMENT SLIP</h4>
+                    <h5 className="text-primary">Online Application for Business Permit</h5>
+                    <p className="mb-1 text-muted">City Hall, Main Street, City</p>
+                    <p className="mb-0 text-muted">Tel: (123) 456-7890 | Email: oabp@city.gov</p>
+                  </div>
+
+                  <hr className="my-4" />
+
+                  {/* Payment Information */}
+                  <div className="row mb-4">
+                    <div className="col-12 mb-3">
+                      <h6 className="text-uppercase text-muted small mb-2">Payment Reference</h6>
+                      <h5 className="mb-0 fw-bold">{selectedPayment.reference_number}</h5>
+                    </div>
+
+                    <div className="col-md-6 mb-3">
+                      <label className="text-uppercase text-muted small mb-1">Tracking Code</label>
+                      <p className="mb-0 fw-bold">{selectedPayment.tracking_code}</p>
+                    </div>
+
+                    <div className="col-md-6 mb-3">
+                      <label className="text-uppercase text-muted small mb-1">Category</label>
+                      <p className="mb-0">{selectedPayment.category_name || "N/A"}</p>
+                    </div>
+
+                    <div className="col-md-6 mb-3">
+                      <label className="text-uppercase text-muted small mb-1">Business Owner</label>
+                      <p className="mb-0">{user.fullname || "N/A"}</p>
+                    </div>
+
+                    <div className="col-md-6 mb-3">
+                      <label className="text-uppercase text-muted small mb-1">Contact Number</label>
+                      <p className="mb-0">{user.phone_number || "N/A"}</p>
+                    </div>
+
+                    <div className="col-md-12 mb-3">
+                      <label className="text-uppercase text-muted small mb-1">Email</label>
+                      <p className="mb-0">{user.email || "N/A"}</p>
+                    </div>
+                  </div>
+
+                  <hr className="my-4" />
+
+                  {/* Payment Details */}
+                  <div className="row mb-4">
+                    <div className="col-12 mb-3">
+                      <h6 className="text-uppercase text-muted small mb-2">Payment Details</h6>
+                    </div>
+
+                    <div className="col-md-6 mb-3">
+                      <label className="text-uppercase text-muted small mb-1">Payment Type</label>
+                      <p className="mb-0">{selectedPayment.payment_type}</p>
+                    </div>
+
+                    <div className="col-md-6 mb-3">
+                      <label className="text-uppercase text-muted small mb-1">Amount to Pay</label>
+                      <h4 className="mb-0 text-success fw-bold">₱{parseFloat(selectedPayment.amount).toFixed(2)}</h4>
+                    </div>
+
+                    <div className="col-12 mb-3">
+                      <label className="text-uppercase text-muted small mb-1">Description</label>
+                      <p className="mb-0">{selectedPayment.description || "N/A"}</p>
+                    </div>
+                  </div>
+
+                  <hr className="my-4" />
+
+                  {/* Instructions */}
+                  <div className="alert alert-warning mb-0">
+                    <h6 className="mb-2 fw-bold">PAYMENT INSTRUCTIONS:</h6>
+                    <ol className="mb-2 ps-3">
+                      <li>Present this payment slip to the cashier at the office counter</li>
+                      <li>Payment must be made in full amount (₱{parseFloat(selectedPayment.amount).toFixed(2)})</li>
+                      <li>Accepted payment methods: Cash, Check</li>
+                      <li>Official receipt will be issued upon payment</li>
+                      <li>Keep your official receipt for your records</li>
+                    </ol>
+                    <p className="mb-0 small text-muted">
+                      <strong>Note:</strong> Partial payments are not accepted. Payment must be made during office hours: Mon-Fri, 8:00 AM - 5:00 PM
+                    </p>
+                  </div>
+
+                  {/* Footer */}
+                  <div className="text-center mt-4 pt-3 border-top">
+                    <p className="mb-1 small text-muted">This is a computer-generated payment slip</p>
+                    <p className="mb-0 small text-muted">Generated on: {formatDate(new Date().toISOString())}</p>
+                  </div>
+                </div>
+              </div>
+              <div className="modal-footer d-print-none">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={closePrintSlip}
+                >
+                  Close
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-primary d-flex align-items-center gap-2"
+                  onClick={printSlip}
+                >
+                  <Printer size={16} />
+                  Print Slip
+                </button>
               </div>
             </div>
           </div>

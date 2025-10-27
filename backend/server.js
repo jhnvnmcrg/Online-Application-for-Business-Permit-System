@@ -3708,14 +3708,70 @@ app.put("/api/payment/submit-proof/:paymentId", upload.single("proofPayment"), a
   }
 });
 
-// Verify payment (Admin)
+// Generate receipt number for OTC payment
+app.get("/api/payment/generate-receipt-number", async (req, res) => {
+  try {
+    // Get the latest receipt number from the database
+    const { data, error } = await supabase
+      .from("Payments")
+      .select("receipt_number")
+      .not("receipt_number", "is", null)
+      .order("created_at", { ascending: false })
+      .limit(1);
+
+    if (error) {
+      console.error("Supabase error:", error);
+      // Fallback to random if query fails
+      const year = new Date().getFullYear();
+      const random = Math.floor(Math.random() * 100000).toString().padStart(5, '0');
+      return res.status(200).json({
+        success: true,
+        receiptNumber: `OR-${year}-${random}`,
+      });
+    }
+
+    const year = new Date().getFullYear();
+    let sequenceNumber = 1;
+
+    if (data && data.length > 0 && data[0].receipt_number) {
+      // Parse the last receipt number (format: OR-YYYY-NNNNN)
+      const lastReceipt = data[0].receipt_number;
+      const parts = lastReceipt.split('-');
+
+      if (parts.length === 3 && parts[1] === year.toString()) {
+        // Same year, increment sequence
+        sequenceNumber = parseInt(parts[2]) + 1;
+      }
+      // Different year, start from 1
+    }
+
+    // Format: OR-YYYY-NNNNN (5 digits, zero-padded)
+    const receiptNumber = `OR-${year}-${sequenceNumber.toString().padStart(5, '0')}`;
+
+    res.status(200).json({
+      success: true,
+      receiptNumber: receiptNumber,
+    });
+  } catch (err) {
+    console.error("Generate receipt number error:", err);
+    // Fallback to random on error
+    const year = new Date().getFullYear();
+    const random = Math.floor(Math.random() * 100000).toString().padStart(5, '0');
+    res.status(200).json({
+      success: true,
+      receiptNumber: `OR-${year}-${random}`,
+    });
+  }
+});
+
+// Verify payment (Admin) - OTC Payment Model
 app.put("/api/payment/verify/:paymentId", async (req, res) => {
   try {
     const { paymentId } = req.params;
-    const { status, verifiedBy, remarks } = req.body;
+    const { status, processedBy, remarks, receiptNumber, paymentDate } = req.body;
 
     // Validation
-    if (!paymentId || !status || !verifiedBy) {
+    if (!paymentId || !status || !processedBy) {
       return res.status(400).json({
         success: false,
         message: "Payment ID, status, and admin ID are required",
@@ -3730,14 +3786,33 @@ app.put("/api/payment/verify/:paymentId", async (req, res) => {
       });
     }
 
+    // For verified payments, require receipt number and payment date
+    if (status === "Verified") {
+      if (!receiptNumber || !paymentDate) {
+        return res.status(400).json({
+          success: false,
+          message: "Receipt number and payment date are required for verified payments",
+        });
+      }
+    }
+
+    // Prepare update data
+    const updateData = {
+      status: status,
+      processed_by: processedBy,
+      remarks: remarks || null,
+    };
+
+    // Add receipt number and payment date only for verified payments
+    if (status === "Verified") {
+      updateData.receipt_number = receiptNumber;
+      updateData.payment_date = paymentDate;
+    }
+
     // Update payment
     const { data, error } = await supabase
       .from("Payments")
-      .update({
-        status: status,
-        processed_by: verifiedBy,
-        remarks: remarks || null,
-      })
+      .update(updateData)
       .eq("payment_id", paymentId)
       .select();
 
@@ -3774,6 +3849,16 @@ app.put("/api/payment/verify/:paymentId", async (req, res) => {
         data[0].amount
       );
     }
+
+    // Add to payment history
+    await supabase.from("Payment History").insert([
+      {
+        payment_id: paymentId,
+        status: status,
+        changed_by: processedBy,
+        remarks: remarks || `Payment ${status.toLowerCase()} at counter${status === "Verified" ? ` - Receipt: ${receiptNumber}` : ""}`,
+      },
+    ]);
 
     res.status(200).json({
       success: true,
