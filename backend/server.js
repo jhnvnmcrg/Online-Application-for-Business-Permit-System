@@ -3713,42 +3713,46 @@ app.put("/api/payment/submit-proof/:paymentId", upload.single("proofPayment"), a
 // Generate receipt number for OTC payment
 app.get("/api/payment/generate-receipt-number", async (req, res) => {
   try {
-    // Get the latest receipt number from the database
+    const year = new Date().getFullYear();
+
+    // Get all receipt numbers for the current year
     const { data, error } = await supabase
       .from("Payments")
       .select("receipt_number")
       .not("receipt_number", "is", null)
-      .order("created_at", { ascending: false })
-      .limit(1);
+      .like("receipt_number", `OR-${year}-%`);
 
     if (error) {
       console.error("Supabase error:", error);
-      // Fallback to random if query fails
-      const year = new Date().getFullYear();
-      const random = Math.floor(Math.random() * 100000).toString().padStart(5, '0');
+      // Fallback to starting sequence if query fails
       return res.status(200).json({
         success: true,
-        receiptNumber: `OR-${year}-${random}`,
+        receiptNumber: `OR-${year}-00001`,
       });
     }
 
-    const year = new Date().getFullYear();
-    let sequenceNumber = 1;
+    let maxSequence = 0;
 
-    if (data && data.length > 0 && data[0].receipt_number) {
-      // Parse the last receipt number (format: OR-YYYY-NNNNN)
-      const lastReceipt = data[0].receipt_number;
-      const parts = lastReceipt.split('-');
-
-      if (parts.length === 3 && parts[1] === year.toString()) {
-        // Same year, increment sequence
-        sequenceNumber = parseInt(parts[2]) + 1;
-      }
-      // Different year, start from 1
+    if (data && data.length > 0) {
+      // Parse all receipt numbers and find the highest sequence number
+      data.forEach((payment) => {
+        if (payment.receipt_number) {
+          const parts = payment.receipt_number.split('-');
+          if (parts.length === 3 && parts[1] === year.toString()) {
+            const sequence = parseInt(parts[2]);
+            if (sequence > maxSequence) {
+              maxSequence = sequence;
+            }
+          }
+        }
+      });
     }
 
+    // Increment sequence number
+    const nextSequence = maxSequence + 1;
+
     // Format: OR-YYYY-NNNNN (5 digits, zero-padded)
-    const receiptNumber = `OR-${year}-${sequenceNumber.toString().padStart(5, '0')}`;
+    const receiptNumber = `OR-${year}-${nextSequence.toString().padStart(5, '0')}`;
 
     res.status(200).json({
       success: true,
@@ -3756,12 +3760,11 @@ app.get("/api/payment/generate-receipt-number", async (req, res) => {
     });
   } catch (err) {
     console.error("Generate receipt number error:", err);
-    // Fallback to random on error
+    // Fallback to starting sequence on error
     const year = new Date().getFullYear();
-    const random = Math.floor(Math.random() * 100000).toString().padStart(5, '0');
     res.status(200).json({
       success: true,
-      receiptNumber: `OR-${year}-${random}`,
+      receiptNumber: `OR-${year}-00001`,
     });
   }
 });
