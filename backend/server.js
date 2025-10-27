@@ -3790,6 +3790,7 @@ app.get("/api/payment/all", async (req, res) => {
           request_id,
           tracking_code,
           status,
+          category_id,
           Owners:owner_id (
             owner_id,
             fullname,

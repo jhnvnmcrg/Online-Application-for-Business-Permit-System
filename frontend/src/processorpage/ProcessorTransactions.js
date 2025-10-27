@@ -95,12 +95,12 @@ function ProcessorTransactions() {
         if (response.data.success && response.data.requests) {
           const allRequests = response.data.requests || [];
 
-          // Filter to show only Rejected, Released, and Cancelled for assigned categories
+          // Filter to show only Rejected, Completed, and Cancelled for assigned categories
           const completedRequests = allRequests.filter(
             (req) =>
               categoryIds.includes(req.category_id) &&
               (req.status === "Rejected" ||
-                req.status === "Released" ||
+                req.status === "Completed" ||
                 req.status === "Cancelled")
           );
           setRequests(completedRequests);
@@ -201,7 +201,7 @@ function ProcessorTransactions() {
   const getStatusBadge = (status) => {
     const badges = {
       Rejected: { color: "danger", icon: <XCircle size={14} /> },
-      Released: { color: "success", icon: <CheckCircle size={14} /> },
+      Completed: { color: "primary", icon: <CheckCircle size={14} /> },
       Cancelled: { color: "secondary", icon: <Ban size={14} /> },
     };
 
@@ -251,7 +251,7 @@ function ProcessorTransactions() {
                 >
                   <option value="All">All Status</option>
                   <option value="Rejected">Rejected</option>
-                  <option value="Released">Released</option>
+                  <option value="Completed">Completed</option>
                   <option value="Cancelled">Cancelled</option>
                 </select>
               </div>

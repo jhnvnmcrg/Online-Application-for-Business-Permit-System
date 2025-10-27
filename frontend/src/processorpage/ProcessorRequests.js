@@ -50,12 +50,6 @@ function ProcessorRequests() {
   const [paymentAmount, setPaymentAmount] = useState("");
   const [paymentType, setPaymentType] = useState("Permit Fee");
   const [paymentDescription, setPaymentDescription] = useState("");
-  const [receiverName, setReceiverName] = useState("");
-  const [receiverNumber, setReceiverNumber] = useState("");
-  const [receiverAccount, setReceiverAccount] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState("GCash");
-  const [paymentDeadlineDays, setPaymentDeadlineDays] = useState("7");
-  const [paymentDeadline, setPaymentDeadline] = useState("");
   const [addingPayment, setAddingPayment] = useState(false);
   const [existingPayment, setExistingPayment] = useState(null);
   const [isUpdatingPayment, setIsUpdatingPayment] = useState(false);
@@ -127,12 +121,12 @@ function ProcessorRequests() {
         if (response.data.success && response.data.requests) {
           const allRequests = response.data.requests || [];
 
-          // Filter to show only Pending, Processing, and Approved for assigned categories
+          // Filter to show only Pending, Under Review, and Approved for assigned categories
           const activeRequests = allRequests.filter(
             (req) =>
               categoryIds.includes(req.category_id) &&
               (req.status === "Pending" ||
-                req.status === "Processing" ||
+                req.status === "Under Review" ||
                 req.status === "Approved")
           );
           setRequests(activeRequests);
@@ -222,9 +216,9 @@ function ProcessorRequests() {
   const handleUpdateStatus = async (e) => {
     e.preventDefault();
 
-    // Validate file if status is Released
-    if (newStatus === "Released" && !attachmentFile) {
-      setError("Please upload the document file for release");
+    // Validate file if status is Completed
+    if (newStatus === "Completed" && !attachmentFile) {
+      setError("Please upload the document file for completion");
       return;
     }
 
@@ -306,28 +300,13 @@ function ProcessorRequests() {
       const response = await axios.get(`${API_URL}/api/payment/request/${request.request_id}`);
 
       if (response.data.success && response.data.payments.length > 0) {
-        // Payment exists, populate form with existing data
+        // Payment exists, populate form with existing data (OTC model - Cash only)
         const payment = response.data.payments[0];
         setExistingPayment(payment);
         setIsUpdatingPayment(true);
         setPaymentAmount(payment.amount.toString());
         setPaymentType(payment.payment_type || "Permit Fee");
         setPaymentDescription(payment.description || "");
-        setReceiverName(payment.receiver_name || "");
-        setReceiverNumber(payment.receiver_number || "");
-        setReceiverAccount(payment.receiver_account || "");
-        setPaymentMethod(payment.payment_method || "GCash");
-
-        // Handle deadline - if payment has a deadline, convert to local date format
-        if (payment.payment_deadline) {
-          const deadlineDate = new Date(payment.payment_deadline);
-          const formattedDate = deadlineDate.toISOString().split('T')[0];
-          setPaymentDeadline(formattedDate);
-          setPaymentDeadlineDays("");
-        } else {
-          setPaymentDeadline("");
-          setPaymentDeadlineDays("7");
-        }
 
         // Fetch payment history
         await fetchPaymentHistory(payment.payment_id);
@@ -338,20 +317,13 @@ function ProcessorRequests() {
         setPaymentAmount("");
         setPaymentType("Permit Fee");
         setPaymentDescription("");
-        setReceiverName("");
-        setReceiverNumber("");
-        setReceiverAccount("");
-        setPaymentMethod("GCash");
-        setPaymentDeadlineDays("7");
-        setPaymentDeadline("");
         setPaymentHistory([]);
       }
     } catch (err) {
       console.error("Fetch payment error:", err);
+      // If error, assume no payment exists
       setExistingPayment(null);
       setIsUpdatingPayment(false);
-      setPaymentDeadlineDays("7");
-      setPaymentDeadline("");
       setPaymentHistory([]);
     }
 
@@ -369,43 +341,27 @@ function ProcessorRequests() {
 
       let response;
 
-      // Prepare deadline data
-      const deadlineData = {};
-      if (paymentDeadline) {
-        deadlineData.paymentDeadline = new Date(paymentDeadline).toISOString();
-      } else if (paymentDeadlineDays) {
-        deadlineData.deadlineDays = parseInt(paymentDeadlineDays);
-      }
-
       if (isUpdatingPayment && existingPayment) {
-        // Update existing payment
+        // Update existing payment (OTC model - Cash only)
         response = await axios.put(
           `${API_URL}/api/payment/update/${existingPayment.payment_id}`,
           {
             amount: parseFloat(paymentAmount),
             paymentType,
             description: paymentDescription,
-            receiverName,
-            receiverNumber,
-            receiverAccount,
-            paymentMethod,
+            paymentMethod: "Cash",
             updatedBy: processorId,
-            ...deadlineData,
           }
         );
       } else {
-        // Add new payment
+        // Add new payment (OTC model - Cash only)
         response = await axios.post(`${API_URL}/api/payment/add`, {
           requestId: selectedRequest.request_id,
           amount: parseFloat(paymentAmount),
           paymentType,
           description: paymentDescription,
-          receiverName,
-          receiverNumber,
-          receiverAccount,
-          paymentMethod,
+          paymentMethod: "Cash",
           createdBy: processorId,
-          ...deadlineData,
         });
       }
 
@@ -415,12 +371,6 @@ function ProcessorRequests() {
         setPaymentAmount("");
         setPaymentType("Permit Fee");
         setPaymentDescription("");
-        setReceiverName("");
-        setReceiverNumber("");
-        setReceiverAccount("");
-        setPaymentMethod("GCash");
-        setPaymentDeadlineDays("7");
-        setPaymentDeadline("");
         setExistingPayment(null);
         setIsUpdatingPayment(false);
         alert(
@@ -466,16 +416,10 @@ function ProcessorRequests() {
 
       if (response.data.success) {
         setShowPaymentModal(false);
-        // Reset form
+        // Reset form (OTC model)
         setPaymentAmount("");
         setPaymentType("Permit Fee");
         setPaymentDescription("");
-        setReceiverName("");
-        setReceiverNumber("");
-        setReceiverAccount("");
-        setPaymentMethod("GCash");
-        setPaymentDeadlineDays("7");
-        setPaymentDeadline("");
         setExistingPayment(null);
         setIsUpdatingPayment(false);
         alert("Payment requirement removed successfully");
@@ -529,10 +473,10 @@ function ProcessorRequests() {
   const getStatusBadge = (status) => {
     const badges = {
       Pending: { color: "warning", icon: <Clock size={14} /> },
-      Processing: { color: "info", icon: <AlertTriangle size={14} /> },
+      "Under Review": { color: "info", icon: <AlertTriangle size={14} /> },
       Approved: { color: "success", icon: <CheckCircle size={14} /> },
       Rejected: { color: "danger", icon: <XCircle size={14} /> },
-      Released: { color: "primary", icon: <CheckCircle size={14} /> },
+      Completed: { color: "primary", icon: <CheckCircle size={14} /> },
       Cancelled: { color: "secondary", icon: <Ban size={14} /> },
     };
 
@@ -582,7 +526,7 @@ function ProcessorRequests() {
                 >
                   <option value="All">All Status</option>
                   <option value="Pending">Pending</option>
-                  <option value="Processing">Processing</option>
+                  <option value="Under Review">Under Review</option>
                   <option value="Approved">Approved</option>
                 </select>
               </div>
@@ -608,13 +552,14 @@ function ProcessorRequests() {
                     <th>Owner</th>
                     <th>Date Requested</th>
                     <th>Status</th>
+                    <th>ProcessedBy</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {loading ? (
                     <tr>
-                      <td colSpan="7" className="text-center py-4">
+                      <td colSpan="8" className="text-center py-4">
                         <div className="spinner-border text-primary" role="status">
                           <span className="visually-hidden">Loading...</span>
                         </div>
@@ -622,7 +567,7 @@ function ProcessorRequests() {
                     </tr>
                   ) : currentEntries.length === 0 ? (
                     <tr>
-                      <td colSpan="7" className="text-center text-muted py-4">
+                      <td colSpan="8" className="text-center text-muted py-4">
                         No requests found in your assigned categories
                       </td>
                     </tr>
@@ -639,6 +584,7 @@ function ProcessorRequests() {
                         <td>{request.owner_name || "N/A"}</td>
                         <td>{formatDate(request.date_requested)}</td>
                         <td>{getStatusBadge(request.status)}</td>
+                        <td>{request.processor_name || "Unassigned"}</td>
                         <td>
                           <button
                             className="btn btn-sm btn-info me-1"
@@ -916,10 +862,11 @@ function ProcessorRequests() {
                     >
                       <option value="">-- Select Status --</option>
                       <option value="Pending">Pending</option>
-                      <option value="Processing">Processing</option>
+                      <option value="Under Review">Under Review</option>
                       <option value="Approved">Approved</option>
                       <option value="Rejected">Rejected</option>
-                      <option value="Released">Released</option>
+                      <option value="Completed">Completed</option>
+                      <option value="Cancelled">Cancelled</option>
                     </select>
                   </div>
 
@@ -969,11 +916,11 @@ function ProcessorRequests() {
                     </div>
                   )}
 
-                  {/* Show File Upload for Released status */}
-                  {newStatus === "Released" && (
+                  {/* Show File Upload for Completed status */}
+                  {newStatus === "Completed" && (
                     <>
                       <div className="alert alert-info mb-3">
-                        <strong>Note:</strong> Release date will be set automatically. Please upload the processed document.
+                        <strong>Note:</strong> Completion date will be set automatically. Please upload the processed document.
                       </div>
 
                       <div className="mb-3">
@@ -1050,7 +997,7 @@ function ProcessorRequests() {
         </div>
       )}
 
-      {/* Add Payment Modal - Same structure as MainRequests */}
+      {/* Add Payment Modal */}
       {showPaymentModal && (
         <div
           className="modal show d-block"
@@ -1062,10 +1009,10 @@ function ProcessorRequests() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="modal-content">
-              <div className="modal-header bg-success text-white">
+              <div className={`modal-header text-white ${existingPayment?.status === "Verified" ? "bg-info" : "bg-success"}`}>
                 <h5 className="modal-title d-flex align-items-center gap-2">
                   <DollarSign size={20} />
-                  {isUpdatingPayment ? "Update" : "Add"} Payment Requirement - {selectedRequest?.tracking_code}
+                  {existingPayment?.status === "Verified" ? "Payment Details" : (isUpdatingPayment ? "Update" : "Add") + " Payment Requirement"} - {selectedRequest?.tracking_code}
                 </h5>
                 <button
                   type="button"
@@ -1074,10 +1021,67 @@ function ProcessorRequests() {
                 ></button>
               </div>
               <div className="modal-body">
-                <form onSubmit={handleAddPayment}>
+                {/* Show Read-Only Details if Payment is Verified */}
+                {existingPayment?.status === "Verified" ? (
+                  <>
+                    <div className="alert alert-success">
+                      <strong>Payment Verified!</strong> This payment has been successfully verified and processed.
+                    </div>
+
+                    <div className="row">
+                      <div className="col-md-6 mb-3">
+                        <label className="text-muted small">Amount</label>
+                        <p className="mb-0 fw-bold fs-5">₱{parseFloat(paymentAmount).toFixed(2)}</p>
+                      </div>
+
+                      <div className="col-md-6 mb-3">
+                        <label className="text-muted small">Payment Type</label>
+                        <p className="mb-0">{paymentType}</p>
+                      </div>
+
+                      <div className="col-md-6 mb-3">
+                        <label className="text-muted small">Status</label>
+                        <p className="mb-0">
+                          <span className="badge bg-success">Verified</span>
+                        </p>
+                      </div>
+
+
+
+                      {existingPayment?.payment_date && (
+                        <div className="col-md-6 mb-3">
+                          <label className="text-muted small">Payment Date</label>
+                          <p className="mb-0">{formatDate(existingPayment.payment_date)}</p>
+                        </div>
+                      )}
+
+                      {existingPayment?.receipt_number && (
+                        <div className="col-md-6 mb-3">
+                          <label className="text-muted small">Receipt Number</label>
+                          <p className="mb-0">{existingPayment.receipt_number}</p>
+                        </div>
+                      )}
+
+                      {paymentDescription && (
+                        <div className="col-md-12 mb-3">
+                          <label className="text-muted small">Description</label>
+                          <p className="mb-0">{paymentDescription}</p>
+                        </div>
+                      )}
+
+                      {existingPayment?.remarks && (
+                        <div className="col-md-12 mb-3">
+                          <label className="text-muted small">Remarks</label>
+                          <p className="mb-0">{existingPayment.remarks}</p>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <form onSubmit={handleAddPayment}>
                   <div className="alert alert-info">
-                    <strong>Note:</strong> {isUpdatingPayment ? "Update" : "Add"} payment details that the owner needs to pay.
-                    The owner will see these details and upload proof of payment.
+                    <strong>Note:</strong> {isUpdatingPayment ? "Update" : "Add"} payment requirement for payment.
+
                   </div>
 
                   <div className="row">
@@ -1125,109 +1129,9 @@ function ProcessorRequests() {
                     />
                   </div>
 
-                  <hr />
-                  <h6 className="mb-3">Payment Deadline</h6>
 
-                  <div className="row">
-                    <div className="col-md-6 mb-3">
-                      <label className="form-label">Deadline (Days from now)</label>
-                      <select
-                        className="form-select"
-                        value={paymentDeadlineDays}
-                        onChange={(e) => {
-                          setPaymentDeadlineDays(e.target.value);
-                          if (e.target.value) setPaymentDeadline("");
-                        }}
-                        disabled={paymentDeadline !== ""}
-                      >
-                        <option value="">Custom date...</option>
-                        <option value="3">3 days</option>
-                        <option value="5">5 days</option>
-                        <option value="7">7 days (default)</option>
-                        <option value="10">10 days</option>
-                        <option value="14">14 days</option>
-                        <option value="30">30 days</option>
-                      </select>
-                      <small className="text-muted">
-                        Quick select deadline in days from today
-                      </small>
-                    </div>
 
-                    <div className="col-md-6 mb-3">
-                      <label className="form-label">Or Specific Date</label>
-                      <input
-                        type="date"
-                        className="form-control"
-                        value={paymentDeadline}
-                        onChange={(e) => {
-                          setPaymentDeadline(e.target.value);
-                          if (e.target.value) setPaymentDeadlineDays("");
-                        }}
-                        min={new Date().toISOString().split('T')[0]}
-                      />
-                      <small className="text-muted">
-                        Choose a specific deadline date
-                      </small>
-                    </div>
-                  </div>
 
-                  <hr />
-                  <h6 className="mb-3">Payment Receiver Details</h6>
-
-                  <div className="row">
-                    <div className="col-md-6 mb-3">
-                      <label className="form-label">Receiver Name</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        value={receiverName}
-                        onChange={(e) => setReceiverName(e.target.value)}
-                        placeholder="e.g., Municipal Office"
-                      />
-                    </div>
-
-                    <div className="col-md-6 mb-3">
-                      <label className="form-label">Payment Method</label>
-                      <select
-                        className="form-select"
-                        value={paymentMethod}
-                        onChange={(e) => setPaymentMethod(e.target.value)}
-                      >
-                        <option value="GCash">GCash</option>
-                        <option value="PayMaya">PayMaya</option>
-                        <option value="Bank Transfer">Bank Transfer</option>
-                        <option value="Over the Counter">Over the Counter</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="row">
-                    <div className="col-md-6 mb-3">
-                      <label className="form-label">
-                        Receiver Number/Account
-                      </label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        value={receiverNumber}
-                        onChange={(e) => setReceiverNumber(e.target.value)}
-                        placeholder="e.g., 09171234567"
-                      />
-                    </div>
-
-                    <div className="col-md-6 mb-3">
-                      <label className="form-label">
-                        Bank Account (if applicable)
-                      </label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        value={receiverAccount}
-                        onChange={(e) => setReceiverAccount(e.target.value)}
-                        placeholder="e.g., BPI 1234567890"
-                      />
-                    </div>
-                  </div>
 
                   {/* Payment History Section - Only show when updating */}
                   {isUpdatingPayment && (
@@ -1356,6 +1260,22 @@ function ProcessorRequests() {
                     </div>
                   </div>
                 </form>
+                )}
+
+
+
+                {/* Close button for Verified payments */}
+                {existingPayment?.status === "Verified" && (
+                  <div className="d-flex justify-content-end mt-3">
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={closeModals}
+                    >
+                      Close
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
