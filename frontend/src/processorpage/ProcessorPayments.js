@@ -13,6 +13,7 @@ import {
   FileText,
   User,
   Calendar,
+  Printer,
 } from "lucide-react";
 
 function ProcessorPayments() {
@@ -37,6 +38,7 @@ function ProcessorPayments() {
   const [verifying, setVerifying] = useState(false);
   const [showLightbox, setShowLightbox] = useState(false);
   const [lightboxImage, setLightboxImage] = useState("");
+  const [showReceipt, setShowReceipt] = useState(false);
 
   // Statistics
   const [stats, setStats] = useState({
@@ -250,13 +252,46 @@ function ProcessorPayments() {
       );
 
       if (response.data.success) {
+        const paymentId = selectedPayment.payment_id;
+
+        // Refresh the payments list
         await fetchAssignedCategoriesAndPayments(processorId);
+
+        // Close the verify modal
         setShowVerifyModal(false);
         setVerifyStatus("");
         setVerifyRemarks("");
         setReceiptNumber("");
         setPaymentDate("");
-        alert(`Payment ${verifyStatus.toLowerCase()} successfully`);
+
+        // If payment was verified, ask if user wants to print receipt
+        if (verifyStatus === "Verified") {
+          const shouldPrint = window.confirm(
+            "Payment verified successfully! Would you like to print the official receipt now?"
+          );
+
+          if (shouldPrint) {
+            // Need to get the updated payment from the API
+            try {
+              const paymentResponse = await axios.get(`${API_URL}/api/payment/all`);
+              if (paymentResponse.data.success) {
+                const updatedPayment = paymentResponse.data.payments.find(
+                  p => p.payment_id === paymentId
+                );
+                if (updatedPayment) {
+                  handlePrintReceipt(updatedPayment);
+                }
+              }
+            } catch (err) {
+              console.error("Error fetching payment for receipt:", err);
+              alert("Payment verified successfully! Please click the Print button in the table to print the receipt.");
+            }
+          } else {
+            alert("Payment verified successfully!");
+          }
+        } else {
+          alert(`Payment ${verifyStatus.toLowerCase()} successfully`);
+        }
       } else {
         setError(response.data.message || "Failed to verify payment");
       }
@@ -275,6 +310,20 @@ function ProcessorPayments() {
     setShowVerifyModal(false);
     setSelectedPayment(null);
     setError("");
+  };
+
+  const handlePrintReceipt = (payment) => {
+    setSelectedPayment(payment);
+    setShowReceipt(true);
+  };
+
+  const closeReceipt = () => {
+    setShowReceipt(false);
+    setSelectedPayment(null);
+  };
+
+  const printReceipt = () => {
+    window.print();
   };
 
   const handleImageClick = (imageUrl) => {
@@ -330,8 +379,8 @@ function ProcessorPayments() {
         <div className="container-fluid p-4">
           {/* Page Header */}
           <div className="mb-4">
-            <h2 className="fw-bold text-dark mb-2">Payment Verification (My Categories)</h2>
-            <p className="text-muted">Review and verify payment submissions for your assigned categories</p>
+            <h2 className="fw-bold text-dark mb-2">Payment Verification</h2>
+            <p className="text-muted">Review and verify payment submissions</p>
           </div>
 
           {/* Statistics Cards */}
@@ -499,22 +548,33 @@ function ProcessorPayments() {
                         <td>{getStatusBadge(payment.status)}</td>
                         <td>{formatDate(payment.payment_date)}</td>
                         <td>
-                          <button
-                            className="btn btn-sm btn-info me-1"
-                            onClick={() => handleViewDetails(payment)}
-                            title="View Details"
-                          >
-                            <Eye size={16} />
-                          </button>
-                          {payment.status === "Pending" && (
+                          <div className="d-flex gap-1">
                             <button
-                              className="btn btn-sm btn-success"
-                              onClick={() => handleOpenVerifyModal(payment)}
-                              title="Process Payment"
+                              className="btn btn-sm btn-info"
+                              onClick={() => handleViewDetails(payment)}
+                              title="View Details"
                             >
-                              <CheckCircle size={16} />
+                              <Eye size={16} />
                             </button>
-                          )}
+                            {payment.status === "Pending" && (
+                              <button
+                                className="btn btn-sm btn-success"
+                                onClick={() => handleOpenVerifyModal(payment)}
+                                title="Process Payment"
+                              >
+                                <CheckCircle size={16} />
+                              </button>
+                            )}
+                            {payment.status === "Verified" && (
+                              <button
+                                className="btn btn-sm btn-primary"
+                                onClick={() => handlePrintReceipt(payment)}
+                                title="Print Official Receipt"
+                              >
+                                <Printer size={16} />
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))
@@ -811,40 +871,38 @@ function ProcessorPayments() {
                   {/* Show receipt and payment date fields only for Verified status */}
                   {verifyStatus === "Verified" && (
                     <>
-                      <div className="row">
-                        <div className="col-md-6 mb-3">
-                          <label className="form-label">
-                            Official Receipt Number <span className="text-danger">*</span>
-                          </label>
-                          <input
-                            type="text"
-                            className="form-control"
-                            value={receiptNumber}
-                            onChange={(e) => setReceiptNumber(e.target.value)}
-                            placeholder="OR-YYYY-NNNNN"
-                            required
-                          />
-                          <small className="text-muted">Enter or modify receipt number</small>
-                        </div>
+                      <div className="mb-3">
+                        <label className="form-label">
+                          Official Receipt Number <span className="text-danger">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          className="form-control bg-light"
+                          value={receiptNumber}
+                          readOnly
+                          disabled
+                        />
+                        <small className="text-muted">Auto-generated receipt number</small>
+                      </div>
 
-                        <div className="col-md-6 mb-3">
-                          <label className="form-label">
-                            Payment Date <span className="text-danger">*</span>
-                          </label>
-                          <input
-                            type="date"
-                            className="form-control"
-                            value={paymentDate}
-                            onChange={(e) => setPaymentDate(e.target.value)}
-                            max={new Date().toISOString().split('T')[0]}
-                            required
-                          />
-                          <small className="text-muted">Date payment was received</small>
-                        </div>
+                      <div className="mb-3">
+                        <label className="form-label">
+                          Payment Date <span className="text-danger">*</span>
+                        </label>
+                        <input
+                          type="date"
+                          className="form-control bg-light"
+                          value={paymentDate}
+                          readOnly
+                          disabled
+                        />
+                        <small className="text-muted">Current date (auto-set to today)</small>
                       </div>
 
                       <div className="alert alert-success mb-3">
-                        <strong>Over-the-Counter Payment:</strong> Verify that the full amount of ₱{parseFloat(selectedPayment.amount).toFixed(2)} has been received in cash at the office.
+                        <small>
+                          <strong>Full Payment Only:</strong> Verify that the full amount of ₱{parseFloat(selectedPayment.amount).toFixed(2)} has been received.
+                        </small>
                       </div>
                     </>
                   )}
@@ -933,6 +991,190 @@ function ProcessorPayments() {
                   className="img-fluid"
                   style={{ maxHeight: "90vh", maxWidth: "90vw" }}
                 />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Official Receipt Modal */}
+      {showReceipt && selectedPayment && (
+        <div
+          className="modal show d-block"
+          style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+          onClick={closeReceipt}
+        >
+          <div
+            className="modal-dialog modal-lg"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-content">
+              <div
+                className="modal-header text-white d-print-none"
+                style={{ backgroundColor: "#28a745" }}
+              >
+                <h5 className="modal-title d-flex align-items-center gap-2">
+                  <CheckCircle size={20} />
+                  Official Receipt - {selectedPayment.receipt_number || selectedPayment.reference_number}
+                </h5>
+                <button
+                  type="button"
+                  className="btn-close btn-close-white"
+                  onClick={closeReceipt}
+                ></button>
+              </div>
+              <div className="modal-body">
+                {/* Printable Official Receipt */}
+                <div className="official-receipt p-4 border border-success border-2">
+                  {/* Header */}
+                  <div className="text-center mb-4">
+                    <h3 className="mb-2 text-success fw-bold">OFFICIAL RECEIPT</h3>
+                    <h5>Online Application for Business Permit</h5>
+                    <p className="mb-1">City Hall, Main Street, City</p>
+                    <p className="mb-0">Tel: (123) 456-7890 | Email: oabp@city.gov</p>
+                  </div>
+
+                  <hr className="my-4 border-success" />
+
+                  {/* Receipt Header Info */}
+                  <div className="row mb-4">
+                    <div className="col-md-6 mb-3">
+                      <label className="text-uppercase text-muted small mb-1">Receipt Number</label>
+                      <h5 className="mb-0 fw-bold text-success">{selectedPayment.receipt_number || selectedPayment.reference_number}</h5>
+                    </div>
+
+                    <div className="col-md-6 mb-3">
+                      <label className="text-uppercase text-muted small mb-1">Payment Date</label>
+                      <p className="mb-0 fw-bold">{formatDate(selectedPayment.payment_date)}</p>
+                    </div>
+
+                    <div className="col-md-6 mb-3">
+                      <label className="text-uppercase text-muted small mb-1">Tracking Code</label>
+                      <p className="mb-0 fw-bold">{selectedPayment.Requests?.tracking_code || "N/A"}</p>
+                    </div>
+
+                    <div className="col-md-6 mb-3">
+                      <label className="text-uppercase text-muted small mb-1">Payment Method</label>
+                      <p className="mb-0">{selectedPayment.payment_method || "Cash"}</p>
+                    </div>
+                  </div>
+
+                  <hr className="my-4" />
+
+                  {/* Payor Information */}
+                  <div className="mb-4">
+                    <h6 className="text-uppercase text-muted small mb-3">Received From</h6>
+                    <div className="row">
+                      <div className="col-md-6 mb-2">
+                        <label className="text-uppercase text-muted small mb-1">Name</label>
+                        <p className="mb-0 fw-bold">{selectedPayment.Requests?.Owners?.fullname || "N/A"}</p>
+                      </div>
+
+                      <div className="col-md-6 mb-2">
+                        <label className="text-uppercase text-muted small mb-1">Contact Number</label>
+                        <p className="mb-0">{selectedPayment.Requests?.Owners?.phone_number || "N/A"}</p>
+                      </div>
+
+                      <div className="col-md-12 mb-2">
+                        <label className="text-uppercase text-muted small mb-1">Email Address</label>
+                        <p className="mb-0">{selectedPayment.Requests?.Owners?.email || "N/A"}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <hr className="my-4" />
+
+                  {/* Payment Details */}
+                  <div className="mb-4">
+                    <h6 className="text-uppercase text-muted small mb-3">Payment Details</h6>
+                    <div className="row">
+                      <div className="col-md-6 mb-3">
+                        <label className="text-uppercase text-muted small mb-1">Permit Category</label>
+                        <p className="mb-0">{selectedPayment.Requests?.DocumentCategories?.category_name || "N/A"}</p>
+                      </div>
+
+                      <div className="col-md-6 mb-3">
+                        <label className="text-uppercase text-muted small mb-1">Payment Type</label>
+                        <p className="mb-0">{selectedPayment.payment_type}</p>
+                      </div>
+
+                      <div className="col-md-12 mb-3">
+                        <label className="text-uppercase text-muted small mb-1">Description</label>
+                        <p className="mb-0">{selectedPayment.description || "Payment for business permit application"}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <hr className="my-4" />
+
+                  {/* Amount Section */}
+                  <div className="mb-4">
+                    <div className="row">
+                      <div className="col-md-8 text-end">
+                        <h5 className="mb-0 fw-bold">TOTAL AMOUNT PAID:</h5>
+                      </div>
+                      <div className="col-md-4">
+                        <h3 className="mb-0 fw-bold text-success">₱{parseFloat(selectedPayment.amount).toFixed(2)}</h3>
+                      </div>
+                    </div>
+                  </div>
+
+                  <hr className="my-4" />
+
+                  {/* Processing Information */}
+                  {selectedPayment.ProcessedBy && (
+                    <div className="mb-4">
+                      <div className="row">
+                        <div className="col-md-12 mb-2">
+                          <label className="text-uppercase text-muted small mb-1">Processed By</label>
+                          <p className="mb-0 fw-bold">{selectedPayment.ProcessedBy.fullname || selectedPayment.ProcessedBy.username || "N/A"}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Remarks */}
+                  {selectedPayment.remarks && (
+                    <div className="mb-4">
+                      <label className="text-uppercase text-muted small mb-1">Remarks</label>
+                      <p className="mb-0 fst-italic">{selectedPayment.remarks}</p>
+                    </div>
+                  )}
+
+
+
+                  {/* Footer Notice */}
+                  <div className="text-center mt-5 pt-3 border-top">
+                    <p className="mb-1 small text-muted">This is an official receipt for payment received</p>
+                    <p className="mb-1 small text-muted">Please keep this receipt for your records</p>
+                    <p className="mb-0 small text-muted">Issued on: {formatDate(new Date().toISOString())}</p>
+                  </div>
+
+                  {/* Watermark for verified */}
+                  <div className="text-center mt-3">
+                    <span className="badge bg-success fs-6 px-4 py-2">
+                      <CheckCircle size={16} className="me-2" />
+                      PAYMENT VERIFIED
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div className="modal-footer d-print-none">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={closeReceipt}
+                >
+                  Close
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-success d-flex align-items-center gap-2"
+                  onClick={printReceipt}
+                >
+                  <Printer size={16} />
+                  Print Receipt
+                </button>
               </div>
             </div>
           </div>

@@ -149,7 +149,7 @@ function MainDashboard() {
 
           {/* Stats Cards Row 1 - Main Metrics */}
           <div className="row mb-4">
-            <div className="col-md-3 col-sm-6 mb-3">
+            <div className="col-md-4 col-sm-6 mb-3">
               <div className="card h-100 border-0 shadow-sm">
                 <div className="card-body">
                   <div className="d-flex justify-content-between align-items-start">
@@ -171,7 +171,7 @@ function MainDashboard() {
               </div>
             </div>
 
-            <div className="col-md-3 col-sm-6 mb-3">
+            <div className="col-md-4 col-sm-6 mb-3">
               <div className="card h-100 border-0 shadow-sm">
                 <div className="card-body">
                   <div className="d-flex justify-content-between align-items-start">
@@ -190,7 +190,7 @@ function MainDashboard() {
               </div>
             </div>
 
-            <div className="col-md-3 col-sm-6 mb-3">
+            <div className="col-md-4 col-sm-6 mb-3">
               <div className="card h-100 border-0 shadow-sm">
                 <div className="card-body">
                   <div className="d-flex justify-content-between align-items-start">
@@ -209,26 +209,7 @@ function MainDashboard() {
               </div>
             </div>
 
-            <div className="col-md-3 col-sm-6 mb-3">
-              <div className="card h-100 border-0 shadow-sm">
-                <div className="card-body">
-                  <div className="d-flex justify-content-between align-items-start">
-                    <div>
-                      <p className="text-muted mb-1 small">Payment Overdue</p>
-                      <h3 className="mb-0 fw-bold text-danger">
-                        {stats?.payments?.overdue || 0}
-                      </h3>
-                      <small className="text-danger">
-                        {stats?.payments?.overdue > 0 ? "Requires action" : "All on track"}
-                      </small>
-                    </div>
-                    <div className="bg-danger bg-opacity-10 p-3 rounded">
-                      <AlertCircle size={24} className="text-danger" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+            
           </div>
 
           {/* Stats Cards Row 2 - Detailed Metrics */}

@@ -220,7 +220,7 @@ function ProcessorTransactions() {
       <ProcessorSideBar>
         <div className="container-fluid p-4">
           <div className="bg-light p-4 border-bottom mb-4 shadow-sm">
-            <h4 className="mb-4">Transaction History (My Categories)</h4>
+            <h4 className="mb-4">Transaction History</h4>
 
             {error && (
               <div className="alert alert-danger d-flex align-items-center gap-2">

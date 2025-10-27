@@ -217,14 +217,7 @@ function ProcessorDashboard() {
             <h2 className="display-5 fw-bold text-dark mb-2">
               Welcome, {username}!
             </h2>
-            <p className="text-muted">
-              You are assigned to {assignedCategories?.length || 0} categor{assignedCategories?.length === 1 ? 'y' : 'ies'}
-              {assignedCategories && assignedCategories.length > 0 && (
-                <span className="ms-2">
-                  ({assignedCategories.map((cat) => cat.category_name).join(", ")})
-                </span>
-              )}
-            </p>
+            
           </div>
 
           {error && (
@@ -424,7 +417,7 @@ function ProcessorDashboard() {
                 <div className="card-header bg-white border-bottom">
                   <h5 className="card-title mb-0 d-flex align-items-center gap-2">
                     <FileText size={20} />
-                    Recent Requests (My Categories)
+                    Recent Requests
                   </h5>
                 </div>
                 <div className="card-body">
