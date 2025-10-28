@@ -665,11 +665,23 @@ app.post("/api/user/register", async (req, res) => {
       });
     }
 
+    // Send welcome notification to new user
+    const ownerId = data[0].owner_id;
+    await createNotification(
+      ownerId,
+      'User',
+      'Account',
+      'Welcome to Online BPLS!',
+      `Welcome ${fullname}! Your account has been created successfully. You can now apply for business permits online.`,
+      null,
+      null
+    );
+
     res.status(201).json({
       success: true,
       message: "Account created successfully",
       user: {
-        owner_id: data[0].id,
+        owner_id: data[0].owner_id,
         fullname: data[0].fullname,
         email: data[0].email,
         username: data[0].username,
@@ -2354,6 +2366,25 @@ app.post("/api/assignment/add", async (req, res) => {
       });
     }
 
+    // Notify processor about new assignment
+    const { data: categoryData } = await supabase
+      .from('DocumentCategories')
+      .select('category_name')
+      .eq('category_id', category_id)
+      .single();
+
+    const categoryName = categoryData?.category_name || 'Category';
+
+    await createNotification(
+      admin_id,
+      'Admin',
+      'Assignment',
+      'New Assignment',
+      `You have been assigned to process ${categoryName} requests.`,
+      null,
+      null
+    );
+
     res.status(201).json({
       success: true,
       message: "Assignment added successfully",
@@ -2442,6 +2473,13 @@ app.delete("/api/assignment/delete/:id", async (req, res) => {
   try {
     const { id } = req.params;
 
+    // Get assignment data before deletion
+    const { data: assignmentData } = await supabase
+      .from("Assigned Roles")
+      .select("admin_id, category_id")
+      .eq("assignment_id", id)
+      .single();
+
     // Delete assignment from database
     const { data, error } = await supabase
       .from("Assigned Roles")
@@ -2462,6 +2500,27 @@ app.delete("/api/assignment/delete/:id", async (req, res) => {
         success: false,
         message: "Assignment not found",
       });
+    }
+
+    // Notify processor about assignment removal
+    if (assignmentData) {
+      const { data: categoryData } = await supabase
+        .from('DocumentCategories')
+        .select('category_name')
+        .eq('category_id', assignmentData.category_id)
+        .single();
+
+      const categoryName = categoryData?.category_name || 'Category';
+
+      await createNotification(
+        assignmentData.admin_id,
+        'Admin',
+        'Assignment',
+        'Assignment Removed',
+        `You have been unassigned from processing ${categoryName} requests.`,
+        null,
+        null
+      );
     }
 
     res.status(200).json({
@@ -3619,6 +3678,35 @@ app.put("/api/request/cancel/:requestId", async (req, res) => {
       },
     ]);
 
+    // Notify all main admins about request cancellation
+    const { data: admins } = await supabase
+      .from('Admins')
+      .select('admin_id')
+      .eq('role', 'main')
+      .eq('status', 'active');
+
+    if (admins && admins.length > 0) {
+      const { data: categoryData } = await supabase
+        .from('DocumentCategories')
+        .select('category_name')
+        .eq('category_id', currentRequest.category_id)
+        .single();
+
+      const categoryName = categoryData?.category_name || 'N/A';
+
+      for (const admin of admins) {
+        await createNotification(
+          admin.admin_id,
+          'Admin',
+          'Request',
+          `Request Cancelled - ${currentRequest.tracking_code}`,
+          `The request for ${categoryName} (${currentRequest.tracking_code}) has been cancelled by the user.`,
+          requestId,
+          null
+        );
+      }
+    }
+
     res.status(200).json({
       success: true,
       message: "Request cancelled successfully",
@@ -4174,6 +4262,25 @@ app.put("/api/payment/update/:paymentId", async (req, res) => {
         },
       ]);
 
+    // Notify user about payment requirement update
+    const { data: requestData } = await supabase
+      .from("Requests")
+      .select("owner_id, tracking_code")
+      .eq("request_id", currentPayment.request_id)
+      .single();
+
+    if (requestData) {
+      await createNotification(
+        requestData.owner_id,
+        'User',
+        'Payment',
+        `Payment Updated - ${requestData.tracking_code}`,
+        `The payment requirement for ${requestData.tracking_code} has been updated to ₱${parseFloat(amount).toFixed(2)}.`,
+        currentPayment.request_id,
+        paymentId
+      );
+    }
+
     res.status(200).json({
       success: true,
       message: "Payment requirement updated successfully",
@@ -4208,6 +4315,13 @@ app.delete("/api/payment/delete/:paymentId", async (req, res) => {
       });
     }
 
+    // Get request info for notification before deleting
+    const { data: requestData } = await supabase
+      .from("Requests")
+      .select("owner_id, tracking_code")
+      .eq("request_id", currentPayment.request_id)
+      .single();
+
     // Create history entry before deletion (CASCADE will delete it otherwise)
     await supabase
       .from("Payment History")
@@ -4233,6 +4347,19 @@ app.delete("/api/payment/delete/:paymentId", async (req, res) => {
         success: false,
         message: "Failed to delete payment",
       });
+    }
+
+    // Notify user that payment requirement was removed
+    if (requestData) {
+      await createNotification(
+        requestData.owner_id,
+        'User',
+        'Payment',
+        `Payment Removed - ${requestData.tracking_code}`,
+        `The payment requirement of ₱${parseFloat(currentPayment.amount).toFixed(2)} for ${requestData.tracking_code} has been removed.`,
+        currentPayment.request_id,
+        null
+      );
     }
 
     res.status(200).json({

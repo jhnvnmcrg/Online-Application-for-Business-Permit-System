@@ -268,7 +268,7 @@ function UserSidebar({ children }) {
               </Link>
             </div>
             <div
-              className="d-flex align-items-center gap-2 position-relative me-4"
+              className="d-flex align-items-center gap-2 position-relative me-4 text-white"
               ref={userMenuRef}
             >
               <NotificationBell />
