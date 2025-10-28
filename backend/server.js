@@ -78,8 +78,8 @@ async function notifyAdminNewRequest(requestId, trackingCode, categoryName) {
   const { data: admins } = await supabase
     .from('Admins')
     .select('admin_id')
-    .eq('role', 'Main Admin')
-    .eq('status', 'active');
+    .eq('role', 'Superadmin')
+    .eq('status', 'Active');
 
   // Notify all main admins about the new request
   if (admins && admins.length > 0) {
@@ -113,7 +113,7 @@ async function notifyUserStatusChange(requestId, ownerId, trackingCode, newStatu
   // Notify the USER (owner) about status change
   await createNotification(
     ownerId,
-    'User',
+    'Owner',
     'Request',
     `Request ${trackingCode} - Status Update`,
     message,
@@ -128,8 +128,8 @@ async function notifyAdminPaymentSubmitted(paymentId, requestId, trackingCode, a
   const { data: admins } = await supabase
     .from('Admins')
     .select('admin_id')
-    .eq('role', 'Main Admin')
-    .eq('status', 'active');
+    .eq('role', 'Superadmin')
+    .eq('status', 'Active');
 
   // Notify all main admins about new payment proof
   if (admins && admins.length > 0) {
@@ -161,7 +161,7 @@ async function notifyUserPaymentStatus(paymentId, ownerId, requestId, trackingCo
   // Notify the USER (owner)
   await createNotification(
     ownerId,
-    'User',
+    'Owner',
     'Payment',
     `Payment Update - ${trackingCode}`,
     message,
@@ -668,7 +668,7 @@ app.post("/api/user/register", async (req, res) => {
     const ownerId = data[0].owner_id;
     await createNotification(
       ownerId,
-      'User',
+      'Owner',
       'Account',
       'Welcome to Online BPLS!',
       `Welcome ${fullname}! Your account has been created successfully. You can now apply for business permits online.`,
@@ -3681,8 +3681,8 @@ app.put("/api/request/cancel/:requestId", async (req, res) => {
     const { data: admins } = await supabase
       .from('Admins')
       .select('admin_id')
-      .eq('role', 'main')
-      .eq('status', 'active');
+      .eq('role', 'Superadmin')
+      .eq('status', 'Active');
 
     if (admins && admins.length > 0) {
       const { data: categoryData } = await supabase
@@ -4271,7 +4271,7 @@ app.put("/api/payment/update/:paymentId", async (req, res) => {
     if (requestData) {
       await createNotification(
         requestData.owner_id,
-        'User',
+        'Owner',
         'Payment',
         `Payment Updated - ${requestData.tracking_code}`,
         `The payment requirement for ${requestData.tracking_code} has been updated to ₱${parseFloat(amount).toFixed(2)}.`,
@@ -4352,7 +4352,7 @@ app.delete("/api/payment/delete/:paymentId", async (req, res) => {
     if (requestData) {
       await createNotification(
         requestData.owner_id,
-        'User',
+        'Owner',
         'Payment',
         `Payment Removed - ${requestData.tracking_code}`,
         `The payment requirement of ₱${parseFloat(currentPayment.amount).toFixed(2)} for ${requestData.tracking_code} has been removed.`,
