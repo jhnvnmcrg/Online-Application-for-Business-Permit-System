@@ -27,7 +27,7 @@ function MainDashboard() {
 
   useEffect(() => {
     // Get user data from localStorage
-    const userData = localStorage.getItem("main");
+    const userData = localStorage.getItem("mainadmin");
 
     if (!userData) {
       // If no user data, redirect to login

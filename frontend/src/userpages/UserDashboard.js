@@ -29,7 +29,7 @@ function UserDashboard() {
 
   useEffect(() => {
     // Get user data from localStorage
-    const userData = localStorage.getItem("user");
+    const userData = localStorage.getItem("owner");
 
     if (!userData) {
       // If no user data, redirect to login

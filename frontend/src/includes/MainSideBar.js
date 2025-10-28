@@ -93,12 +93,10 @@ function MainSideBar({ children }) {
   };
 
   const handleLogout = () => {
-    // Clear localStorage
-    localStorage.removeItem("user");
-    localStorage.removeItem("token");
+    
     localStorage.removeItem("userType");
-    localStorage.removeItem("main");
-    localStorage.removeItem("mainToken");
+    localStorage.removeItem("mainadmin");
+    localStorage.removeItem("mainadminToken");
 
     // Redirect to login page
     navigate("/oabps/main/login");

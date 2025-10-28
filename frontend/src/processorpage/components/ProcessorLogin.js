@@ -35,7 +35,7 @@ function ProcessorLogin() {
         // Store user data in localStorage
         localStorage.setItem("processor", JSON.stringify(response.data.user));
         localStorage.setItem("processorToken", response.data.token);
-        localStorage.setItem("userType", "Admin"); // For notification system (not JWT - processors are admins)
+        localStorage.setItem("userType", "Processor"); // For notification system (not JWT - processors are admins)
 
         // Log successful login audit
         try {

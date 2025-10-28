@@ -15,15 +15,16 @@ function NotificationBell() {
 
   // Get user info from localStorage
   const getUserInfo = () => {
-    const userType = localStorage.getItem('userType'); // 'User', 'Admin', or 'Processor'
+    const userType = localStorage.getItem('userType'); // 'Owner', 'Admin', or 'Processor'
 
     // Read from the correct localStorage key based on userType
     let user = {};
-    if (userType === 'User') {
-      user = JSON.parse(localStorage.getItem('user') || '{}');
+    if (userType === 'Owner') {
+      user = JSON.parse(localStorage.getItem('owner') || '{}');
     } else if (userType === 'Admin') {
-      // Try 'main' first (for Main Admin), then 'processor' (for Processor)
-      user = JSON.parse(localStorage.getItem('main') || localStorage.getItem('processor') || '{}');
+      user = JSON.parse(localStorage.getItem('mainadmin') || '{}');
+    } else if (userType === 'Processor') {
+      user = JSON.parse(localStorage.getItem('processor') || '{}');
     }
 
     return { user, userType };
@@ -35,7 +36,7 @@ function NotificationBell() {
       const { user, userType } = getUserInfo();
       if (!user || !userType) return;
 
-      const userId = userType === 'User' ? user.owner_id : user.admin_id;
+      const userId = userType === 'Owner' ? user.owner_id : user.admin_id;
 
       const response = await axios.get(
         `${API_URL}/api/notifications/${userType}/${userId}/unread-count`
@@ -61,7 +62,7 @@ function NotificationBell() {
         return;
       }
 
-      const userId = userType === 'User' ? user.owner_id : user.admin_id;
+      const userId = userType === 'Owner' ? user.owner_id : user.admin_id;
 
       if (!userId) {
         console.warn('❌ User ID not found:', { user, userType });
@@ -122,7 +123,7 @@ function NotificationBell() {
       const { user, userType } = getUserInfo();
       if (!user || !userType) return;
 
-      const userId = userType === 'User' ? user.owner_id : user.admin_id;
+      const userId = userType === 'Owner' ? user.owner_id : user.admin_id;
 
       await axios.put(
         `${API_URL}/api/notifications/${userType}/${userId}/read-all`

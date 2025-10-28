@@ -43,10 +43,10 @@ async function createNotification(userId, userType, type, subject, message, requ
     };
 
     // Set the appropriate foreign key based on user type
-    if (userType === 'Admin') {
+    if (userType === 'Admin' || userType === 'Processor') {
       notificationData.admin_id = userId;
       notificationData.owner_id = null;
-    } else if (userType === 'User') {
+    } else if (userType === 'Owner') {
       notificationData.owner_id = userId;
       notificationData.admin_id = null;
     } else {
@@ -4803,18 +4803,18 @@ app.get("/api/notifications/:userType/:userId", async (req, res) => {
       .limit(parseInt(limit));
 
     // Filter by user type using admin_id or owner_id
-    if (userType === 'Admin') {
+    if (userType === 'Admin' || userType === 'Processor') {
       query = query
         .eq('admin_id', userId)
         .not('admin_id', 'is', null);
-    } else if (userType === 'User') {
+    } else if (userType === 'Owner') {
       query = query
         .eq('owner_id', userId)
         .not('owner_id', 'is', null);
     } else {
       return res.status(400).json({
         success: false,
-        error: 'Invalid user type. Must be "Admin" or "User"'
+        error: 'Invalid user type. Must be "Admin", "Processor", or "Owner"'
       });
     }
 
@@ -4857,18 +4857,18 @@ app.get("/api/notifications/:userType/:userId/unread-count", async (req, res) =>
       .is('read_at', null);
 
     // Filter by user type using admin_id or owner_id
-    if (userType === 'Admin') {
+    if (userType === 'Admin' || userType === 'Processor') {
       query = query
         .eq('admin_id', userId)
         .not('admin_id', 'is', null);
-    } else if (userType === 'User') {
+    } else if (userType === 'Owner') {
       query = query
         .eq('owner_id', userId)
         .not('owner_id', 'is', null);
     } else {
       return res.status(400).json({
         success: false,
-        error: 'Invalid user type'
+        error: 'Invalid user type. Must be "Admin", "Processor", or "Owner"'
       });
     }
 
@@ -4940,18 +4940,18 @@ app.put("/api/notifications/:userType/:userId/read-all", async (req, res) => {
       .is('read_at', null);
 
     // Filter by user type using admin_id or owner_id
-    if (userType === 'Admin') {
+    if (userType === 'Admin' || userType === 'Processor') {
       query = query
         .eq('admin_id', userId)
         .not('admin_id', 'is', null);
-    } else if (userType === 'User') {
+    } else if (userType === 'Owner') {
       query = query
         .eq('owner_id', userId)
         .not('owner_id', 'is', null);
     } else {
       return res.status(400).json({
         success: false,
-        error: 'Invalid user type'
+        error: 'Invalid user type. Must be "Admin", "Processor", or "Owner"'
       });
     }
 

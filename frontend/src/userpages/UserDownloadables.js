@@ -23,7 +23,7 @@ function UserDownloadables() {
   // const API_URL = "http://localhost:3000";
 
   // Get logged-in user from localStorage
-  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const user = JSON.parse(localStorage.getItem("owner") || "{}");
   const ownerId = user.owner_id;
 
   // Fetch released documents on component mount

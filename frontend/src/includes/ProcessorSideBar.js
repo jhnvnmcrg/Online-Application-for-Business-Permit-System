@@ -93,9 +93,7 @@ function ProcessorSideBar({ children }) {
   };
 
   const handleLogout = () => {
-    // Clear localStorage
-    localStorage.removeItem("user");
-    localStorage.removeItem("token");
+    
     localStorage.removeItem("userType");
     localStorage.removeItem("processor");
     localStorage.removeItem("processorToken");

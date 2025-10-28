@@ -44,7 +44,7 @@ function UserSidebar({ children }) {
 
   useEffect(() => {
     // Get user data from localStorage
-    const userData = localStorage.getItem("user");
+    const userData = localStorage.getItem("owner");
 
     if (userData) {
       try {
@@ -64,9 +64,9 @@ function UserSidebar({ children }) {
   };
 
   const handleLogout = () => {
-    // Clear localStorage
-    localStorage.removeItem("user");
-    localStorage.removeItem("token");
+    
+    localStorage.removeItem("owner");
+    localStorage.removeItem("ownerToken");
     localStorage.removeItem("userType");
     // Redirect to login
     navigate("/oabps/user/login");

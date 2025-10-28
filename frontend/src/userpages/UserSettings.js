@@ -41,7 +41,7 @@ function UserSettings() {
   // const API_URL = 'http://localhost:3000';
 
   // Get logged-in user from localStorage
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const user = JSON.parse(localStorage.getItem('owner') || '{}');
   const ownerId = user.owner_id;
 
   useEffect(() => {
@@ -53,7 +53,7 @@ function UserSettings() {
   const fetchUserProfile = async () => {
     try {
       // Load from localStorage first
-      const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+      const storedUser = JSON.parse(localStorage.getItem('owner') || '{}');
       setFullname(storedUser.fullname || '');
       setEmail(storedUser.email || '');
       setUsername(storedUser.username || '');
@@ -89,7 +89,7 @@ function UserSettings() {
           ...user,
           ...response.data.user,
         };
-        localStorage.setItem('user', JSON.stringify(updatedUser));
+        localStorage.setItem('owner', JSON.stringify(updatedUser));
 
         setSuccess('Profile updated successfully!');
         setTimeout(() => setSuccess(''), 3000);

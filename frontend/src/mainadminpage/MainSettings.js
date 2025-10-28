@@ -31,7 +31,7 @@ function MainSettings() {
 
   useEffect(() => {
     // Get admin data from localStorage
-    const userData = localStorage.getItem("main");
+    const userData = localStorage.getItem("mainadmin");
 
     if (!userData) {
       navigate("/oabps/main/login");
@@ -70,7 +70,7 @@ function MainSettings() {
       if (response.data.success) {
         // Update localStorage
         const updatedData = { ...adminData, fullname, email, username };
-        localStorage.setItem("main", JSON.stringify(updatedData));
+        localStorage.setItem("mainadmin", JSON.stringify(updatedData));
         setAdminData(updatedData);
 
         setMessage({

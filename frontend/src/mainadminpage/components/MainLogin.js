@@ -36,8 +36,8 @@ function MainLogin() {
         }
 
         // Store user data in localStorage
-        localStorage.setItem("main", JSON.stringify(response.data.user));
-        localStorage.setItem("token", response.data.token);
+        localStorage.setItem("mainadmin", JSON.stringify(response.data.user));
+        localStorage.setItem("mainadminToken", response.data.token);
         localStorage.setItem("userType", "Admin"); // For notification system (not JWT)
 
         // Log successful login audit

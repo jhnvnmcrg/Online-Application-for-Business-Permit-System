@@ -24,7 +24,7 @@ function UserPayments() {
   const API_URL = "https://oabs-f7by.onrender.com";
   // const API_URL = "http://localhost:3000";
 
-  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const user = JSON.parse(localStorage.getItem("owner") || "{}");
   const ownerId = user.owner_id;
 
   useEffect(() => {

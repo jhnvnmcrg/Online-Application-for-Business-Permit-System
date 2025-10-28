@@ -46,7 +46,7 @@ function UserTransaction() {
   // const API_URL = "http://localhost:3000"; // For local development
 
   // Get logged-in user from localStorage
-  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const user = JSON.parse(localStorage.getItem("owner") || "{}");
   const ownerId = user.owner_id;
 
   // Fetch requests on component mount
