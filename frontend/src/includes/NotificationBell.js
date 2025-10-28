@@ -78,8 +78,15 @@ function NotificationBell() {
       console.log('✅ Notifications response:', response.data);
 
       if (response.data.success) {
-        setNotifications(response.data.notifications);
-        console.log('📬 Loaded', response.data.notifications.length, 'notifications');
+        const notifications = response.data.notifications || [];
+        console.log('📬 Loaded', notifications.length, 'notifications');
+
+        // Debug: Log each notification's recipient
+        notifications.forEach(notif => {
+          console.log(`  - [${notif.type}] ${notif.subject} (admin_id: ${notif.admin_id}, owner_id: ${notif.owner_id})`);
+        });
+
+        setNotifications(notifications);
       }
     } catch (error) {
       console.error('❌ Error fetching notifications:', error);

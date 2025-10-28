@@ -89,7 +89,6 @@ CREATE TABLE public.Notifications (
   type character varying,
   subject character varying,
   message text,
-  status character varying DEFAULT 'Pending'::character varying CHECK (status::text = ANY (ARRAY['Pending'::character varying, 'Sent'::character varying, 'Failed'::character varying, 'Read'::character varying]::text[])),
   request_id integer,
   payment_id integer,
   admin_id integer,

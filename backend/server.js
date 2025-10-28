@@ -39,8 +39,7 @@ async function createNotification(userId, userType, type, subject, message, requ
       subject: subject,
       message: message,
       request_id: requestId,
-      payment_id: paymentId,
-      status: 'Pending'
+      payment_id: paymentId
     };
 
     // Set the appropriate foreign key based on user type
@@ -4805,9 +4804,13 @@ app.get("/api/notifications/:userType/:userId", async (req, res) => {
 
     // Filter by user type using admin_id or owner_id
     if (userType === 'Admin') {
-      query = query.eq('admin_id', userId);
+      query = query
+        .eq('admin_id', userId)
+        .not('admin_id', 'is', null);
     } else if (userType === 'User') {
-      query = query.eq('owner_id', userId);
+      query = query
+        .eq('owner_id', userId)
+        .not('owner_id', 'is', null);
     } else {
       return res.status(400).json({
         success: false,
@@ -4855,9 +4858,13 @@ app.get("/api/notifications/:userType/:userId/unread-count", async (req, res) =>
 
     // Filter by user type using admin_id or owner_id
     if (userType === 'Admin') {
-      query = query.eq('admin_id', userId);
+      query = query
+        .eq('admin_id', userId)
+        .not('admin_id', 'is', null);
     } else if (userType === 'User') {
-      query = query.eq('owner_id', userId);
+      query = query
+        .eq('owner_id', userId)
+        .not('owner_id', 'is', null);
     } else {
       return res.status(400).json({
         success: false,
@@ -4934,9 +4941,13 @@ app.put("/api/notifications/:userType/:userId/read-all", async (req, res) => {
 
     // Filter by user type using admin_id or owner_id
     if (userType === 'Admin') {
-      query = query.eq('admin_id', userId);
+      query = query
+        .eq('admin_id', userId)
+        .not('admin_id', 'is', null);
     } else if (userType === 'User') {
-      query = query.eq('owner_id', userId);
+      query = query
+        .eq('owner_id', userId)
+        .not('owner_id', 'is', null);
     } else {
       return res.status(400).json({
         success: false,
