@@ -116,13 +116,10 @@ function App() {
         <Route path='/tracking' element={<Tracking/>}></Route>
         <Route path='/contactus' element={<ContactUs/>}></Route>
         <Route path='/about' element={<About/>}></Route>
-        
-      
 
-        
+        {/* Catch-all route for 404 - redirect to home */}
+        <Route path='*' element={<Home/>}></Route>
 
-        
-      
       </Routes>
     </BrowserRouter>
   );
