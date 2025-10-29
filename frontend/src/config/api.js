@@ -5,8 +5,10 @@
  * Update REACT_APP_API_URL in .env file to change the API endpoint.
  */
 
-// API Base URL - defaults to production URL if not set in .env
-export const API_URL = process.env.REACT_APP_API_URL || 'https://oabs-f7by.onrender.com';
+// API Base URL - Use production backend
+// IMPORTANT: The backend on Render must have the new auth routes deployed first!
+export const API_URL = 'https://oabs-f7by.onrender.com';
+// For local backend: export const API_URL = 'http://localhost:3000';
 
 /**
  * Get authentication token from localStorage
