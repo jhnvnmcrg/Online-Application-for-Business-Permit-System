@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Eye, EyeOff } from "lucide-react";
+import { API_URL, setAuthToken } from "../../config/api";
 
 function UserLogin() {
   const navigate = useNavigate();
@@ -23,27 +24,41 @@ function UserLogin() {
     setIsLoading(true);
 
     try {
-      const response = await axios.post("https://oabs-f7by.onrender.com/api/user/login", {
+      const response = await axios.post(`${API_URL}/api/user/login`, {
         username: username,
         password: password,
       });
 
       if (response.data.success) {
+        // Check if email is verified
+        if (response.data.user.email_verified === false) {
+          setError("Please verify your email before logging in. Check your inbox for the verification link.");
+          setIsLoading(false);
+          return;
+        }
+
+        // Store JWT tokens
+        if (response.data.accessToken) {
+          setAuthToken(response.data.accessToken);
+          localStorage.setItem('refreshToken', response.data.refreshToken);
+        }
+
         // Store user data in localStorage
         localStorage.setItem("owner", JSON.stringify(response.data.user));
-        localStorage.setItem("ownerToken", response.data.token);
-        localStorage.setItem("userType", "Owner"); // For notification system (not JWT)
+        localStorage.setItem("userType", "Owner"); // For notification system
 
         // Redirect to dashboard
         navigate("/oabps/user/dashboard");
       }
     } catch (err) {
-      if (err.response?.data?.error) {
+      if (err.response?.data?.message) {
+        setError(err.response.data.message);
+      } else if (err.response?.data?.error) {
         setError(err.response.data.error);
       } else {
         setError("Login failed. Please try again.");
       }
-      
+
     } finally {
       setIsLoading(false);
     }

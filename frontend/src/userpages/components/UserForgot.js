@@ -1,62 +1,45 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { Eye, EyeOff } from "lucide-react";
+import { Mail } from "lucide-react";
+import { API_URL } from "../../config/api";
 
 function UserForgot() {
   const navigate = useNavigate();
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [username, setUsername] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  const handleResetPassword = async (e) => {
+  const handleForgotPassword = async (e) => {
     e.preventDefault();
     setError("");
     setSuccess("");
 
     // Validation
-    if (!username || !newPassword || !confirmPassword) {
-      setError("All fields are required");
-      return;
-    }
-
-    if (newPassword.length < 6) {
-      setError("Password must be at least 6 characters long");
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      setError("Passwords do not match");
+    if (!email) {
+      setError("Email is required");
       return;
     }
 
     setIsLoading(true);
 
     try {
-      const response = await axios.post(
-        "https://oabs-f7by.onrender.com/api/user/forgot-password",
-        {
-          username: username,
-          newPassword: newPassword,
-        }
-      );
+      const response = await axios.post(`${API_URL}/api/user/forgot-password`, {
+        email: email,
+      });
 
       if (response.data.success) {
-        setSuccess("Password reset successfully! Redirecting to login...");
-        setTimeout(() => {
-          navigate("/oabps/user/login");
-        }, 2000);
+        setSuccess("Password reset link has been sent to your email! Please check your inbox.");
+        setEmail("");
       }
     } catch (err) {
-      if (err.response?.data?.error) {
+      if (err.response?.data?.message) {
+        setError(err.response.data.message);
+      } else if (err.response?.data?.error) {
         setError(err.response.data.error);
       } else {
-        setError("Failed to reset password. Please try again.");
+        setError("Failed to send reset link. Please try again.");
       }
     } finally {
       setIsLoading(false);
@@ -76,9 +59,9 @@ function UserForgot() {
                     <div className="logo-inner w-50 h-50"></div>
                   </div>
                 </div>
-                <h4 className="fw-semibold text-dark mb-1">Reset Password</h4>
+                <h4 className="fw-semibold text-dark mb-1">Forgot Password</h4>
                 <p className="text-muted mb-4" style={{ fontSize: "14px" }}>
-                  Online Business Permit & Licensing System
+                  Enter your email to receive a password reset link
                 </p>
               </div>
 
@@ -94,93 +77,25 @@ function UserForgot() {
                 </div>
               )}
 
-              <form onSubmit={handleResetPassword}>
-                <div className="mb-3">
-                  
-                  <input
-                    type="text"
-                    className="form-control"
-                    placeholder="Enter your username or email"
-                    value={username}
-                    onChange={(e) => {
-                      setUsername(e.target.value);
-                      setError("");
-                    }}
-                    required
-                    disabled={isLoading}
-                  />
-                </div>
-
-                <div className="mb-3">
-
-                  <div className="position-relative">
+              <form onSubmit={handleForgotPassword}>
+                <div className="mb-4">
+                  <div className="input-group">
+                    <span className="input-group-text bg-white">
+                      <Mail size={20} className="text-muted" />
+                    </span>
                     <input
-                      type={showPassword ? "text" : "password"}
+                      type="email"
                       className="form-control"
-                      placeholder="Enter new password"
-                      value={newPassword}
+                      placeholder="Enter your email address"
+                      value={email}
                       onChange={(e) => {
-                        setNewPassword(e.target.value);
+                        setEmail(e.target.value);
                         setError("");
+                        setSuccess("");
                       }}
                       required
                       disabled={isLoading}
-                      style={{ paddingRight: "40px" }}
                     />
-                    <button
-                      type="button"
-                      className="btn btn-link position-absolute end-0 top-50 translate-middle-y"
-                      onClick={() => setShowPassword(!showPassword)}
-                      disabled={isLoading}
-                      style={{
-                        border: "none",
-                        background: "none",
-                        padding: "0 10px",
-                        color: "#6c757d",
-                      }}
-                    >
-                      {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                    </button>
-                  </div>
-                 
-                </div>
-
-                <div className="mb-3">
-                  
-                  <div className="position-relative">
-                    <input
-                      type={showConfirmPassword ? "text" : "password"}
-                      className="form-control"
-                      placeholder="Re-enter new password"
-                      value={confirmPassword}
-                      onChange={(e) => {
-                        setConfirmPassword(e.target.value);
-                        setError("");
-                      }}
-                      required
-                      disabled={isLoading}
-                      style={{ paddingRight: "40px" }}
-                    />
-                    <button
-                      type="button"
-                      className="btn btn-link position-absolute end-0 top-50 translate-middle-y"
-                      onClick={() =>
-                        setShowConfirmPassword(!showConfirmPassword)
-                      }
-                      disabled={isLoading}
-                      style={{
-                        border: "none",
-                        background: "none",
-                        padding: "0 10px",
-                        color: "#6c757d",
-                      }}
-                    >
-                      {showConfirmPassword ? (
-                        <EyeOff size={20} />
-                      ) : (
-                        <Eye size={20} />
-                      )}
-                    </button>
                   </div>
                 </div>
 
@@ -201,7 +116,7 @@ function UserForgot() {
                       e.target.style.color = "#dc3545";
                     }}
                   >
-                    CANCEL
+                    BACK TO LOGIN
                   </Link>
                   <button
                     type="submit"
@@ -215,7 +130,7 @@ function UserForgot() {
                     }
                     disabled={isLoading}
                   >
-                    {isLoading ? "RESETTING..." : "RESET PASSWORD"}
+                    {isLoading ? "SENDING..." : "SEND RESET LINK"}
                   </button>
                 </div>
               </form>

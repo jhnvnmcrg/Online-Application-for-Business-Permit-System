@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Eye, EyeOff, CheckCircle, XCircle, AlertCircle } from "lucide-react";
+import { API_URL } from "../../config/api";
 
 function UserRegister() {
   const navigate = useNavigate();
@@ -73,22 +74,24 @@ function UserRegister() {
     setIsLoading(true);
 
     try {
-      const response = await axios.post(
-        "https://oabs-f7by.onrender.com/api/user/register",
-        {
-          fullname: formData.fullname,
-          email: formData.email,
-          username: formData.username,
-          password: formData.password,
-        }
-      );
+      const response = await axios.post(`${API_URL}/api/user/register`, {
+        fullname: formData.fullname,
+        email: formData.email,
+        username: formData.username,
+        password: formData.password,
+      });
 
       if (response.data.success) {
-        showMessage("Account created successfully! Please log in.", "success");
-        setTimeout(() => navigate("/oabps/user/login"), 2000);
+        showMessage(
+          "Account created successfully! Please check your email to verify your account before logging in.",
+          "success"
+        );
+        setTimeout(() => navigate("/oabps/user/login"), 3000);
       }
     } catch (err) {
-      if (err.response?.data?.error) {
+      if (err.response?.data?.message) {
+        setError(err.response.data.message);
+      } else if (err.response?.data?.error) {
         setError(err.response.data.error);
       } else {
         setError("Failed to create account. Please try again.");

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Eye, EyeOff } from "lucide-react";
+import { API_URL, setAuthToken } from "../../config/api";
 
 function MainLogin() {
   const navigate = useNavigate();
@@ -23,51 +24,43 @@ function MainLogin() {
     setIsLoading(true);
 
     try {
-      const response = await axios.post("https://oabs-f7by.onrender.com/api/main/login", {
+      const response = await axios.post(`${API_URL}/api/main/login`, {
         username: username,
         password: password,
       });
 
       if (response.data.success) {
+        // Check if email is verified
+        if (response.data.user.email_verified === false) {
+          setError("Please verify your email before logging in. Check your inbox for the verification link.");
+          setIsLoading(false);
+          return;
+        }
+
         // Verify user role is Superadmin
         if (response.data.user.role !== "Superadmin") {
           setError("Access denied. Only Superadmins can login here.");
+          setIsLoading(false);
           return;
+        }
+
+        // Store JWT tokens
+        if (response.data.accessToken) {
+          setAuthToken(response.data.accessToken);
+          localStorage.setItem('refreshToken', response.data.refreshToken);
         }
 
         // Store user data in localStorage
         localStorage.setItem("mainadmin", JSON.stringify(response.data.user));
-        localStorage.setItem("mainadminToken", response.data.token);
-        localStorage.setItem("userType", "Admin"); // For notification system (not JWT)
-
-        // Log successful login audit
-        try {
-          await axios.post("https://oabs-f7by.onrender.com/api/audit/login", {
-            admin_id: response.data.user.admin_id,
-            status: "Success",
-          });
-        } catch (auditError) {
-          console.error("Failed to log audit:", auditError);
-          // Continue with login even if audit fails
-        }
+        localStorage.setItem("userType", "Admin"); // For notification system
 
         // Redirect to dashboard
         navigate("/oabps/main/dashboard");
       }
     } catch (err) {
-      // Log failed login audit
-      if (err.response?.data?.admin_id) {
-        try {
-          await axios.post("https://oabs-f7by.onrender.com/api/audit/login", {
-            admin_id: err.response.data.admin_id,
-            status: "Failed",
-          });
-        } catch (auditError) {
-          console.error("Failed to log audit:", auditError);
-        }
-      }
-
-      if (err.response?.data?.error) {
+      if (err.response?.data?.message) {
+        setError(err.response.data.message);
+      } else if (err.response?.data?.error) {
         setError(err.response.data.error);
       } else {
         setError("Login failed. Please try again.");
