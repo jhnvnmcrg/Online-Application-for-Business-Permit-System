@@ -45,10 +45,6 @@ function UserRegister() {
     e.preventDefault();
     setError("");
 
-    // Debug: Log API_URL
-    console.log("API_URL:", API_URL);
-    console.log("Full URL:", `${API_URL}/api/user/register`);
-
     // Validation
     if (
       !formData.fullname ||
