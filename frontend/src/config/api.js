@@ -6,7 +6,9 @@
  */
 
 // API Base URL - defaults to production URL if not set in .env
-export const API_URL = process.env.REACT_APP_API_URL || 'https://oabs-f7by.onrender.com';
+// Temporarily hardcoded for local development
+export const API_URL = 'http://localhost:3000';
+// export const API_URL = process.env.REACT_APP_API_URL || 'https://oabs-f7by.onrender.com';
 
 /**
  * Get authentication token from localStorage
