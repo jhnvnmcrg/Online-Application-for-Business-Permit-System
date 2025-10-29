@@ -1,5 +1,5 @@
 require('dotenv').config();
-const nodemailer = require('nodemailer');
+const { createTransport } = require('nodemailer');
 
 async function testSendGrid() {
   console.log('Testing SendGrid configuration...\n');
@@ -11,7 +11,7 @@ async function testSendGrid() {
   console.log('API Key:', process.env.EMAIL_PASSWORD ? 'Set (length: ' + process.env.EMAIL_PASSWORD.length + ')' : 'NOT SET');
   console.log('');
 
-  const transporter = nodemailer.createTransporter({
+  const transporter = createTransport({
     host: process.env.EMAIL_HOST,
     port: parseInt(process.env.EMAIL_PORT),
     secure: process.env.EMAIL_SECURE === 'true',
