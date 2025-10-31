@@ -6,7 +6,7 @@ const { createClient } = require("@supabase/supabase-js");
 require("dotenv").config();
 
 // Import security utilities
-const { generalLimiter, uploadLimiter } = require('./middleware/rateLimiter');
+// Rate limiter removed
 
 const app = express();
 app.use(
@@ -21,9 +21,6 @@ app.use(
   })
 );
 app.use(express.json());
-
-// Apply general rate limiter to all routes
-app.use(generalLimiter);
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
