@@ -1,17 +1,21 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { Mail } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { API_URL } from "../../config/api";
 
 function MainForgot() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  const handleForgotPassword = async (e) => {
+  const handleResetPassword = async (e) => {
     e.preventDefault();
     setError("");
     setSuccess("");
@@ -22,16 +26,42 @@ function MainForgot() {
       return;
     }
 
+    if (!newPassword) {
+      setError("New password is required");
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setError("Password must be at least 6 characters long");
+      return;
+    }
+
+    if (!confirmPassword) {
+      setError("Please confirm your password");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      const response = await axios.post(`${API_URL}/api/main/forgot-password`, {
+      const response = await axios.post(`${API_URL}/api/main/reset-password`, {
         email: email,
+        newPassword: newPassword,
       });
 
       if (response.data.success) {
-        setSuccess("Password reset link has been sent to your email! Please check your inbox.");
+        setSuccess("Password reset successfully! You can now log in with your new password.");
         setEmail("");
+        setNewPassword("");
+        setConfirmPassword("");
+        setTimeout(() => {
+          navigate("/oabps/main/login");
+        }, 2000);
       }
     } catch (err) {
       if (err.response?.data?.message) {
@@ -39,7 +69,7 @@ function MainForgot() {
       } else if (err.response?.data?.error) {
         setError(err.response.data.error);
       } else {
-        setError("Failed to send reset link. Please try again.");
+        setError("Failed to reset password. Please try again.");
       }
     } finally {
       setIsLoading(false);
@@ -59,9 +89,9 @@ function MainForgot() {
                     <div className="logo-inner w-50 h-50"></div>
                   </div>
                 </div>
-                <h4 className="fw-semibold text-dark mb-1">Forgot Password</h4>
+                <h4 className="fw-semibold text-dark mb-1">Reset Password</h4>
                 <p className="text-muted mb-4" style={{ fontSize: "14px" }}>
-                  Enter your email to receive a password reset link
+                  Enter your email and new password
                 </p>
               </div>
 
@@ -77,8 +107,8 @@ function MainForgot() {
                 </div>
               )}
 
-              <form onSubmit={handleForgotPassword}>
-                <div className="mb-4">
+              <form onSubmit={handleResetPassword}>
+                <div className="mb-3">
                   <div className="input-group">
                     <span className="input-group-text bg-white">
                       <Mail size={20} className="text-muted" />
@@ -96,6 +126,72 @@ function MainForgot() {
                       required
                       disabled={isLoading}
                     />
+                  </div>
+                </div>
+
+                <div className="mb-3">
+                  <div className="input-group">
+                    <span className="input-group-text bg-white">
+                      <Lock size={20} className="text-muted" />
+                    </span>
+                    <input
+                      type={showNewPassword ? "text" : "password"}
+                      className="form-control"
+                      placeholder="Enter new password"
+                      value={newPassword}
+                      onChange={(e) => {
+                        setNewPassword(e.target.value);
+                        setError("");
+                        setSuccess("");
+                      }}
+                      required
+                      disabled={isLoading}
+                    />
+                    <button
+                      type="button"
+                      className="btn btn-outline-secondary"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                      disabled={isLoading}
+                    >
+                      {showNewPassword ? (
+                        <EyeOff size={20} />
+                      ) : (
+                        <Eye size={20} />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="mb-4">
+                  <div className="input-group">
+                    <span className="input-group-text bg-white">
+                      <Lock size={20} className="text-muted" />
+                    </span>
+                    <input
+                      type={showConfirmPassword ? "text" : "password"}
+                      className="form-control"
+                      placeholder="Confirm new password"
+                      value={confirmPassword}
+                      onChange={(e) => {
+                        setConfirmPassword(e.target.value);
+                        setError("");
+                        setSuccess("");
+                      }}
+                      required
+                      disabled={isLoading}
+                    />
+                    <button
+                      type="button"
+                      className="btn btn-outline-secondary"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      disabled={isLoading}
+                    >
+                      {showConfirmPassword ? (
+                        <EyeOff size={20} />
+                      ) : (
+                        <Eye size={20} />
+                      )}
+                    </button>
                   </div>
                 </div>
 
@@ -130,7 +226,7 @@ function MainForgot() {
                     }
                     disabled={isLoading}
                   >
-                    {isLoading ? "SENDING..." : "SEND RESET LINK"}
+                    {isLoading ? "RESETTING..." : "RESET PASSWORD"}
                   </button>
                 </div>
               </form>

@@ -347,15 +347,15 @@ app.post("/api/main/login", async (req, res) => {
 });
 
 // Main admin (Superadmin) forgot password endpoint
-app.post("/api/main/forgot-password", async (req, res) => {
+app.post("/api/main/reset-password", async (req, res) => {
   try {
-    const { username, newPassword } = req.body;
+    const { email, newPassword } = req.body;
 
     // Validation
-    if (!username || !newPassword) {
+    if (!email || !newPassword) {
       return res.status(400).json({
         success: false,
-        error: "Username/Email and new password are required",
+        error: "Email and new password are required",
       });
     }
 
@@ -366,17 +366,17 @@ app.post("/api/main/forgot-password", async (req, res) => {
       });
     }
 
-    // Find admin by username or email (any admin can reset, not limited to Superadmin)
+    // Find admin by email
     const { data: user, error } = await supabase
       .from("Admins")
       .select("*")
-      .or(`username.eq.${username},email.eq.${username}`)
+      .eq("email", email)
       .single();
 
     if (error || !user) {
       return res.status(404).json({
         success: false,
-        error: "Admin account not found with this username/email",
+        error: "Admin account not found with this email",
       });
     }
 
@@ -404,7 +404,7 @@ app.post("/api/main/forgot-password", async (req, res) => {
       message: "Password reset successfully",
     });
   } catch (err) {
-    console.error("Main admin forgot password error:", err);
+    console.error("Main admin reset password error:", err);
     res.status(500).json({
       success: false,
       error: "An error occurred during password reset",
@@ -765,15 +765,15 @@ app.post("/api/user/login", async (req, res) => {
 });
 
 // Owner (User) forgot password endpoint
-app.post("/api/user/forgot-password", async (req, res) => {
+app.post("/api/user/reset-password", async (req, res) => {
   try {
-    const { username, newPassword } = req.body;
+    const { email, newPassword } = req.body;
 
     // Validation
-    if (!username || !newPassword) {
+    if (!email || !newPassword) {
       return res.status(400).json({
         success: false,
-        error: "Username/Email and new password are required",
+        error: "Email and new password are required",
       });
     }
 
@@ -784,17 +784,17 @@ app.post("/api/user/forgot-password", async (req, res) => {
       });
     }
 
-    // Find owner by username or email
+    // Find owner by email
     const { data: user, error } = await supabase
       .from("Owners")
       .select("*")
-      .or(`username.eq.${username},email.eq.${username}`)
+      .eq("email", email)
       .single();
 
     if (error || !user) {
       return res.status(404).json({
         success: false,
-        error: "Owner account not found with this username/email",
+        error: "Owner account not found with this email",
       });
     }
 
@@ -822,7 +822,7 @@ app.post("/api/user/forgot-password", async (req, res) => {
       message: "Password reset successfully",
     });
   } catch (err) {
-    console.error("Owner forgot password error:", err);
+    console.error("Owner reset password error:", err);
     res.status(500).json({
       success: false,
       error: "An error occurred during password reset",
@@ -1091,15 +1091,15 @@ app.post("/api/processor/login", async (req, res) => {
 });
 
 // Processor forgot password endpoint
-app.post("/api/processor/forgot-password", async (req, res) => {
+app.post("/api/processor/reset-password", async (req, res) => {
   try {
-    const { username, newPassword } = req.body;
+    const { email, newPassword } = req.body;
 
     // Validation
-    if (!username || !newPassword) {
+    if (!email || !newPassword) {
       return res.status(400).json({
         success: false,
-        error: "Username/Email and new password are required",
+        error: "Email and new password are required",
       });
     }
 
@@ -1110,18 +1110,18 @@ app.post("/api/processor/forgot-password", async (req, res) => {
       });
     }
 
-    // Find processor by username or email and verify role is Processor
+    // Find processor by email and verify role is Processor
     const { data: user, error } = await supabase
       .from("Admins")
       .select("*")
-      .or(`username.eq.${username},email.eq.${username}`)
+      .eq("email", email)
       .eq("role", "Processor")
       .single();
 
     if (error || !user) {
       return res.status(404).json({
         success: false,
-        error: "Processor account not found with this username/email",
+        error: "Processor account not found with this email",
       });
     }
 
@@ -1149,7 +1149,7 @@ app.post("/api/processor/forgot-password", async (req, res) => {
       message: "Password reset successfully",
     });
   } catch (err) {
-    console.error("Processor forgot password error:", err);
+    console.error("Processor reset password error:", err);
     res.status(500).json({
       success: false,
       error: "An error occurred during password reset",
