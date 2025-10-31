@@ -43,11 +43,11 @@ import UserSettings from './userpages/UserSettings'
 // --------------------------------------------------------
 
 
-import Home from './pages/Home'
-import Requirements from './pages/Requirements'
-import Tracking from './pages/Tracking'
-import ContactUs from './pages/ContactUs'
-import About from './pages/About'
+import Home from './homepages/Home'
+import Requirements from './homepages/Requirements'
+import Tracking from './homepages/Tracking'
+import ContactUs from './homepages/ContactUs'
+import About from './homepages/About'
 
 
 

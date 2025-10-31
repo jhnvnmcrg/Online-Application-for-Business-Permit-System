@@ -1,6 +1,18 @@
 -- WARNING: This schema is for context only and is not meant to be run.
 -- Table order and constraints may not be valid for execution.
 
+CREATE TABLE public.Activity_Logs (
+  log_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  user_type text CHECK (user_type = ANY (ARRAY['Admin'::text, 'Processor'::text, 'Owner'::text])),
+  user_id bigint NOT NULL,
+  action text NOT NULL,
+  entity_type text,
+  entity_id bigint,
+  ip_address text,
+  user_agent text,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT Activity_Logs_pkey PRIMARY KEY (log_id)
+);
 CREATE TABLE public.Admins (
   admin_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
   fullname text NOT NULL,
@@ -11,6 +23,12 @@ CREATE TABLE public.Admins (
   status text DEFAULT 'Active'::text CHECK (status = ANY (ARRAY['Active'::text, 'Inactive'::text])),
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   last_login_at timestamp without time zone,
+  email_verified boolean DEFAULT false,
+  verification_token text,
+  verification_token_expires timestamp with time zone,
+  reset_token text,
+  reset_token_expires timestamp with time zone,
+  deleted_at timestamp with time zone,
   CONSTRAINT Admins_pkey PRIMARY KEY (admin_id)
 );
 CREATE TABLE public.Assigned Roles (
@@ -19,14 +37,15 @@ CREATE TABLE public.Assigned Roles (
   admin_id bigint NOT NULL,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT Assigned Roles_pkey PRIMARY KEY (assignment_id),
-  CONSTRAINT Assigned Roles_category_id_fkey FOREIGN KEY (category_id) REFERENCES public.Document Categories(category_id),
-  CONSTRAINT Assigned Roles_admin_id_fkey FOREIGN KEY (admin_id) REFERENCES public.Admins(admin_id)
+  CONSTRAINT Assigned Roles_admin_id_fkey FOREIGN KEY (admin_id) REFERENCES public.Admins(admin_id),
+  CONSTRAINT Assigned Roles_category_id_fkey FOREIGN KEY (category_id) REFERENCES public.Document Categories(category_id)
 );
 CREATE TABLE public.Document Categories (
   category_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
   category_name text NOT NULL,
   description text,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
+  deleted_at timestamp with time zone,
   CONSTRAINT Document Categories_pkey PRIMARY KEY (category_id)
 );
 CREATE TABLE public.Document Forms (
@@ -54,9 +73,10 @@ CREATE TABLE public.Documents (
   description text,
   created_by bigint NOT NULL,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
+  deleted_at timestamp with time zone,
   CONSTRAINT Documents_pkey PRIMARY KEY (document_id),
-  CONSTRAINT Documents_category_id_fkey FOREIGN KEY (category_id) REFERENCES public.Document Categories(category_id),
-  CONSTRAINT Documents_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.Admins(admin_id)
+  CONSTRAINT Documents_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.Admins(admin_id),
+  CONSTRAINT Documents_category_id_fkey FOREIGN KEY (category_id) REFERENCES public.Document Categories(category_id)
 );
 CREATE TABLE public.Form Field Groups (
   group_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
@@ -81,8 +101,11 @@ CREATE TABLE public.Login Audits (
   admin_id bigint,
   status text CHECK (status = ANY (ARRAY['Success'::text, 'Failed'::text])),
   login_datetime timestamp with time zone DEFAULT now(),
+  owner_id bigint,
+  user_type text CHECK (user_type = ANY (ARRAY['Admin'::text, 'Owner'::text])),
   CONSTRAINT Login Audits_pkey PRIMARY KEY (audit_id),
-  CONSTRAINT Login Audits_admin_id_fkey FOREIGN KEY (admin_id) REFERENCES public.Admins(admin_id)
+  CONSTRAINT Login Audits_admin_id_fkey FOREIGN KEY (admin_id) REFERENCES public.Admins(admin_id),
+  CONSTRAINT Login Audits_owner_id_fkey FOREIGN KEY (owner_id) REFERENCES public.Owners(owner_id)
 );
 CREATE TABLE public.Notifications (
   notification_id integer GENERATED ALWAYS AS IDENTITY NOT NULL,
@@ -113,19 +136,13 @@ CREATE TABLE public.Owners (
   business_address text,
   status character varying DEFAULT 'Active'::character varying CHECK (status::text = ANY (ARRAY['Active'::character varying, 'Inactive'::character varying, 'Suspended'::character varying]::text[])),
   created_at timestamp with time zone NOT NULL DEFAULT now(),
+  email_verified boolean DEFAULT false,
+  verification_token text,
+  verification_token_expires timestamp with time zone,
+  reset_token text,
+  reset_token_expires timestamp with time zone,
+  deleted_at timestamp with time zone,
   CONSTRAINT Owners_pkey PRIMARY KEY (owner_id)
-);
-CREATE TABLE public.Payment History (
-  history_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
-  payment_id bigint NOT NULL,
-  previous_status text,
-  new_status text NOT NULL,
-  changed_by bigint NOT NULL,
-  remarks text,
-  created_at timestamp with time zone NOT NULL DEFAULT now(),
-  CONSTRAINT Payment History_pkey PRIMARY KEY (history_id),
-  CONSTRAINT Payment History_payment_id_fkey FOREIGN KEY (payment_id) REFERENCES public.Payments(payment_id),
-  CONSTRAINT Payment History_changed_by_fkey FOREIGN KEY (changed_by) REFERENCES public.Admins(admin_id)
 );
 CREATE TABLE public.Payments (
   payment_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
@@ -168,18 +185,6 @@ CREATE TABLE public.Request Form Data (
   CONSTRAINT Request Form Data_request_id_fkey FOREIGN KEY (request_id) REFERENCES public.Requests(request_id),
   CONSTRAINT Request Form Data_form_id_fkey FOREIGN KEY (form_id) REFERENCES public.Document Forms(form_id)
 );
-CREATE TABLE public.Request History (
-  history_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
-  request_id bigint NOT NULL,
-  previous_status text,
-  new_status text NOT NULL,
-  changed_by bigint NOT NULL,
-  remarks text,
-  created_at timestamp with time zone NOT NULL DEFAULT now(),
-  CONSTRAINT Request History_pkey PRIMARY KEY (history_id),
-  CONSTRAINT Request History_request_id_fkey FOREIGN KEY (request_id) REFERENCES public.Requests(request_id),
-  CONSTRAINT Request History_changed_by_fkey FOREIGN KEY (changed_by) REFERENCES public.Admins(admin_id)
-);
 CREATE TABLE public.Requests (
   request_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
   owner_id bigint NOT NULL,
@@ -193,6 +198,7 @@ CREATE TABLE public.Requests (
   payment_required boolean DEFAULT false,
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp without time zone DEFAULT now(),
+  deleted_at timestamp with time zone,
   CONSTRAINT Requests_pkey PRIMARY KEY (request_id),
   CONSTRAINT Requests_owner_id_fkey FOREIGN KEY (owner_id) REFERENCES public.Owners(owner_id),
   CONSTRAINT Requests_category_id_fkey FOREIGN KEY (category_id) REFERENCES public.Document Categories(category_id),
