@@ -9,9 +9,7 @@ import MainDocuments from './mainadminpage/MainDocuments'
 import MainDocCategory from './mainadminpage/MainDocCategory'
 import MainDocForms from './mainadminpage/MainDocForms'
 import MainRequests from './mainadminpage/MainRequests'
-import MainRequestsHistory from './mainadminpage/MainRequestsHistory'
 import MainPayments from './mainadminpage/MainPayments'
-import MainPaymentsHistory from './mainadminpage/MainPaymentsHistory'
 import MainTransactions from './mainadminpage/MainTransactions'
 import MainAssign from './mainadminpage/MainAssign'
 import MainAdmins from './mainadminpage/MainAdmins'
@@ -68,9 +66,7 @@ function App() {
         <Route path='/oabps/main/documentcategory' element={<MainDocCategory/>}></Route>
         <Route path='/oabps/main/documentforms' element={<MainDocForms/>}></Route>
         <Route path='/oabps/main/requests' element={<MainRequests/>}></Route>
-        <Route path='/oabps/main/requestshistory' element={<MainRequestsHistory/>}></Route>
         <Route path='/oabps/main/payments' element={<MainPayments/>}></Route>
-        <Route path='/oabps/main/paymentshistory' element={<MainPaymentsHistory/>}></Route>
         <Route path='/oabps/main/transactions' element={<MainTransactions/>}></Route>
         <Route path='/oabps/main/assign' element={<MainAssign/>}></Route>
         <Route path='/oabps/main/admins' element={<MainAdmins/>}></Route>

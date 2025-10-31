@@ -3376,18 +3376,8 @@ app.put("/api/request/update-status/:requestId", upload.single("attachmentFile")
       }
     }
 
-    // Log status change to Request History
+    // Request History removed - using processed_by column in Requests table
     if (currentRequest) {
-      await supabase.from("Request History").insert([
-        {
-          request_id: requestId,
-          previous_status: currentRequest.status,
-          new_status: status,
-          changed_by: processedBy || null,
-          remarks: remarks || null,
-        },
-      ]);
-
       // Send notification to user about status change
       await notifyUserStatusChange(
         requestId,
@@ -3453,44 +3443,7 @@ app.get("/api/request/attachments/:requestId", async (req, res) => {
   }
 });
 
-// Get request history
-app.get("/api/request/history/:requestId", async (req, res) => {
-  try {
-    const { requestId } = req.params;
-
-    const { data, error } = await supabase
-      .from("Request History")
-      .select(`
-        *,
-        Admins:changed_by (
-          admin_id,
-          fullname,
-          username
-        )
-      `)
-      .eq("request_id", requestId)
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      console.error("Supabase error:", error);
-      return res.status(500).json({
-        success: false,
-        message: "Failed to fetch request history",
-      });
-    }
-
-    res.status(200).json({
-      success: true,
-      history: data,
-    });
-  } catch (err) {
-    console.error("Fetch request history error:", err);
-    res.status(500).json({
-      success: false,
-      message: "An error occurred while fetching request history",
-    });
-  }
-});
+// Request history endpoint removed - using processed_by column in Requests table
 
 // Update request (Owner only - can only update Pending requests)
 app.put("/api/request/update/:requestId", upload.any(), async (req, res) => {
@@ -3688,17 +3641,7 @@ app.put("/api/request/cancel/:requestId", async (req, res) => {
       });
     }
 
-    // Log status change to Request History
-    await supabase.from("Request History").insert([
-      {
-        request_id: requestId,
-        previous_status: currentRequest.status,
-        new_status: "Cancelled",
-        changed_by: null, // Owner cancelled, not admin
-        remarks: "Cancelled by owner",
-      },
-    ]);
-
+    // Request History removed - using processed_by column in Requests table
     // Notify all main admins about request cancellation
     const { data: admins } = await supabase
       .from('Admins')
@@ -3804,19 +3747,7 @@ app.post("/api/payment/add", async (req, res) => {
       });
     }
 
-    // Create history entry for payment creation
-    await supabase
-      .from("Payment History")
-      .insert([
-        {
-          payment_id: data[0].payment_id,
-          previous_status: null,
-          new_status: "Pending",
-          changed_by: createdBy,
-          remarks: "Payment requirement created",
-        },
-      ]);
-
+    // Payment History removed - using processed_by column in Payments table
     // Send notification to user about new payment requirement
     const { data: requestData } = await supabase
       .from("Requests")
@@ -4194,15 +4125,7 @@ app.put("/api/payment/verify/:paymentId", async (req, res) => {
       // Email notifications removed
     }
 
-    // Add to payment history
-    await supabase.from("Payment History").insert([
-      {
-        payment_id: paymentId,
-        status: status,
-        changed_by: processedBy,
-        remarks: remarks || `Payment ${status.toLowerCase()} at counter${status === "Verified" ? ` - Receipt: ${receiptNumber}` : ""}`,
-      },
-    ]);
+    // Payment History removed - using processed_by column in Payments table
 
     res.status(200).json({
       success: true,
@@ -4272,19 +4195,7 @@ app.put("/api/payment/update/:paymentId", async (req, res) => {
       });
     }
 
-    // Create history entry for payment update
-    await supabase
-      .from("Payment History")
-      .insert([
-        {
-          payment_id: paymentId,
-          previous_status: currentPayment?.status,
-          new_status: currentPayment?.status,
-          changed_by: updatedBy || null,
-          remarks: `Payment details updated (Amount: ${currentPayment?.amount} → ${amount})`,
-        },
-      ]);
-
+    // Payment History removed - using processed_by column in Payments table
     // Notify user about payment requirement update
     const { data: requestData } = await supabase
       .from("Requests")
@@ -4345,18 +4256,7 @@ app.delete("/api/payment/delete/:paymentId", async (req, res) => {
       .eq("request_id", currentPayment.request_id)
       .single();
 
-    // Create history entry before deletion (CASCADE will delete it otherwise)
-    await supabase
-      .from("Payment History")
-      .insert([
-        {
-          payment_id: paymentId,
-          previous_status: currentPayment?.status,
-          new_status: "Deleted",
-          changed_by: deletedBy || null,
-          remarks: "Payment requirement removed",
-        },
-      ]);
+    // Payment History removed - using processed_by column in Payments table
 
     const { data, error } = await supabase
       .from("Payments")
@@ -4398,44 +4298,7 @@ app.delete("/api/payment/delete/:paymentId", async (req, res) => {
   }
 });
 
-// Get payment history
-app.get("/api/payment/history/:paymentId", async (req, res) => {
-  try {
-    const { paymentId } = req.params;
-
-    const { data, error } = await supabase
-      .from("Payment History")
-      .select(`
-        *,
-        Admins:changed_by (
-          admin_id,
-          fullname,
-          username
-        )
-      `)
-      .eq("payment_id", paymentId)
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      console.error("Supabase error:", error);
-      return res.status(500).json({
-        success: false,
-        message: "Failed to fetch payment history",
-      });
-    }
-
-    res.status(200).json({
-      success: true,
-      history: data,
-    });
-  } catch (err) {
-    console.error("Fetch payment history error:", err);
-    res.status(500).json({
-      success: false,
-      message: "An error occurred while fetching payment history",
-    });
-  }
-});
+// Payment history endpoint removed - using processed_by column in Payments table
 
 // ============================================
 // DASHBOARD STATISTICS ENDPOINTS
