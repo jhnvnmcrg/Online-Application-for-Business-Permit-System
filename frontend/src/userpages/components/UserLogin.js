@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { Eye, EyeOff } from "lucide-react";
+import { User, Lock, Eye, EyeOff } from "lucide-react";
 import { API_URL, setAuthToken } from "../../config/api";
 
 function UserLogin() {
@@ -79,49 +79,53 @@ function UserLogin() {
 
               <form onSubmit={handleLogin}>
                 <div className="mb-3">
-                  <input
-                    type="text"
-                    className="form-control"
-                    placeholder="Username or Email"
-                    value={username}
-                    onChange={(e) => {
-                      setUsername(e.target.value);
-                      setError("");
-                    }}
-                    required
-                    disabled={isLoading}
-                  />
+                  <div className="input-group">
+                    <span className="input-group-text bg-white">
+                      <User size={20} className="text-muted" />
+                    </span>
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="Username or Email"
+                      value={username}
+                      onChange={(e) => {
+                        setUsername(e.target.value);
+                        setError("");
+                      }}
+                      required
+                      disabled={isLoading}
+                    />
+                  </div>
                 </div>
-                <div className="mb-3 position-relative">
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    className="form-control"
-                    placeholder="Password"
-                    value={password}
-                    onChange={(e) => {
-                      setPassword(e.target.value);
-                      setError("");
-                    }}
-                    required
-                    disabled={isLoading}
-                    style={{ paddingRight: "40px" }}
-                  />
-                  <button
-                    type="button"
-                    className="btn btn-link position-absolute end-0 top-50 translate-middle-y"
-                    onClick={() => setShowPassword(!showPassword)}
-                    disabled={isLoading}
-                    style={{
-                      border: "none",
-                      background: "none",
-                      padding: "0 10px",
-                      color: "#6c757d",
-                    }}
-                  >
-                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                  </button>
+
+                <div className="mb-3">
+                  <div className="input-group">
+                    <span className="input-group-text bg-white">
+                      <Lock size={20} className="text-muted" />
+                    </span>
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      className="form-control"
+                      placeholder="Password"
+                      value={password}
+                      onChange={(e) => {
+                        setPassword(e.target.value);
+                        setError("");
+                      }}
+                      required
+                      disabled={isLoading}
+                    />
+                    <button
+                      type="button"
+                      className="btn btn-outline-secondary"
+                      onClick={() => setShowPassword(!showPassword)}
+                      disabled={isLoading}
+                    >
+                      {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                    </button>
+                  </div>
                 </div>
-                
+
                 <div className="d-flex justify-content-between mb-4">
                   <Link
                     to="/oabps/user/register"
@@ -138,6 +142,7 @@ function UserLogin() {
                     Forgot Password?
                   </Link>
                 </div>
+
                 <button
                   type="submit"
                   className="btn w-100 text-white fw-medium"

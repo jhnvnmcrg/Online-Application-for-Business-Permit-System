@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { Eye, EyeOff, CheckCircle, XCircle, AlertCircle } from "lucide-react";
+import { User, Mail, Lock, Eye, EyeOff, CheckCircle, XCircle, AlertCircle } from "lucide-react";
 import { API_URL } from "../../config/api";
 
 function MainRegister() {
@@ -130,98 +130,109 @@ function MainRegister() {
 
               <form onSubmit={handleCreateAccount}>
                 <div className="mb-3">
-                  <input
-                    type="text"
-                    className="form-control"
-                    name="fullname"
-                    placeholder="Fullname"
-                    value={formData.fullname}
-                    onChange={handleInputChange}
-                    required
-                    disabled={isLoading}
-                  />
+                  <div className="input-group">
+                    <span className="input-group-text bg-white">
+                      <User size={20} className="text-muted" />
+                    </span>
+                    <input
+                      type="text"
+                      className="form-control"
+                      name="fullname"
+                      placeholder="Fullname"
+                      value={formData.fullname}
+                      onChange={handleInputChange}
+                      required
+                      disabled={isLoading}
+                    />
+                  </div>
                 </div>
+
                 <div className="mb-3">
-                  <input
-                    type="email"
-                    className="form-control"
-                    name="email"
-                    placeholder="Email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    required
-                    disabled={isLoading}
-                  />
+                  <div className="input-group">
+                    <span className="input-group-text bg-white">
+                      <Mail size={20} className="text-muted" />
+                    </span>
+                    <input
+                      type="email"
+                      className="form-control"
+                      name="email"
+                      placeholder="Email"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      required
+                      disabled={isLoading}
+                    />
+                  </div>
                 </div>
+
                 <div className="mb-3">
-                  <input
-                    type="text"
-                    className="form-control"
-                    name="username"
-                    placeholder="Username"
-                    value={formData.username}
-                    onChange={handleInputChange}
-                    required
-                    disabled={isLoading}
-                  />
+                  <div className="input-group">
+                    <span className="input-group-text bg-white">
+                      <User size={20} className="text-muted" />
+                    </span>
+                    <input
+                      type="text"
+                      className="form-control"
+                      name="username"
+                      placeholder="Username"
+                      value={formData.username}
+                      onChange={handleInputChange}
+                      required
+                      disabled={isLoading}
+                    />
+                  </div>
                 </div>
-                <div className="mb-3 position-relative">
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    className="form-control"
-                    name="password"
-                    placeholder="Password"
-                    value={formData.password}
-                    onChange={handleInputChange}
-                    required
-                    disabled={isLoading}
-                    style={{ paddingRight: "40px" }}
-                  />
-                  <button
-                    type="button"
-                    className="btn btn-link position-absolute end-0 top-50 translate-middle-y"
-                    onClick={() => setShowPassword(!showPassword)}
-                    disabled={isLoading}
-                    style={{
-                      border: "none",
-                      background: "none",
-                      padding: "0 10px",
-                      color: "#6c757d",
-                    }}
-                  >
-                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                  </button>
+
+                <div className="mb-3">
+                  <div className="input-group">
+                    <span className="input-group-text bg-white">
+                      <Lock size={20} className="text-muted" />
+                    </span>
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      className="form-control"
+                      name="password"
+                      placeholder="Password"
+                      value={formData.password}
+                      onChange={handleInputChange}
+                      required
+                      disabled={isLoading}
+                    />
+                    <button
+                      type="button"
+                      className="btn btn-outline-secondary"
+                      onClick={() => setShowPassword(!showPassword)}
+                      disabled={isLoading}
+                    >
+                      {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                    </button>
+                  </div>
                 </div>
-                <div className="mb-3 position-relative">
-                  <input
-                    type={showRetypePassword ? "text" : "password"}
-                    className="form-control"
-                    name="retypePassword"
-                    placeholder="Retype Password"
-                    value={formData.retypePassword}
-                    onChange={handleInputChange}
-                    required
-                    disabled={isLoading}
-                    style={{ paddingRight: "40px" }}
-                  />
-                  <button
-                    type="button"
-                    className="btn btn-link position-absolute end-0 top-50 translate-middle-y"
-                    onClick={() => setShowRetypePassword(!showRetypePassword)}
-                    disabled={isLoading}
-                    style={{
-                      border: "none",
-                      background: "none",
-                      padding: "0 10px",
-                      color: "#6c757d",
-                    }}
-                  >
-                    {showRetypePassword ? (
-                      <EyeOff size={20} />
-                    ) : (
-                      <Eye size={20} />
-                    )}
-                  </button>
+
+                <div className="mb-3">
+                  <div className="input-group">
+                    <span className="input-group-text bg-white">
+                      <Lock size={20} className="text-muted" />
+                    </span>
+                    <input
+                      type={showRetypePassword ? "text" : "password"}
+                      className="form-control"
+                      name="retypePassword"
+                      placeholder="Retype Password"
+                      value={formData.retypePassword}
+                      onChange={handleInputChange}
+                      required
+                      disabled={isLoading}
+                    />
+                    <button
+                      type="button"
+                      className="btn btn-outline-secondary"
+                      onClick={() => setShowRetypePassword(!showRetypePassword)}
+                      disabled={isLoading}
+                    >
+                      {showRetypePassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                    </button>
+                  </div>
                 </div>
 
                 <div className="form-check mb-4">
