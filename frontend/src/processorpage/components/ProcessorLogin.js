@@ -30,13 +30,6 @@ function ProcessorLogin() {
       });
 
       if (response.data.success) {
-        // Check if email is verified
-        if (response.data.user.email_verified === false) {
-          setError("Please verify your email before logging in. Check your inbox for the verification link.");
-          setIsLoading(false);
-          return;
-        }
-
         // Verify user role is Processor
         if (response.data.user.role !== "Processor") {
           setError("Access denied. Only Processors can login here.");
@@ -44,15 +37,9 @@ function ProcessorLogin() {
           return;
         }
 
-        // Store JWT tokens
-        if (response.data.accessToken) {
-          setAuthToken(response.data.accessToken);
-          localStorage.setItem('refreshToken', response.data.refreshToken);
-        }
-
         // Store user data in localStorage
         localStorage.setItem("processor", JSON.stringify(response.data.user));
-        localStorage.setItem("userType", "Processor"); // For notification system
+        localStorage.setItem("userType", "Processor");
 
         // Redirect to processor dashboard
         navigate("/oabps/processor/dashboard");

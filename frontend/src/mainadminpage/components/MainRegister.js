@@ -83,13 +83,10 @@ function MainRegister() {
       });
 
       if (response.data.success) {
-        showMessage(
-          "Account created successfully! Please check your email to verify your account before logging in.",
-          "success"
-        );
+        showMessage("Account created successfully! You can now log in.", "success");
         setTimeout(() => {
           navigate("/oabps/main/login");
-        }, 3000);
+        }, 2000);
       }
     } catch (err) {
       if (err.response?.data?.message) {

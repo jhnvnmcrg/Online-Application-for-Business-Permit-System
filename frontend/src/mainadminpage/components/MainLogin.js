@@ -30,13 +30,6 @@ function MainLogin() {
       });
 
       if (response.data.success) {
-        // Check if email is verified
-        if (response.data.user.email_verified === false) {
-          setError("Please verify your email before logging in. Check your inbox for the verification link.");
-          setIsLoading(false);
-          return;
-        }
-
         // Verify user role is Superadmin
         if (response.data.user.role !== "Superadmin") {
           setError("Access denied. Only Superadmins can login here.");
@@ -44,15 +37,9 @@ function MainLogin() {
           return;
         }
 
-        // Store JWT tokens
-        if (response.data.accessToken) {
-          setAuthToken(response.data.accessToken);
-          localStorage.setItem('refreshToken', response.data.refreshToken);
-        }
-
         // Store user data in localStorage
         localStorage.setItem("mainadmin", JSON.stringify(response.data.user));
-        localStorage.setItem("userType", "Admin"); // For notification system
+        localStorage.setItem("userType", "Admin");
 
         // Redirect to dashboard
         navigate("/oabps/main/dashboard");

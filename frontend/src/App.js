@@ -1,5 +1,4 @@
 import { BrowserRouter, Routes, Route} from 'react-router-dom'
-import './utils/axiosInterceptor'; // Import axios interceptor for JWT token refresh
 
 import MainLogin from './mainadminpage/components/MainLogin'
 import MainRegister from './mainadminpage/components/MainRegister'
@@ -51,8 +50,6 @@ import Requirements from './pages/Requirements'
 import Tracking from './pages/Tracking'
 import ContactUs from './pages/ContactUs'
 import About from './pages/About'
-import VerifyEmail from './pages/VerifyEmail'
-import ResetPassword from './pages/ResetPassword'
 
 
 
@@ -105,10 +102,6 @@ function App() {
         <Route path='/oabps/user/settings' element={<UserSettings/>}></Route>
 
         {/* ----------------------------------------------------------- */}
-
-        {/* Email Verification and Password Reset */}
-        <Route path='/verify-email' element={<VerifyEmail/>}></Route>
-        <Route path='/reset-password' element={<ResetPassword/>}></Route>
 
         <Route path='/' element={<Home/>}></Route>
         <Route path='/home' element={<Home/>}></Route>

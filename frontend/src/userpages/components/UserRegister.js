@@ -82,11 +82,8 @@ function UserRegister() {
       });
 
       if (response.data.success) {
-        showMessage(
-          "Account created successfully! Please check your email to verify your account before logging in.",
-          "success"
-        );
-        setTimeout(() => navigate("/oabps/user/login"), 3000);
+        showMessage("Account created successfully! You can now log in.", "success");
+        setTimeout(() => navigate("/oabps/user/login"), 2000);
       }
     } catch (err) {
       if (err.response?.data?.message) {

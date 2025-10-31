@@ -4,7 +4,9 @@
       "Bash(npm uninstall nodemailer)",
       "Bash(npm install nodemailer)",
       "Bash(npm install jsonwebtoken)",
-      "Bash(npm uninstall jsonwebtoken)"
+      "Bash(npm uninstall jsonwebtoken)",
+      "Bash(rm:*)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []

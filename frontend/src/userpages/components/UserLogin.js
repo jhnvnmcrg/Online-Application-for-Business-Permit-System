@@ -30,22 +30,9 @@ function UserLogin() {
       });
 
       if (response.data.success) {
-        // Check if email is verified
-        if (response.data.user.email_verified === false) {
-          setError("Please verify your email before logging in. Check your inbox for the verification link.");
-          setIsLoading(false);
-          return;
-        }
-
-        // Store JWT tokens
-        if (response.data.accessToken) {
-          setAuthToken(response.data.accessToken);
-          localStorage.setItem('refreshToken', response.data.refreshToken);
-        }
-
         // Store user data in localStorage
         localStorage.setItem("owner", JSON.stringify(response.data.user));
-        localStorage.setItem("userType", "Owner"); // For notification system
+        localStorage.setItem("userType", "Owner");
 
         // Redirect to dashboard
         navigate("/oabps/user/dashboard");

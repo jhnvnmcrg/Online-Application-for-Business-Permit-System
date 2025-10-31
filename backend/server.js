@@ -5,13 +5,8 @@ const multer = require("multer");
 const { createClient } = require("@supabase/supabase-js");
 require("dotenv").config();
 
-// Import security and email utilities
+// Import security utilities
 const { generalLimiter, uploadLimiter } = require('./middleware/rateLimiter');
-const {
-  sendRequestStatusEmail,
-  sendPaymentStatusEmail,
-  sendNewRequestNotificationToAdmin
-} = require('./utils/emailService');
 
 const app = express();
 app.use(
@@ -3042,26 +3037,9 @@ app.post("/api/request/submit", upload.any(), async (req, res) => {
           .eq("role", "Superadmin")
           .eq("status", "Active");
 
-        const { data: ownerData } = await supabase
-          .from("Owners")
-          .select("fullname")
-          .eq("owner_id", ownerId)
-          .single();
-
-        if (admins && admins.length > 0 && ownerData) {
-          for (const admin of admins) {
-            await sendNewRequestNotificationToAdmin(
-              admin.email,
-              admin.fullname,
-              trackingCode,
-              categoryData.category_name,
-              ownerData.fullname
-            );
-          }
-        }
-      } catch (emailError) {
-        console.error("Email notification error:", emailError);
-        // Don't fail the request if email fails
+        // Email notifications removed
+      } catch (err) {
+        console.log("Notification creation skipped");
       }
     }
 
@@ -3418,29 +3396,7 @@ app.put("/api/request/update-status/:requestId", upload.single("attachmentFile")
         status
       );
 
-      // Send email notification to owner
-      try {
-        const { data: requestDetails } = await supabase
-          .from("Requests")
-          .select("*, Owners!inner(email, fullname), Document Categories!inner(category_name)")
-          .eq("request_id", requestId)
-          .single();
-
-        if (requestDetails && requestDetails.Owners) {
-          await sendRequestStatusEmail(
-            requestDetails.Owners.email,
-            requestDetails.Owners.fullname,
-            currentRequest.tracking_code,
-            requestDetails["Document Categories"].category_name,
-            currentRequest.status,
-            status,
-            remarks || ''
-          );
-        }
-      } catch (emailError) {
-        console.error("Email notification error:", emailError);
-        // Don't fail the request if email fails
-      }
+      // Email notifications removed
     }
 
 
@@ -4235,28 +4191,7 @@ app.put("/api/payment/verify/:paymentId", async (req, res) => {
         data[0].amount
       );
 
-      // Send email notification to owner
-      try {
-        const { data: ownerData } = await supabase
-          .from("Owners")
-          .select("email, fullname")
-          .eq("owner_id", requestData.owner_id)
-          .single();
-
-        if (ownerData) {
-          await sendPaymentStatusEmail(
-            ownerData.email,
-            ownerData.fullname,
-            requestData.tracking_code,
-            data[0].reference_number || 'N/A',
-            status,
-            remarks || ''
-          );
-        }
-      } catch (emailError) {
-        console.error("Email notification error:", emailError);
-        // Don't fail the request if email fails
-      }
+      // Email notifications removed
     }
 
     // Add to payment history
@@ -5097,10 +5032,5 @@ app.delete("/api/notifications/:notificationId", async (req, res) => {
     });
   }
 });
-
-// ==================== ENHANCED AUTHENTICATION ROUTES ====================
-// Load enhanced authentication routes with JWT, email verification, and password reset
-const authRoutes = require('./routes/auth');
-authRoutes(app, supabase);
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
