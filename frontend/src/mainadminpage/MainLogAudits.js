@@ -2,10 +2,12 @@ import MainSideBar from "../includes/MainSideBar";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { API_URL } from "../../config/api";
 
 function MainLogAudits() {
   const [searchName, setSearchName] = useState("");
   const [searchStatus, setSearchStatus] = useState("");
+  const [searchUserType, setSearchUserType] = useState("");
   const navigate = useNavigate();
   const [username, setUsername] = useState("User");
   const [audits, setAudits] = useState([]);
@@ -42,9 +44,7 @@ function MainLogAudits() {
   const fetchAudits = async () => {
     setLoading(true);
     try {
-      const response = await axios.get(
-        "https://oabs-f7by.onrender.com/api/audit/all"
-      );
+      const response = await axios.get(`${API_URL}/api/audit/all`);
       if (response.data.success) {
         setAudits(response.data.audits);
       }
@@ -73,13 +73,16 @@ function MainLogAudits() {
   const filteredAudits = audits.filter((audit) => {
     const matchesName =
       searchName === "" ||
-      audit.admin_fullname?.toLowerCase().includes(searchName.toLowerCase()) ||
-      audit.admin_username?.toLowerCase().includes(searchName.toLowerCase());
+      audit.user_fullname?.toLowerCase().includes(searchName.toLowerCase()) ||
+      audit.user_username?.toLowerCase().includes(searchName.toLowerCase());
 
     const matchesStatus =
       searchStatus === "" || audit.status === searchStatus;
 
-    return matchesName && matchesStatus;
+    const matchesUserType =
+      searchUserType === "" || audit.user_type === searchUserType;
+
+    return matchesName && matchesStatus && matchesUserType;
   });
 
   // Pagination calculations
@@ -96,7 +99,7 @@ function MainLogAudits() {
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchName, searchStatus]);
+  }, [searchName, searchStatus, searchUserType]);
 
   // Generate page numbers for pagination
   const getPageNumbers = () => {
@@ -155,7 +158,16 @@ function MainLogAudits() {
                   onChange={(e) => setSearchName(e.target.value)}
                 />
                 <select
-                  className="form-select  mx-1"
+                  className="form-select mx-1"
+                  value={searchUserType}
+                  onChange={(e) => setSearchUserType(e.target.value)}
+                >
+                  <option value="">All Types</option>
+                  <option value="Admin">Admin</option>
+                  <option value="Owner">Owner</option>
+                </select>
+                <select
+                  className="form-select mx-1"
                   value={searchStatus}
                   onChange={(e) => setSearchStatus(e.target.value)}
                 >
@@ -164,7 +176,7 @@ function MainLogAudits() {
                   <option value="Failed">Failed</option>
                 </select>
                 <select
-                  className="form-select  mx-1"
+                  className="form-select mx-1"
                   style={{ maxWidth: "100px" }}
                   value={itemsPerPage}
                   onChange={(e) => {
@@ -190,6 +202,8 @@ function MainLogAudits() {
                     <th>#</th>
                     <th>Full Name</th>
                     <th>Username</th>
+                    <th>User Type</th>
+                    <th>Role</th>
                     <th>Status</th>
                     <th>Log Date & Time</th>
                   </tr>
@@ -197,13 +211,13 @@ function MainLogAudits() {
                 <tbody>
                   {loading ? (
                     <tr>
-                      <td colSpan="5" className="text-center text-muted">
+                      <td colSpan="7" className="text-center text-muted">
                         Loading...
                       </td>
                     </tr>
                   ) : filteredAudits.length === 0 ? (
                     <tr>
-                      <td colSpan="5" className="text-center text-muted">
+                      <td colSpan="7" className="text-center text-muted">
                         No audit logs found
                       </td>
                     </tr>
@@ -211,8 +225,32 @@ function MainLogAudits() {
                     currentItems.map((audit, index) => (
                       <tr key={audit.audit_id}>
                         <td>{indexOfFirstItem + index + 1}</td>
-                        <td>{audit.admin_fullname || "Unknown"}</td>
-                        <td>{audit.admin_username || "Unknown"}</td>
+                        <td>{audit.user_fullname || "Unknown"}</td>
+                        <td>{audit.user_username || "Unknown"}</td>
+                        <td>
+                          <span
+                            className={`badge ${
+                              audit.user_type === "Admin"
+                                ? "bg-primary"
+                                : "bg-info"
+                            }`}
+                          >
+                            {audit.user_type || "Unknown"}
+                          </span>
+                        </td>
+                        <td>
+                          <span
+                            className={`badge ${
+                              audit.user_role === "Superadmin"
+                                ? "bg-danger"
+                                : audit.user_role === "Processor"
+                                ? "bg-warning text-dark"
+                                : "bg-secondary"
+                            }`}
+                          >
+                            {audit.user_role || "Unknown"}
+                          </span>
+                        </td>
                         <td>
                           <span
                             className={`badge ${

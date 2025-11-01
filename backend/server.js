@@ -2548,6 +2548,11 @@ app.get("/api/audit/all", async (req, res) => {
         *,
         Admins (
           fullname,
+          username,
+          role
+        ),
+        Owners (
+          fullname,
           username
         )
       `)
@@ -2561,12 +2566,33 @@ app.get("/api/audit/all", async (req, res) => {
       });
     }
 
-    // Transform data to include admin details
-    const transformedData = data.map((audit) => ({
-      ...audit,
-      admin_fullname: audit.Admins?.fullname || "Unknown",
-      admin_username: audit.Admins?.username || "Unknown",
-    }));
+    // Transform data to include user details based on user_type
+    const transformedData = data.map((audit) => {
+      if (audit.user_type === "Admin") {
+        return {
+          ...audit,
+          user_fullname: audit.Admins?.fullname || "Unknown",
+          user_username: audit.Admins?.username || "Unknown",
+          user_role: audit.Admins?.role || "Admin",
+        };
+      } else if (audit.user_type === "Owner") {
+        return {
+          ...audit,
+          user_fullname: audit.Owners?.fullname || "Unknown",
+          user_username: audit.Owners?.username || "Unknown",
+          user_role: "Owner",
+        };
+      } else {
+        // Fallback for old data without user_type
+        return {
+          ...audit,
+          user_fullname: audit.Admins?.fullname || "Unknown",
+          user_username: audit.Admins?.username || "Unknown",
+          user_role: audit.Admins?.role || "Unknown",
+          user_type: "Admin", // Assume Admin for backward compatibility
+        };
+      }
+    });
 
     res.status(200).json({
       success: true,
