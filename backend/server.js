@@ -2287,7 +2287,7 @@ app.get("/api/assignment/all", async (req, res) => {
           fullname,
           username
         ),
-        DocumentCategories:category_id (
+        Document Categories:category_id (
           category_name
         )
       `)
@@ -2684,7 +2684,7 @@ app.get("/api/processor/assigned-categories/:adminId", async (req, res) => {
       .from("Assigned Roles")
       .select(`
         *,
-        DocumentCategories:category_id (
+        Document Categories:category_id (
           category_id,
           category_name,
           description
@@ -2741,7 +2741,7 @@ app.get("/api/processor/documents/:adminId", async (req, res) => {
       .from("Documents")
       .select(`
         *,
-        DocumentCategories:category_id (
+        Document Categories:category_id (
           category_id,
           category_name
         ),
@@ -3106,7 +3106,7 @@ app.get("/api/request/owner/:ownerId", async (req, res) => {
       .from("Requests")
       .select(`
         *,
-        DocumentCategories:category_id (
+        Document Categories:category_id (
           category_id,
           category_name,
           description
@@ -3166,7 +3166,7 @@ app.get("/api/request/details/:requestId", async (req, res) => {
       .from("Requests")
       .select(`
         *,
-        DocumentCategories:category_id (
+        Document Categories:category_id (
           category_id,
           category_name,
           description
@@ -3239,7 +3239,7 @@ app.get("/api/request/all", async (req, res) => {
       .from("Requests")
       .select(`
         *,
-        DocumentCategories:category_id (
+        Document Categories:category_id (
           category_id,
           category_name
         ),
@@ -3865,7 +3865,7 @@ app.get("/api/payment/all", async (req, res) => {
             email,
             phone_number
           ),
-          DocumentCategories:category_id (
+          Document Categories:category_id (
             category_name
           )
         ),
@@ -4475,8 +4475,8 @@ app.get("/api/dashboard/admin/recent-requests", async (req, res) => {
         tracking_code,
         status,
         created_at,
-        Owners!Requests_owner_id_fkey(fullname),
-        DocumentCategories:category_id(category_name)
+        Owners:owner_id(fullname),
+        Document Categories:category_id(category_name)
       `)
       .order("created_at", { ascending: false })
       .limit(10);
@@ -4518,7 +4518,7 @@ app.get("/api/dashboard/user/recent-activity/:ownerId", async (req, res) => {
         status,
         created_at,
         updated_at,
-        DocumentCategories:category_id(category_name)
+        Document Categories:category_id(category_name)
       `)
       .eq("owner_id", ownerId)
       .order("updated_at", { ascending: false })

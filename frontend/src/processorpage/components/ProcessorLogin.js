@@ -41,6 +41,18 @@ function ProcessorLogin() {
         localStorage.setItem("processor", JSON.stringify(response.data.user));
         localStorage.setItem("userType", "Processor");
 
+        // Log successful login audit
+        try {
+          await axios.post(`${API_URL}/api/audit/login`, {
+            user_type: "Admin",
+            admin_id: response.data.user.admin_id,
+            status: "Success",
+          });
+        } catch (auditErr) {
+          console.error("Failed to log audit:", auditErr);
+          // Don't block login if audit fails
+        }
+
         // Redirect to processor dashboard
         navigate("/oabps/processor/dashboard");
       }

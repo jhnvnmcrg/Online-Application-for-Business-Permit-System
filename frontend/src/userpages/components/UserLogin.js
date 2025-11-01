@@ -34,6 +34,18 @@ function UserLogin() {
         localStorage.setItem("owner", JSON.stringify(response.data.user));
         localStorage.setItem("userType", "Owner");
 
+        // Log successful login audit
+        try {
+          await axios.post(`${API_URL}/api/audit/login`, {
+            user_type: "Owner",
+            owner_id: response.data.user.owner_id,
+            status: "Success",
+          });
+        } catch (auditErr) {
+          console.error("Failed to log audit:", auditErr);
+          // Don't block login if audit fails
+        }
+
         // Redirect to dashboard
         navigate("/oabps/user/dashboard");
       }
