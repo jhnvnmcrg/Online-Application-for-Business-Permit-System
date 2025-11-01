@@ -2371,7 +2371,7 @@ app.post("/api/assignment/add", async (req, res) => {
 
     // Notify processor about new assignment
     const { data: categoryData } = await supabase
-      .from('DocumentCategories')
+      .from('Document Categories')
       .select('category_name')
       .eq('category_id', category_id)
       .single();
@@ -2508,7 +2508,7 @@ app.delete("/api/assignment/delete/:id", async (req, res) => {
     // Notify processor about assignment removal
     if (assignmentData) {
       const { data: categoryData } = await supabase
-        .from('DocumentCategories')
+        .from('Document Categories')
         .select('category_name')
         .eq('category_id', assignmentData.category_id)
         .single();
@@ -2584,13 +2584,34 @@ app.get("/api/audit/all", async (req, res) => {
 // Add login audit endpoint
 app.post("/api/audit/login", async (req, res) => {
   try {
-    const { admin_id, status } = req.body;
+    const { admin_id, owner_id, user_type, status } = req.body;
 
     // Validation
-    if (!admin_id || !status) {
+    if (!status) {
       return res.status(400).json({
         success: false,
-        message: "Admin ID and status are required",
+        message: "Status is required",
+      });
+    }
+
+    if (!user_type || (user_type !== "Admin" && user_type !== "Owner")) {
+      return res.status(400).json({
+        success: false,
+        message: "User type must be 'Admin' or 'Owner'",
+      });
+    }
+
+    if (user_type === "Admin" && !admin_id) {
+      return res.status(400).json({
+        success: false,
+        message: "Admin ID is required for Admin user type",
+      });
+    }
+
+    if (user_type === "Owner" && !owner_id) {
+      return res.status(400).json({
+        success: false,
+        message: "Owner ID is required for Owner user type",
       });
     }
 
@@ -2602,16 +2623,25 @@ app.post("/api/audit/login", async (req, res) => {
       });
     }
 
+    // Build audit log data
+    const auditData = {
+      status,
+      user_type,
+      login_datetime: new Date().toISOString(),
+    };
+
+    if (user_type === "Admin") {
+      auditData.admin_id = admin_id;
+      auditData.owner_id = null;
+    } else {
+      auditData.owner_id = owner_id;
+      auditData.admin_id = null;
+    }
+
     // Insert audit log into database
     const { data, error } = await supabase
       .from("Login Audits")
-      .insert([
-        {
-          admin_id,
-          status,
-          login_datetime: new Date().toISOString(),
-        },
-      ])
+      .insert([auditData])
       .select();
 
     if (error) {
@@ -3088,7 +3118,7 @@ app.get("/api/request/owner/:ownerId", async (req, res) => {
         )
       `)
       .eq("owner_id", ownerId)
-      .order("date_requested", { ascending: false });
+      .order("created_at", { ascending: false });
 
     if (error) {
       console.error("Supabase error:", error);
@@ -3168,7 +3198,7 @@ app.get("/api/request/details/:requestId", async (req, res) => {
       .from("Request Form Data")
       .select(`
         *,
-        DocumentForms:form_id (
+        Document Forms:form_id (
           form_id,
           field_name,
           field_type,
@@ -3224,7 +3254,7 @@ app.get("/api/request/all", async (req, res) => {
           username
         )
       `)
-      .order("date_requested", { ascending: false });
+      .order("created_at", { ascending: false });
 
     if (error) {
       console.error("Supabase error:", error);
