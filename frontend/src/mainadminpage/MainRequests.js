@@ -453,7 +453,7 @@ function MainRequests() {
       Pending: { color: "warning", icon: <Clock size={12} />, text: "Pending" },
       Verified: { color: "success", icon: <CheckCircle size={12} />, text: "Verified" },
       Rejected: { color: "danger", icon: <XCircle size={12} />, text: "Rejected" },
-      "No Payment": { color: "secondary", icon: <DollarSign size={12} />, text: "No Payment" },
+      "No Payment": {  },
     };
 
     const badge = badges[paymentStatus] || badges["No Payment"];

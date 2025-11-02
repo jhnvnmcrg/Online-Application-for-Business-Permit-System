@@ -508,7 +508,7 @@ function ProcessorRequests() {
       Pending: { color: "warning", icon: <Clock size={12} />, text: "Pending" },
       Verified: { color: "success", icon: <CheckCircle size={12} />, text: "Verified" },
       Rejected: { color: "danger", icon: <XCircle size={12} />, text: "Rejected" },
-      "No Payment": { color: "secondary", icon: <DollarSign size={12} />, text: "No Payment" },
+      "No Payment": {  },
     };
 
     const badge = badges[paymentStatus] || badges["No Payment"];
@@ -1166,75 +1166,7 @@ function ProcessorRequests() {
 
 
 
-                  {/* Payment History Section - Only show when updating */}
-                  {isUpdatingPayment && (
-                    <>
-                      <hr className="my-4" />
-                      <h6 className="mb-3">Payment History</h6>
-
-                      {loadingHistory ? (
-                        <div className="text-center py-3">
-                          <div className="spinner-border spinner-border-sm text-primary" role="status">
-                            <span className="visually-hidden">Loading history...</span>
-                          </div>
-                        </div>
-                      ) : paymentHistory.length > 0 ? (
-                        <div className="table-responsive">
-                          <table className="table table-sm table-bordered">
-                            <thead className="table-light">
-                              <tr>
-                                <th>Date</th>
-                                <th>Previous Status</th>
-                                <th>New Status</th>
-                                <th>Changed By</th>
-                                <th>Remarks</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {paymentHistory.map((history) => (
-                                <tr key={history.history_id}>
-                                  <td className="small">
-                                    {new Date(history.created_at).toLocaleString("en-US", {
-                                      month: "short",
-                                      day: "2-digit",
-                                      year: "numeric",
-                                      hour: "2-digit",
-                                      minute: "2-digit",
-                                    })}
-                                  </td>
-                                  <td>
-                                    {history.previous_status ? (
-                                      <span className="badge bg-secondary">{history.previous_status}</span>
-                                    ) : (
-                                      <span className="text-muted">-</span>
-                                    )}
-                                  </td>
-                                  <td>
-                                    <span className={`badge bg-${
-                                      history.new_status === "Pending" ? "warning" :
-                                      history.new_status === "Paid" ? "success" :
-                                      history.new_status === "Verified" ? "primary" :
-                                      history.new_status === "Deleted" ? "danger" :
-                                      "secondary"
-                                    }`}>
-                                      {history.new_status}
-                                    </span>
-                                  </td>
-                                  <td className="small">
-                                    {history.Admins?.fullname || "System"}
-                                  </td>
-                                  <td className="small">{history.remarks || "-"}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      ) : (
-                        <p className="text-muted small mb-0">No history available</p>
-                      )}
-                    </>
-                  )}
-
+                  
                   <div className="d-flex justify-content-between gap-2 mt-3">
                     {/* Left side - Remove Payment button (only show when updating) */}
                     <div>
