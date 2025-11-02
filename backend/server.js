@@ -4076,13 +4076,16 @@ app.get("/api/dashboard/admin/stats", async (req, res) => {
         total: requests.length,
         pending: requests.filter(r => r.status === "Pending").length,
         underReview: requests.filter(r => r.status === "Under Review").length,
+        processing: requests.filter(r => r.status === "Under Review").length, // Alias for frontend
         approved: requests.filter(r => r.status === "Approved").length,
         rejected: requests.filter(r => r.status === "Rejected").length,
         completed: requests.filter(r => r.status === "Completed").length,
+        released: requests.filter(r => r.status === "Completed").length, // Alias for frontend
       },
       payments: {
         total: payments.length,
         pending: payments.filter(p => p.status === "Pending").length,
+        submitted: payments.filter(p => p.status === "Pending").length, // Alias for "Payments to Verify"
         verified: payments.filter(p => p.status === "Verified").length,
         rejected: payments.filter(p => p.status === "Rejected").length,
       },
