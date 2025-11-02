@@ -3069,12 +3069,33 @@ app.get("/api/request/all", async (req, res) => {
       });
     }
 
+    // Fetch payments for all requests
+    const requestIds = data.map(r => r.request_id);
+    let paymentsMap = {};
+
+    if (requestIds.length > 0) {
+      const { data: payments, error: paymentsError } = await supabase
+        .from("Payments")
+        .select("request_id, payment_id, status, amount")
+        .in("request_id", requestIds);
+
+      if (!paymentsError && payments) {
+        // Create a map of request_id to payment
+        payments.forEach(payment => {
+          paymentsMap[payment.request_id] = payment;
+        });
+      }
+    }
+
     // Transform data
     const transformedData = data.map((request) => ({
       ...request,
       category_name: request.DocumentCategories?.category_name || "N/A",
       owner_name: request.Owners?.fullname || request.Owners?.username || "Unknown",
       processor_name: request.Admins?.fullname || request.Admins?.username || "Not Assigned",
+      payment_status: paymentsMap[request.request_id]?.status || "No Payment",
+      payment_amount: paymentsMap[request.request_id]?.amount || null,
+      payment_id: paymentsMap[request.request_id]?.payment_id || null,
     }));
 
     res.status(200).json({

@@ -503,6 +503,24 @@ function ProcessorRequests() {
     );
   };
 
+  const getPaymentBadge = (paymentStatus) => {
+    const badges = {
+      Pending: { color: "warning", icon: <Clock size={12} />, text: "Pending" },
+      Verified: { color: "success", icon: <CheckCircle size={12} />, text: "Verified" },
+      Rejected: { color: "danger", icon: <XCircle size={12} />, text: "Rejected" },
+      "No Payment": { color: "secondary", icon: <DollarSign size={12} />, text: "No Payment" },
+    };
+
+    const badge = badges[paymentStatus] || badges["No Payment"];
+
+    return (
+      <span className={`badge bg-${badge.color} d-inline-flex align-items-center gap-1`}>
+        {badge.icon}
+        {badge.text}
+      </span>
+    );
+  };
+
   return (
     <>
       <ProcessorSideBar>
@@ -565,6 +583,7 @@ function ProcessorRequests() {
                     <th>Owner</th>
                     <th>Date Requested</th>
                     <th>Status</th>
+                    <th>Payment</th>
                     <th>ProcessedBy</th>
                     <th>Actions</th>
                   </tr>
@@ -572,7 +591,7 @@ function ProcessorRequests() {
                 <tbody>
                   {loading ? (
                     <tr>
-                      <td colSpan="8" className="text-center py-4">
+                      <td colSpan="9" className="text-center py-4">
                         <div className="spinner-border text-primary" role="status">
                           <span className="visually-hidden">Loading...</span>
                         </div>
@@ -580,7 +599,7 @@ function ProcessorRequests() {
                     </tr>
                   ) : currentEntries.length === 0 ? (
                     <tr>
-                      <td colSpan="8" className="text-center text-muted py-4">
+                      <td colSpan="9" className="text-center text-muted py-4">
                         No requests found in your assigned categories
                       </td>
                     </tr>
@@ -597,6 +616,7 @@ function ProcessorRequests() {
                         <td>{request.owner_name || "N/A"}</td>
                         <td>{formatDate(request.date_requested)}</td>
                         <td>{getStatusBadge(request.status)}</td>
+                        <td>{getPaymentBadge(request.payment_status)}</td>
                         <td>{request.processor_name || "Unassigned"}</td>
                         <td>
                           <button
