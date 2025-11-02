@@ -381,7 +381,7 @@ function ProcessorPayments() {
 
           {/* Statistics Cards */}
           <div className="row mb-4 g-3">
-            <div className="col-md-3">
+            <div className="col-md-4">
               <div className="card border-0 shadow-sm h-100">
                 <div className="card-body">
                   <div className="d-flex justify-content-between align-items-start">
@@ -397,7 +397,7 @@ function ProcessorPayments() {
               </div>
             </div>
 
-            <div className="col-md-3">
+            <div className="col-md-4">
               <div className="card border-0 shadow-sm h-100">
                 <div className="card-body">
                   <div className="d-flex justify-content-between align-items-start">
@@ -414,7 +414,7 @@ function ProcessorPayments() {
               </div>
             </div>
 
-            <div className="col-md-3">
+            <div className="col-md-4">
               <div className="card border-0 shadow-sm h-100">
                 <div className="card-body">
                   <div className="d-flex justify-content-between align-items-start">
@@ -431,22 +431,7 @@ function ProcessorPayments() {
               </div>
             </div>
 
-            <div className="col-md-3">
-              <div className="card border-0 shadow-sm h-100">
-                <div className="card-body">
-                  <div className="d-flex justify-content-between align-items-start">
-                    <div>
-                      <p className="text-muted mb-1 small">Rejected</p>
-                      <h3 className="mb-0 fw-bold text-danger">{stats.rejected}</h3>
-                      <small className="text-muted">Denied</small>
-                    </div>
-                    <div className="bg-danger bg-opacity-10 p-2 rounded">
-                      <XCircle size={24} className="text-danger" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+            
           </div>
 
           {/* Main Card */}
