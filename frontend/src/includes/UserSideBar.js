@@ -16,7 +16,6 @@ import {
   LogOut,
   Settings,
 } from "lucide-react";
-import NotificationBell from "./NotificationBell";
 // Import the external CSS file
 
 function UserSidebar({ children }) {
@@ -271,13 +270,12 @@ function UserSidebar({ children }) {
               className="d-flex align-items-center gap-2 position-relative me-4 text-white"
               ref={userMenuRef}
             >
-              <NotificationBell />
               <div
                 onClick={() => setShowUserMenu(!showUserMenu)}
                 style={{ cursor: "pointer" }}
               >
                 <UserRoundCog className="text-white" size={24} />
-              
+
               </div>
               
 

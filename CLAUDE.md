@@ -96,15 +96,10 @@ oabp/
 - Owner: `/oabps/user/*` (register, login, dashboard, payments, forms, etc.)
 
 **Database Schema:**
-- Core tables: `Admins`, `Owners`, `Document Categories`, `Documents`, `Requests`, `Payments`, `Notifications`
+- Core tables: `Admins`, `Owners`, `Document Categories`, `Documents`, `Requests`, `Payments`, `Login Audits`
 - Foreign keys: Requests link to Owners and Categories; Payments link to Requests
 - Dynamic forms: `Document Forms`, `Form Field Groups`, `Form Field Options`, `Request Form Data` tables store configurable form definitions per category
 - Full schema in [backend/database.sql](backend/database.sql) with DROP statements safe for Supabase SQL Editor
-
-**Notifications System:**
-- Created via `createNotification()` helper in [backend/server.js](backend/server.js)
-- Targeted by `userType` (Admin/Processor/Owner) and `userId`
-- Triggered on request status changes, payment submissions, assignments
 
 **File Uploads:**
 - Multer configured for memory storage (10MB limit)

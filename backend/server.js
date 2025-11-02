@@ -34,146 +34,6 @@ const upload = multer({
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
 });
 
-// ==================== NOTIFICATION HELPER FUNCTIONS ====================
-async function createNotification(userId, userType, type, subject, message, requestId = null, paymentId = null) {
-  try {
-    // Build notification data with proper foreign keys
-    const notificationData = {
-      type: type,
-      subject: subject,
-      message: message,
-      request_id: requestId,
-      payment_id: paymentId
-    };
-
-    // Set the appropriate foreign key based on user type
-    if (userType === 'Admin' || userType === 'Processor') {
-      notificationData.admin_id = userId;
-      notificationData.owner_id = null;
-    } else if (userType === 'Owner') {
-      notificationData.owner_id = userId;
-      notificationData.admin_id = null;
-    } else {
-      console.error('Invalid user type:', userType);
-      return null;
-    }
-
-    const { data, error } = await supabase
-      .from('Notifications')
-      .insert([notificationData])
-      .select();
-
-    if (error) {
-      console.error('Notification creation error:', error);
-      return null;
-    }
-
-    console.log('✅ Notification created:', data[0].notification_id, 'for', userType, userId);
-    return data[0];
-  } catch (err) {
-    console.error('Notification helper error:', err);
-    return null;
-  }
-}
-
-// Helper to notify admin when user submits a new request
-async function notifyAdminNewRequest(requestId, trackingCode, categoryName) {
-  // Get all main admins to notify them
-  const { data: admins } = await supabase
-    .from('Admins')
-    .select('admin_id')
-    .eq('role', 'Superadmin')
-    .eq('status', 'Active');
-
-  // Notify all main admins about the new request
-  if (admins && admins.length > 0) {
-    for (const admin of admins) {
-      await createNotification(
-        admin.admin_id,
-        'Admin',
-        'Request',
-        `New Request - ${trackingCode}`,
-        `A new request for ${categoryName} has been submitted and is awaiting review.`,
-        requestId,
-        null
-      );
-    }
-  }
-}
-
-// Helper to notify user when admin updates request status
-async function notifyUserStatusChange(requestId, ownerId, trackingCode, newStatus) {
-  const statusMessages = {
-    'Pending': 'Your request has been received and is pending review.',
-    'Under Review': 'Your request is now being reviewed by our team.',
-    'Approved': 'Congratulations! Your request has been approved.',
-    'Rejected': 'Your request has been rejected. Please check the remarks for details.',
-    'Completed': 'Your document is ready! You can now download it from the Downloadables section.',
-    'Cancelled': 'Your request has been cancelled.'
-  };
-
-  const message = statusMessages[newStatus] || `Your request status has been updated to ${newStatus}.`;
-
-  // Notify the USER (owner) about status change
-  await createNotification(
-    ownerId,
-    'Owner',
-    'Request',
-    `Request ${trackingCode} - Status Update`,
-    message,
-    requestId,
-    null
-  );
-}
-
-// Helper to notify admin when user submits payment proof
-async function notifyAdminPaymentSubmitted(paymentId, requestId, trackingCode, amount) {
-  // Get all main admins to notify them
-  const { data: admins } = await supabase
-    .from('Admins')
-    .select('admin_id')
-    .eq('role', 'Superadmin')
-    .eq('status', 'Active');
-
-  // Notify all main admins about new payment proof
-  if (admins && admins.length > 0) {
-    for (const admin of admins) {
-      await createNotification(
-        admin.admin_id,
-        'Admin',
-        'Payment',
-        `Payment Proof Submitted - ${trackingCode}`,
-        `New payment proof of ₱${amount.toFixed(2)} submitted for ${trackingCode}. Please review.`,
-        requestId,
-        paymentId
-      );
-    }
-  }
-}
-
-// Helper to notify user about payment status change
-async function notifyUserPaymentStatus(paymentId, ownerId, requestId, trackingCode, status, amount) {
-  const userMessages = {
-    'Pending': `A payment of ₱${amount.toFixed(2)} is required for request ${trackingCode}.`,
-    'Submitted': `Your payment proof for request ${trackingCode} has been received and is under review.`,
-    'Verified': `Your payment of ₱${amount.toFixed(2)} for request ${trackingCode} has been verified.`,
-    'Rejected': `Your payment proof for request ${trackingCode} was rejected. Please resubmit.`
-  };
-
-  const message = userMessages[status] || `Payment status updated to ${status}.`;
-
-  // Notify the USER (owner)
-  await createNotification(
-    ownerId,
-    'Owner',
-    'Payment',
-    `Payment Update - ${trackingCode}`,
-    message,
-    requestId,
-    paymentId
-  );
-}
-
 // Register main admin endpoint
 app.post("/api/main/register", async (req, res) => {
   try {
@@ -667,18 +527,6 @@ app.post("/api/user/register", async (req, res) => {
         error: "Failed to create account. Please try again.",
       });
     }
-
-    // Send welcome notification to new user
-    const ownerId = data[0].owner_id;
-    await createNotification(
-      ownerId,
-      'Owner',
-      'Account',
-      'Welcome to Online BPLS!',
-      `Welcome ${fullname}! Your account has been created successfully. You can now apply for business permits online.`,
-      null,
-      null
-    );
 
     res.status(201).json({
       success: true,
@@ -2369,25 +2217,6 @@ app.post("/api/assignment/add", async (req, res) => {
       });
     }
 
-    // Notify processor about new assignment
-    const { data: categoryData } = await supabase
-      .from('Document Categories')
-      .select('category_name')
-      .eq('category_id', category_id)
-      .single();
-
-    const categoryName = categoryData?.category_name || 'Category';
-
-    await createNotification(
-      admin_id,
-      'Admin',
-      'Assignment',
-      'New Assignment',
-      `You have been assigned to process ${categoryName} requests.`,
-      null,
-      null
-    );
-
     res.status(201).json({
       success: true,
       message: "Assignment added successfully",
@@ -2503,27 +2332,6 @@ app.delete("/api/assignment/delete/:id", async (req, res) => {
         success: false,
         message: "Assignment not found",
       });
-    }
-
-    // Notify processor about assignment removal
-    if (assignmentData) {
-      const { data: categoryData } = await supabase
-        .from('Document Categories')
-        .select('category_name')
-        .eq('category_id', assignmentData.category_id)
-        .single();
-
-      const categoryName = categoryData?.category_name || 'Category';
-
-      await createNotification(
-        assignmentData.admin_id,
-        'Admin',
-        'Assignment',
-        'Assignment Removed',
-        `You have been unassigned from processing ${categoryName} requests.`,
-        null,
-        null
-      );
     }
 
     res.status(200).json({
@@ -3067,35 +2875,6 @@ app.post("/api/request/submit", upload.any(), async (req, res) => {
       }
     }
 
-    // Get category name for notification
-    const { data: categoryData } = await supabase
-      .from("Document Categories")
-      .select("category_name")
-      .eq("category_id", categoryId)
-      .single();
-
-    // Notify admin about new request submission
-    if (categoryData) {
-      await notifyAdminNewRequest(
-        requestId,
-        trackingCode,
-        categoryData.category_name
-      );
-
-      // Send email notifications to all superadmins
-      try {
-        const { data: admins } = await supabase
-          .from("Admins")
-          .select("email, fullname")
-          .eq("role", "Superadmin")
-          .eq("status", "Active");
-
-        // Email notifications removed
-      } catch (err) {
-        console.log("Notification creation skipped");
-      }
-    }
-
     res.status(201).json({
       success: true,
       message: "Request submitted successfully",
@@ -3429,20 +3208,6 @@ app.put("/api/request/update-status/:requestId", upload.single("attachmentFile")
       }
     }
 
-    // Request History removed - using processed_by column in Requests table
-    if (currentRequest) {
-      // Send notification to user about status change
-      await notifyUserStatusChange(
-        requestId,
-        currentRequest.owner_id,
-        currentRequest.tracking_code,
-        status
-      );
-
-      // Email notifications removed
-    }
-
-
     res.status(200).json({
       success: true,
       message: "Request status updated successfully",
@@ -3702,28 +3467,6 @@ app.put("/api/request/cancel/:requestId", async (req, res) => {
       .eq('role', 'Superadmin')
       .eq('status', 'Active');
 
-    if (admins && admins.length > 0) {
-      const { data: categoryData } = await supabase
-        .from('DocumentCategories')
-        .select('category_name')
-        .eq('category_id', currentRequest.category_id)
-        .single();
-
-      const categoryName = categoryData?.category_name || 'N/A';
-
-      for (const admin of admins) {
-        await createNotification(
-          admin.admin_id,
-          'Admin',
-          'Request',
-          `Request Cancelled - ${currentRequest.tracking_code}`,
-          `The request for ${categoryName} (${currentRequest.tracking_code}) has been cancelled by the user.`,
-          requestId,
-          null
-        );
-      }
-    }
-
     res.status(200).json({
       success: true,
       message: "Request cancelled successfully",
@@ -3801,24 +3544,6 @@ app.post("/api/payment/add", async (req, res) => {
     }
 
     // Payment History removed - using processed_by column in Payments table
-    // Send notification to user about new payment requirement
-    const { data: requestData } = await supabase
-      .from("Requests")
-      .select("owner_id, tracking_code")
-      .eq("request_id", requestId)
-      .single();
-
-    if (requestData) {
-      await notifyUserPaymentStatus(
-        data[0].payment_id,
-        requestData.owner_id,
-        requestId,
-        requestData.tracking_code,
-        "Pending",
-        parseFloat(amount)
-      );
-    }
-
     res.status(201).json({
       success: true,
       message: "Payment requirement added successfully",
@@ -4001,22 +3726,6 @@ app.put("/api/payment/submit-proof/:paymentId", upload.single("proofPayment"), a
     }
 
     // Get request information for notification
-    const { data: requestData } = await supabase
-      .from("Requests")
-      .select("tracking_code")
-      .eq("request_id", payment.request_id)
-      .single();
-
-    // Send notification to admin that payment proof was submitted
-    if (requestData) {
-      await notifyAdminPaymentSubmitted(
-        paymentId,
-        payment.request_id,
-        requestData.tracking_code,
-        payment.amount
-      );
-    }
-
     res.status(200).json({
       success: true,
       message: "Payment proof submitted successfully",
@@ -4158,28 +3867,6 @@ app.put("/api/payment/verify/:paymentId", async (req, res) => {
     }
 
     // Get request information for notification
-    const { data: requestData } = await supabase
-      .from("Requests")
-      .select("owner_id, tracking_code")
-      .eq("request_id", data[0].request_id)
-      .single();
-
-    // Send notification to user about payment verification
-    if (requestData) {
-      await notifyUserPaymentStatus(
-        paymentId,
-        requestData.owner_id,
-        data[0].request_id,
-        requestData.tracking_code,
-        status,
-        data[0].amount
-      );
-
-      // Email notifications removed
-    }
-
-    // Payment History removed - using processed_by column in Payments table
-
     res.status(200).json({
       success: true,
       message: "Payment verification completed",
@@ -4248,26 +3935,6 @@ app.put("/api/payment/update/:paymentId", async (req, res) => {
       });
     }
 
-    // Payment History removed - using processed_by column in Payments table
-    // Notify user about payment requirement update
-    const { data: requestData } = await supabase
-      .from("Requests")
-      .select("owner_id, tracking_code")
-      .eq("request_id", currentPayment.request_id)
-      .single();
-
-    if (requestData) {
-      await createNotification(
-        requestData.owner_id,
-        'Owner',
-        'Payment',
-        `Payment Updated - ${requestData.tracking_code}`,
-        `The payment requirement for ${requestData.tracking_code} has been updated to ₱${parseFloat(amount).toFixed(2)}.`,
-        currentPayment.request_id,
-        paymentId
-      );
-    }
-
     res.status(200).json({
       success: true,
       message: "Payment requirement updated successfully",
@@ -4323,19 +3990,6 @@ app.delete("/api/payment/delete/:paymentId", async (req, res) => {
         success: false,
         message: "Failed to delete payment",
       });
-    }
-
-    // Notify user that payment requirement was removed
-    if (requestData) {
-      await createNotification(
-        requestData.owner_id,
-        'Owner',
-        'Payment',
-        `Payment Removed - ${requestData.tracking_code}`,
-        `The payment requirement of ₱${parseFloat(currentPayment.amount).toFixed(2)} for ${requestData.tracking_code} has been removed.`,
-        currentPayment.request_id,
-        null
-      );
     }
 
     res.status(200).json({
@@ -4723,228 +4377,6 @@ app.get("/api/request/timeline/:requestId", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "An error occurred while fetching request timeline",
-    });
-  }
-});
-
-// ==================== NOTIFICATION ENDPOINTS ====================
-
-// Get all notifications for a user
-app.get("/api/notifications/:userType/:userId", async (req, res) => {
-  try {
-    const { userType, userId } = req.params;
-    const { limit = 50, unreadOnly = false } = req.query;
-
-    // Build query based on user type using proper foreign keys
-    let query = supabase
-      .from('Notifications')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(parseInt(limit));
-
-    // Filter by user type using admin_id or owner_id
-    if (userType === 'Admin' || userType === 'Processor') {
-      query = query
-        .eq('admin_id', userId)
-        .not('admin_id', 'is', null);
-    } else if (userType === 'Owner') {
-      query = query
-        .eq('owner_id', userId)
-        .not('owner_id', 'is', null);
-    } else {
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid user type. Must be "Admin", "Processor", or "Owner"'
-      });
-    }
-
-    if (unreadOnly === 'true') {
-      query = query.is('read_at', null);
-    }
-
-    const { data, error } = await query;
-
-    if (error) {
-      console.error('Notifications fetch error:', error);
-      return res.status(500).json({
-        success: false,
-        error: 'Failed to fetch notifications'
-      });
-    }
-
-    res.json({
-      success: true,
-      notifications: data
-    });
-  } catch (err) {
-    console.error('Get notifications error:', err);
-    res.status(500).json({
-      success: false,
-      error: 'An error occurred while fetching notifications'
-    });
-  }
-});
-
-// Get unread notification count
-app.get("/api/notifications/:userType/:userId/unread-count", async (req, res) => {
-  try {
-    const { userType, userId } = req.params;
-
-    // Build query based on user type using proper foreign keys
-    let query = supabase
-      .from('Notifications')
-      .select('*', { count: 'exact', head: true })
-      .is('read_at', null);
-
-    // Filter by user type using admin_id or owner_id
-    if (userType === 'Admin' || userType === 'Processor') {
-      query = query
-        .eq('admin_id', userId)
-        .not('admin_id', 'is', null);
-    } else if (userType === 'Owner') {
-      query = query
-        .eq('owner_id', userId)
-        .not('owner_id', 'is', null);
-    } else {
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid user type. Must be "Admin", "Processor", or "Owner"'
-      });
-    }
-
-    const { count, error } = await query;
-
-    if (error) {
-      console.error('Unread count error:', error);
-      return res.status(500).json({
-        success: false,
-        error: 'Failed to get unread count'
-      });
-    }
-
-    res.json({
-      success: true,
-      count: count || 0
-    });
-  } catch (err) {
-    console.error('Unread count error:', err);
-    res.status(500).json({
-      success: false,
-      error: 'An error occurred'
-    });
-  }
-});
-
-// Mark notification as read
-app.put("/api/notifications/:notificationId/read", async (req, res) => {
-  try {
-    const { notificationId } = req.params;
-
-    // Mark as read
-    const { data, error } = await supabase
-      .from('Notifications')
-      .update({ read_at: new Date().toISOString() })
-      .eq('notification_id', notificationId)
-      .select();
-
-    if (error) {
-      console.error('Mark as read error:', error);
-      return res.status(500).json({
-        success: false,
-        error: 'Failed to mark notification as read'
-      });
-    }
-
-    res.json({
-      success: true,
-      notification: data[0]
-    });
-  } catch (err) {
-    console.error('Mark notification as read error:', err);
-    res.status(500).json({
-      success: false,
-      error: 'An error occurred'
-    });
-  }
-});
-
-// Mark all notifications as read
-app.put("/api/notifications/:userType/:userId/read-all", async (req, res) => {
-  try {
-    const { userType, userId } = req.params;
-
-    // Build query based on user type using proper foreign keys
-    let query = supabase
-      .from('Notifications')
-      .update({ read_at: new Date().toISOString() })
-      .is('read_at', null);
-
-    // Filter by user type using admin_id or owner_id
-    if (userType === 'Admin' || userType === 'Processor') {
-      query = query
-        .eq('admin_id', userId)
-        .not('admin_id', 'is', null);
-    } else if (userType === 'Owner') {
-      query = query
-        .eq('owner_id', userId)
-        .not('owner_id', 'is', null);
-    } else {
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid user type. Must be "Admin", "Processor", or "Owner"'
-      });
-    }
-
-    const { data, error } = await query.select();
-
-    if (error) {
-      console.error('Mark all as read error:', error);
-      return res.status(500).json({
-        success: false,
-        error: 'Failed to mark all notifications as read'
-      });
-    }
-
-    res.json({
-      success: true,
-      message: `Marked ${data.length} notifications as read`
-    });
-  } catch (err) {
-    console.error('Mark all notifications as read error:', err);
-    res.status(500).json({
-      success: false,
-      error: 'An error occurred'
-    });
-  }
-});
-
-// Delete notification
-app.delete("/api/notifications/:notificationId", async (req, res) => {
-  try {
-    const { notificationId } = req.params;
-
-    const { error } = await supabase
-      .from('Notifications')
-      .delete()
-      .eq('notification_id', notificationId);
-
-    if (error) {
-      console.error('Delete notification error:', error);
-      return res.status(500).json({
-        success: false,
-        error: 'Failed to delete notification'
-      });
-    }
-
-    res.json({
-      success: true,
-      message: 'Notification deleted successfully'
-    });
-  } catch (err) {
-    console.error('Delete notification error:', err);
-    res.status(500).json({
-      success: false,
-      error: 'An error occurred'
     });
   }
 });

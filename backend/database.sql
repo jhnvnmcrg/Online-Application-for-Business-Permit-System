@@ -12,7 +12,6 @@
 -- STEP 1: DROP EXISTING TABLES (in reverse dependency order)
 -- ========================================================
 DROP TABLE IF EXISTS public."Login Audits" CASCADE;
-DROP TABLE IF EXISTS public."Notifications" CASCADE;
 DROP TABLE IF EXISTS public."Request Form Data" CASCADE;
 DROP TABLE IF EXISTS public."Request Attachments" CASCADE;
 DROP TABLE IF EXISTS public."Payments" CASCADE;
@@ -223,26 +222,6 @@ CREATE TABLE public."Payments" (
   CONSTRAINT Payments_processed_by_fkey FOREIGN KEY (processed_by) REFERENCES public."Admins"(admin_id)
 );
 
--- ========================================================
--- NOTIFICATIONS TABLE - System notifications
--- ========================================================
-CREATE TABLE public."Notifications" (
-  notification_id integer GENERATED ALWAYS AS IDENTITY NOT NULL,
-  type character varying,
-  subject character varying,
-  message text,
-  request_id integer,
-  payment_id integer,
-  admin_id integer,
-  owner_id integer,
-  created_at timestamp without time zone DEFAULT now(),
-  read_at timestamp with time zone,
-  CONSTRAINT Notifications_pkey PRIMARY KEY (notification_id),
-  CONSTRAINT Notifications_request_id_fkey FOREIGN KEY (request_id) REFERENCES public."Requests"(request_id),
-  CONSTRAINT Notifications_payment_id_fkey FOREIGN KEY (payment_id) REFERENCES public."Payments"(payment_id),
-  CONSTRAINT Notifications_admin_id_fkey FOREIGN KEY (admin_id) REFERENCES public."Admins"(admin_id),
-  CONSTRAINT Notifications_owner_id_fkey FOREIGN KEY (owner_id) REFERENCES public."Owners"(owner_id)
-);
 
 -- ========================================================
 -- LOGIN AUDITS TABLE - Login attempt tracking
@@ -288,12 +267,6 @@ CREATE INDEX IF NOT EXISTS idx_payments_status ON public."Payments"(status);
 CREATE INDEX IF NOT EXISTS idx_payments_processed_by ON public."Payments"(processed_by);
 CREATE INDEX IF NOT EXISTS idx_payments_receipt_number ON public."Payments"(receipt_number);
 
--- Notifications indexes
-CREATE INDEX IF NOT EXISTS idx_notifications_admin_id ON public."Notifications"(admin_id);
-CREATE INDEX IF NOT EXISTS idx_notifications_owner_id ON public."Notifications"(owner_id);
-CREATE INDEX IF NOT EXISTS idx_notifications_request_id ON public."Notifications"(request_id);
-CREATE INDEX IF NOT EXISTS idx_notifications_payment_id ON public."Notifications"(payment_id);
-CREATE INDEX IF NOT EXISTS idx_notifications_read_at ON public."Notifications"(read_at);
 
 -- Document Forms indexes
 CREATE INDEX IF NOT EXISTS idx_document_forms_category_id ON public."Document Forms"(category_id);

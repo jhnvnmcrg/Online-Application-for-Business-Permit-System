@@ -2,14 +2,13 @@ import MainSideBar from "../includes/MainSideBar";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { API_URL } from "../../config/api";
+import { API_URL } from "../config/api";
 
 function MainLogAudits() {
   const [searchName, setSearchName] = useState("");
   const [searchStatus, setSearchStatus] = useState("");
   const [searchUserType, setSearchUserType] = useState("");
   const navigate = useNavigate();
-  const [username, setUsername] = useState("User");
   const [audits, setAudits] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -28,9 +27,7 @@ function MainLogAudits() {
     }
 
     try {
-      const user = JSON.parse(userData);
-      // Set username from user data
-      setUsername(user.username || user.fullname || "User");
+      JSON.parse(userData);
     } catch (error) {
       console.error("Error parsing user data:", error);
       navigate("/oabps/main/login");

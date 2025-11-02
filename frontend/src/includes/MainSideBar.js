@@ -18,7 +18,6 @@ import {
   Settings,
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import NotificationBell from "./NotificationBell";
 
 function MainSideBar({ children }) {
   const location = useLocation();
@@ -284,7 +283,6 @@ function MainSideBar({ children }) {
                 className="d-flex align-items-center gap-3 position-relative me-4"
                 ref={userMenuRef}
               >
-                <NotificationBell />
                 <div
                   onClick={() => setShowUserMenu(!showUserMenu)}
                   style={{ cursor: "pointer" }}

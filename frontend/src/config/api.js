@@ -147,15 +147,6 @@ export const API_ENDPOINTS = {
     USER_RECENT_ACTIVITY: (ownerId) => `/api/dashboard/user/recent-activity/${ownerId}`,
   },
 
-  // Notification endpoints
-  NOTIFICATION: {
-    GET: (userType, userId) => `/api/notifications/${userType}/${userId}`,
-    UNREAD_COUNT: (userType, userId) => `/api/notifications/${userType}/${userId}/unread-count`,
-    MARK_READ: (notificationId) => `/api/notifications/${notificationId}/read`,
-    MARK_ALL_READ: (userType, userId) => `/api/notifications/${userType}/${userId}/read-all`,
-    DELETE: (notificationId) => `/api/notifications/${notificationId}`,
-  },
-
   // Processor endpoints
   PROCESSOR: {
     ASSIGNED_CATEGORIES: (processorId) => `/api/processor/assigned-categories/${processorId}`,
