@@ -83,9 +83,15 @@ function NewApplication() {
   };
 
   const handleDeleteDocument = (docId) => {
-    if (window.confirm("Are you sure you want to delete this document?")) {
-      setOtherDocuments((prev) => prev.filter((doc) => doc.id !== docId));
-    }
+    setPendingDeleteDocId(docId);
+    setShowDeleteDocConfirm(true);
+  };
+
+  const handleConfirmDeleteDoc = () => {
+    setShowDeleteDocConfirm(false);
+    const docId = pendingDeleteDocId;
+    setPendingDeleteDocId(null);
+    setOtherDocuments((prev) => prev.filter((doc) => doc.id !== docId));
   };
   const [formData, setFormData] = useState({
     businessType: "SINGLE PROPRIETORSHIP",
@@ -122,13 +128,17 @@ function NewApplication() {
   const [searchTerm, setSearchTerm] = useState("");
 
   const handleDeleteBusiness = (id) => {
-    if (
-      window.confirm("Are you sure you want to delete this business activity?")
-    ) {
-      setBusinessActivities((prev) =>
-        prev.filter((activity) => activity.id !== id)
-      );
-    }
+    setPendingDeleteBusinessId(id);
+    setShowDeleteBusinessConfirm(true);
+  };
+
+  const handleConfirmDeleteBusiness = () => {
+    setShowDeleteBusinessConfirm(false);
+    const id = pendingDeleteBusinessId;
+    setPendingDeleteBusinessId(null);
+    setBusinessActivities((prev) =>
+      prev.filter((activity) => activity.id !== id)
+    );
   };
 
   const filteredActivities = businessActivities.filter((activity) =>
@@ -148,6 +158,12 @@ function NewApplication() {
     message: "",
   });
 
+  // Delete confirmation modal states
+  const [showDeleteDocConfirm, setShowDeleteDocConfirm] = useState(false);
+  const [pendingDeleteDocId, setPendingDeleteDocId] = useState(null);
+  const [showDeleteBusinessConfirm, setShowDeleteBusinessConfirm] = useState(false);
+  const [pendingDeleteBusinessId, setPendingDeleteBusinessId] = useState(null);
+
   // Helper functions for message modal
   const showMessage = (type, message) => {
     setMessageModal({ show: true, type, message });
@@ -155,6 +171,16 @@ function NewApplication() {
 
   const closeMessageModal = () => {
     setMessageModal({ show: false, type: "", message: "" });
+  };
+
+  const handleCancelDeleteDoc = () => {
+    setShowDeleteDocConfirm(false);
+    setPendingDeleteDocId(null);
+  };
+
+  const handleCancelDeleteBusiness = () => {
+    setShowDeleteBusinessConfirm(false);
+    setPendingDeleteBusinessId(null);
   };
 
   const businessOptions = [
@@ -1352,6 +1378,114 @@ function NewApplication() {
                 </div>
               </div>
             )}
+
+        {/* Delete Document Confirmation Modal */}
+        {showDeleteDocConfirm && (
+          <div
+            className="modal show d-block"
+            style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+            onClick={handleCancelDeleteDoc}
+          >
+            <div
+              className="modal-dialog modal-dialog-centered"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="modal-content">
+                <div className="modal-header bg-danger text-white">
+                  <h5 className="modal-title d-flex align-items-center gap-2">
+                    <AlertCircle size={20} />
+                    Confirm Document Deletion
+                  </h5>
+                  <button
+                    type="button"
+                    className="btn-close btn-close-white"
+                    onClick={handleCancelDeleteDoc}
+                  ></button>
+                </div>
+                <div className="modal-body">
+                  <p className="mb-2">
+                    Are you sure you want to delete this document?
+                  </p>
+                  <p className="text-danger fw-bold mb-0">
+                    <AlertCircle size={16} className="me-1" />
+                    This action cannot be undone.
+                  </p>
+                </div>
+                <div className="modal-footer">
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={handleCancelDeleteDoc}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-danger"
+                    onClick={handleConfirmDeleteDoc}
+                  >
+                    <XCircle size={16} className="me-1" />
+                    Delete Document
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Delete Business Activity Confirmation Modal */}
+        {showDeleteBusinessConfirm && (
+          <div
+            className="modal show d-block"
+            style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+            onClick={handleCancelDeleteBusiness}
+          >
+            <div
+              className="modal-dialog modal-dialog-centered"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="modal-content">
+                <div className="modal-header bg-danger text-white">
+                  <h5 className="modal-title d-flex align-items-center gap-2">
+                    <AlertCircle size={20} />
+                    Confirm Business Activity Deletion
+                  </h5>
+                  <button
+                    type="button"
+                    className="btn-close btn-close-white"
+                    onClick={handleCancelDeleteBusiness}
+                  ></button>
+                </div>
+                <div className="modal-body">
+                  <p className="mb-2">
+                    Are you sure you want to delete this business activity?
+                  </p>
+                  <p className="text-danger fw-bold mb-0">
+                    <AlertCircle size={16} className="me-1" />
+                    This action cannot be undone.
+                  </p>
+                </div>
+                <div className="modal-footer">
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={handleCancelDeleteBusiness}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-danger"
+                    onClick={handleConfirmDeleteBusiness}
+                  >
+                    <XCircle size={16} className="me-1" />
+                    Delete Activity
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
       </UserTopBar>
     </>

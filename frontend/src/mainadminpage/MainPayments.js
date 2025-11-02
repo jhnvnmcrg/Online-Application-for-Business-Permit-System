@@ -40,6 +40,8 @@ function MainPayments() {
   const [showReceipt, setShowReceipt] = useState(false);
   const [showMessageModal, setShowMessageModal] = useState(false);
   const [messageModal, setMessageModal] = useState({ title: "", message: "", type: "success" });
+  const [showPrintConfirm, setShowPrintConfirm] = useState(false);
+  const [pendingPrintPayment, setPendingPrintPayment] = useState(null);
 
   // Statistics
   const [stats, setStats] = useState({
@@ -188,17 +190,11 @@ function MainPayments() {
         setReceiptNumber("");
         setPaymentDate("");
 
-        // Ask if they want to print the receipt
-        const printNow = window.confirm("Payment verified successfully! Would you like to print the official receipt now?");
-        if (printNow) {
-          // Find the updated payment and open receipt modal
-          const updatedPayments = await fetchPayments();
-          const verifiedPayment = payments.find(p => p.payment_id === selectedPayment.payment_id);
-          if (verifiedPayment) {
-            handlePrintReceipt(verifiedPayment);
-          }
-        } else {
-          showMessage("Success", "Payment verified successfully. You can print the receipt later from the actions menu.", "success");
+        // Find the verified payment and show print confirmation modal
+        const verifiedPayment = payments.find(p => p.payment_id === selectedPayment.payment_id);
+        if (verifiedPayment) {
+          setPendingPrintPayment(verifiedPayment);
+          setShowPrintConfirm(true);
         }
       } else {
         setError(response.data.message || "Failed to verify payment");
@@ -241,6 +237,20 @@ function MainPayments() {
 
   const closeMessageModal = () => {
     setShowMessageModal(false);
+  };
+
+  const handleConfirmPrint = () => {
+    setShowPrintConfirm(false);
+    if (pendingPrintPayment) {
+      handlePrintReceipt(pendingPrintPayment);
+      setPendingPrintPayment(null);
+    }
+  };
+
+  const handleCancelPrint = () => {
+    setShowPrintConfirm(false);
+    setPendingPrintPayment(null);
+    showMessage("Success", "Payment verified successfully. You can print the receipt later from the actions menu.", "success");
   };
 
   const handleImageClick = (imageUrl) => {
@@ -756,7 +766,7 @@ function MainPayments() {
                 <form onSubmit={handleVerifyPayment}>
                   <div className="mb-3">
                     <label className="form-label">
-                      Official Receipt Number <span className="text-danger">*</span>
+                      Official Receipt Number 
                     </label>
                     <input
                       type="text"
@@ -770,7 +780,7 @@ function MainPayments() {
 
                   <div className="mb-3">
                     <label className="form-label">
-                      Payment Date <span className="text-danger">*</span>
+                      Payment Date 
                     </label>
                     <input
                       type="date"
@@ -1090,6 +1100,59 @@ function MainPayments() {
                   onClick={closeMessageModal}
                 >
                   Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Print Receipt Confirmation Modal */}
+      {showPrintConfirm && (
+        <div
+          className="modal show d-block"
+          style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+          onClick={handleCancelPrint}
+        >
+          <div
+            className="modal-dialog modal-dialog-centered"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-content">
+              <div className="modal-header bg-success text-white">
+                <h5 className="modal-title d-flex align-items-center gap-2">
+                  <CheckCircle size={20} />
+                  Payment Verified Successfully
+                </h5>
+                <button
+                  type="button"
+                  className="btn-close btn-close-white"
+                  onClick={handleCancelPrint}
+                ></button>
+              </div>
+              <div className="modal-body">
+                <p className="mb-0">
+                  Would you like to print the official receipt now?
+                </p>
+                <small className="text-muted">
+                  You can also print the receipt later from the actions menu.
+                </small>
+              </div>
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={handleCancelPrint}
+                >
+                  Print Later
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-success"
+                  onClick={handleConfirmPrint}
+                >
+                  <Printer size={16} className="me-1" />
+                  Print Now
                 </button>
               </div>
             </div>

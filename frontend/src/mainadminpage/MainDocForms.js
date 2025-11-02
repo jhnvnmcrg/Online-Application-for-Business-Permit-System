@@ -50,6 +50,9 @@ function MainDocForms() {
   const [filteredForms, setFilteredForms] = useState([]);
   const [filteredOptions, setFilteredOptions] = useState([]);
 
+  // Groups for modal form (filtered by selected categoryId)
+  const [availableGroups, setAvailableGroups] = useState([]);
+
   // Pagination states
   const [groupsPage, setGroupsPage] = useState(1);
   const [formsPage, setFormsPage] = useState(1);
@@ -60,6 +63,14 @@ function MainDocForms() {
   const [showMessageModal, setShowMessageModal] = useState(false);
   const [messageContent, setMessageContent] = useState("");
   const [messageType, setMessageType] = useState("success");
+
+  // Delete confirmation modal states
+  const [showDeleteGroupConfirm, setShowDeleteGroupConfirm] = useState(false);
+  const [pendingDeleteGroupId, setPendingDeleteGroupId] = useState(null);
+  const [showDeleteOptionConfirm, setShowDeleteOptionConfirm] = useState(false);
+  const [pendingDeleteOptionId, setPendingDeleteOptionId] = useState(null);
+  const [showDeleteFieldConfirm, setShowDeleteFieldConfirm] = useState(false);
+  const [pendingDeleteFieldId, setPendingDeleteFieldId] = useState(null);
 
   const navigate = useNavigate();
 
@@ -74,6 +85,21 @@ function MainDocForms() {
     setShowMessageModal(false);
     setMessageContent("");
     setMessageType("success");
+  };
+
+  const handleCancelDeleteGroup = () => {
+    setShowDeleteGroupConfirm(false);
+    setPendingDeleteGroupId(null);
+  };
+
+  const handleCancelDeleteOption = () => {
+    setShowDeleteOptionConfirm(false);
+    setPendingDeleteOptionId(null);
+  };
+
+  const handleCancelDeleteField = () => {
+    setShowDeleteFieldConfirm(false);
+    setPendingDeleteFieldId(null);
   };
 
   useEffect(() => {
@@ -91,6 +117,18 @@ function MainDocForms() {
     fetchGroups();
     fetchFormFields();
   }, [navigate]);
+
+  // Filter groups when categoryId changes
+  useEffect(() => {
+    if (categoryId) {
+      const filtered = groups.filter(
+        (group) => group.category_id === parseInt(categoryId)
+      );
+      setAvailableGroups(filtered);
+    } else {
+      setAvailableGroups([]);
+    }
+  }, [categoryId, groups]);
 
   const fetchCategories = async () => {
     try {
@@ -234,10 +272,15 @@ function MainDocForms() {
     }
   };
 
-  const handleDeleteGroup = async (groupId) => {
-    if (!window.confirm("Are you sure you want to delete this group?")) {
-      return;
-    }
+  const handleDeleteGroup = (groupId) => {
+    setPendingDeleteGroupId(groupId);
+    setShowDeleteGroupConfirm(true);
+  };
+
+  const handleConfirmDeleteGroup = async () => {
+    setShowDeleteGroupConfirm(false);
+    const groupId = pendingDeleteGroupId;
+    setPendingDeleteGroupId(null);
 
     try {
       const response = await axios.delete(
@@ -346,12 +389,17 @@ function MainDocForms() {
     }
   };
 
-  const handleDeleteOption = async (optionId) => {
-    if (!window.confirm("Are you sure you want to delete this option?")) {
-      return;
-    }
+  const handleDeleteOption = (optionId) => {
+    setPendingDeleteOptionId(optionId);
+    setShowDeleteOptionConfirm(true);
+  };
 
-    try {
+  const handleConfirmDeleteOption = async () => {
+    setShowDeleteOptionConfirm(false);
+    const optionId = pendingDeleteOptionId;
+    setPendingDeleteOptionId(null);
+
+    try{
       const response = await axios.delete(
         `https://oabs-f7by.onrender.com/api/option/delete/${optionId}`
       );
@@ -495,10 +543,15 @@ function MainDocForms() {
     }
   };
 
-  const handleDelete = async (formId) => {
-    if (!window.confirm("Are you sure you want to delete this form field?")) {
-      return;
-    }
+  const handleDelete = (formId) => {
+    setPendingDeleteFieldId(formId);
+    setShowDeleteFieldConfirm(true);
+  };
+
+  const handleConfirmDeleteField = async () => {
+    setShowDeleteFieldConfirm(false);
+    const formId = pendingDeleteFieldId;
+    setPendingDeleteFieldId(null);
 
     try {
       const response = await axios.delete(
@@ -1325,7 +1378,10 @@ function MainDocForms() {
                         className="form-select"
                         id="categoryId"
                         value={categoryId}
-                        onChange={(e) => setCategoryId(e.target.value)}
+                        onChange={(e) => {
+                          setCategoryId(e.target.value);
+                          setGroupId(""); // Reset group when category changes
+                        }}
                         required
                         disabled={loading || selectedCategory}
                       >
@@ -1447,20 +1503,7 @@ function MainDocForms() {
                         disabled={loading}
                       />
                     </div>
-                    <div className="mb-3">
-                      <label htmlFor="defaultValue" className="form-label">
-                        Default Value
-                      </label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        id="defaultValue"
-                        value={defaultValue}
-                        onChange={(e) => setDefaultValue(e.target.value)}
-                        placeholder="e.g., N/A"
-                        disabled={loading}
-                      />
-                    </div>
+                    
                     <div className="mb-3">
                       <label htmlFor="groupId" className="form-label">
                         Field Group (Optional)
@@ -1470,33 +1513,20 @@ function MainDocForms() {
                         id="groupId"
                         value={groupId}
                         onChange={(e) => setGroupId(e.target.value)}
-                        disabled={loading}
+                        disabled={loading || !categoryId}
                       >
                         <option value="">No Group</option>
-                        {groups.map((group) => (
+                        {availableGroups.map((group) => (
                           <option key={group.group_id} value={group.group_id}>
                             {group.group_name}
                           </option>
                         ))}
                       </select>
+                      {!categoryId && (
+                        <small className="text-muted">Select a category first to see available groups</small>
+                      )}
                     </div>
-                    <div className="mb-3">
-                      <label htmlFor="validationRule" className="form-label">
-                        Validation Rule
-                      </label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        id="validationRule"
-                        value={validationRule}
-                        onChange={(e) => setValidationRule(e.target.value)}
-                        placeholder="e.g., email, phone, or regex pattern"
-                        disabled={loading}
-                      />
-                      <small className="text-muted">
-                        Optional: Use 'email', 'phone', or custom regex
-                      </small>
-                    </div>
+                    
                     <div className="mb-3">
                       <label htmlFor="fieldWidth" className="form-label">
                         Field Width
@@ -1573,7 +1603,10 @@ function MainDocForms() {
                         className="form-select"
                         id="editCategoryId"
                         value={categoryId}
-                        onChange={(e) => setCategoryId(e.target.value)}
+                        onChange={(e) => {
+                          setCategoryId(e.target.value);
+                          setGroupId(""); // Reset group when category changes
+                        }}
                         required
                         disabled={loading || selectedCategory}
                       >
@@ -1587,12 +1620,7 @@ function MainDocForms() {
                           </option>
                         ))}
                       </select>
-                      {selectedCategory && (
-                        <small className="text-muted">
-                          Category is locked while managing{" "}
-                          {selectedCategory.category_name}
-                        </small>
-                      )}
+                      
                     </div>
                     <div className="mb-3">
                       <label htmlFor="editFieldName" className="form-label">
@@ -1701,20 +1729,7 @@ function MainDocForms() {
                         disabled={loading}
                       />
                     </div>
-                    <div className="mb-3">
-                      <label htmlFor="editDefaultValue" className="form-label">
-                        Default Value
-                      </label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        id="editDefaultValue"
-                        value={defaultValue}
-                        onChange={(e) => setDefaultValue(e.target.value)}
-                        placeholder="e.g., N/A"
-                        disabled={loading}
-                      />
-                    </div>
+                    
                     <div className="mb-3">
                       <label htmlFor="editGroupId" className="form-label">
                         Field Group (Optional)
@@ -1724,36 +1739,20 @@ function MainDocForms() {
                         id="editGroupId"
                         value={groupId}
                         onChange={(e) => setGroupId(e.target.value)}
-                        disabled={loading}
+                        disabled={loading || !categoryId}
                       >
                         <option value="">No Group</option>
-                        {groups.map((group) => (
+                        {availableGroups.map((group) => (
                           <option key={group.group_id} value={group.group_id}>
                             {group.group_name}
                           </option>
                         ))}
                       </select>
+                      {!categoryId && (
+                        <small className="text-muted">Select a category first to see available groups</small>
+                      )}
                     </div>
-                    <div className="mb-3">
-                      <label
-                        htmlFor="editValidationRule"
-                        className="form-label"
-                      >
-                        Validation Rule
-                      </label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        id="editValidationRule"
-                        value={validationRule}
-                        onChange={(e) => setValidationRule(e.target.value)}
-                        placeholder="e.g., email, phone, or regex pattern"
-                        disabled={loading}
-                      />
-                      <small className="text-muted">
-                        Optional: Use 'email', 'phone', or custom regex
-                      </small>
-                    </div>
+                    
                     <div className="mb-3">
                       <label htmlFor="editFieldWidth" className="form-label">
                         Field Width
@@ -2198,6 +2197,168 @@ function MainDocForms() {
             </div>
           </div>
         )}
+
+      {/* Delete Group Confirmation Modal */}
+      {showDeleteGroupConfirm && (
+        <div
+          className="modal show d-block"
+          style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+          onClick={handleCancelDeleteGroup}
+        >
+          <div
+            className="modal-dialog modal-dialog-centered"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-content">
+              <div className="modal-header bg-danger text-white">
+                <h5 className="modal-title d-flex align-items-center gap-2">
+                  <AlertCircle size={20} />
+                  Confirm Group Deletion
+                </h5>
+                <button
+                  type="button"
+                  className="btn-close btn-close-white"
+                  onClick={handleCancelDeleteGroup}
+                ></button>
+              </div>
+              <div className="modal-body">
+                <p className="mb-2">
+                  Are you sure you want to delete this group?
+                </p>
+                <p className="text-danger fw-bold mb-0">
+                  <AlertCircle size={16} className="me-1" />
+                  This action cannot be undone.
+                </p>
+              </div>
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={handleCancelDeleteGroup}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-danger"
+                  onClick={handleConfirmDeleteGroup}
+                >
+                  <Trash size={16} className="me-1" />
+                  Delete Group
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Option Confirmation Modal */}
+      {showDeleteOptionConfirm && (
+        <div
+          className="modal show d-block"
+          style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+          onClick={handleCancelDeleteOption}
+        >
+          <div
+            className="modal-dialog modal-dialog-centered"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-content">
+              <div className="modal-header bg-danger text-white">
+                <h5 className="modal-title d-flex align-items-center gap-2">
+                  <AlertCircle size={20} />
+                  Confirm Option Deletion
+                </h5>
+                <button
+                  type="button"
+                  className="btn-close btn-close-white"
+                  onClick={handleCancelDeleteOption}
+                ></button>
+              </div>
+              <div className="modal-body">
+                <p className="mb-2">
+                  Are you sure you want to delete this option?
+                </p>
+                <p className="text-danger fw-bold mb-0">
+                  <AlertCircle size={16} className="me-1" />
+                  This action cannot be undone.
+                </p>
+              </div>
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={handleCancelDeleteOption}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-danger"
+                  onClick={handleConfirmDeleteOption}
+                >
+                  <Trash size={16} className="me-1" />
+                  Delete Option
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Field Confirmation Modal */}
+      {showDeleteFieldConfirm && (
+        <div
+          className="modal show d-block"
+          style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+          onClick={handleCancelDeleteField}
+        >
+          <div
+            className="modal-dialog modal-dialog-centered"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-content">
+              <div className="modal-header bg-danger text-white">
+                <h5 className="modal-title d-flex align-items-center gap-2">
+                  <AlertCircle size={20} />
+                  Confirm Field Deletion
+                </h5>
+                <button
+                  type="button"
+                  className="btn-close btn-close-white"
+                  onClick={handleCancelDeleteField}
+                ></button>
+              </div>
+              <div className="modal-body">
+                <p className="mb-2">
+                  Are you sure you want to delete this form field?
+                </p>
+                <p className="text-danger fw-bold mb-0">
+                  <AlertCircle size={16} className="me-1" />
+                  This action cannot be undone.
+                </p>
+              </div>
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={handleCancelDeleteField}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-danger"
+                  onClick={handleConfirmDeleteField}
+                >
+                  <Trash size={16} className="me-1" />
+                  Delete Field
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       </MainSideBar>
     </>
   );

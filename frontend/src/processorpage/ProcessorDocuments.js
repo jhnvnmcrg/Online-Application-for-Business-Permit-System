@@ -24,6 +24,11 @@ function ProcessorDocuments() {
   const [messageContent, setMessageContent] = useState("");
   const [messageType, setMessageType] = useState("success");
 
+  // Delete confirmation modal states
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [pendingDeleteId, setPendingDeleteId] = useState(null);
+  const [pendingDeletePath, setPendingDeletePath] = useState(null);
+
   const navigate = useNavigate();
   const [username, setUsername] = useState("User");
   const [createdBy, setCreatedBy] = useState("");
@@ -39,6 +44,12 @@ function ProcessorDocuments() {
     setShowMessageModal(false);
     setMessageContent("");
     setMessageType("success");
+  };
+
+  const handleCancelDelete = () => {
+    setShowDeleteConfirm(false);
+    setPendingDeleteId(null);
+    setPendingDeletePath(null);
   };
 
   useEffect(() => {
@@ -248,10 +259,18 @@ function ProcessorDocuments() {
     }
   };
 
-  const handleDelete = async (documentId, documentPath) => {
-    if (!window.confirm("Are you sure you want to delete this document?")) {
-      return;
-    }
+  const handleDelete = (documentId, documentPath) => {
+    setPendingDeleteId(documentId);
+    setPendingDeletePath(documentPath);
+    setShowDeleteConfirm(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    setShowDeleteConfirm(false);
+    const documentId = pendingDeleteId;
+    const documentPath = pendingDeletePath;
+    setPendingDeleteId(null);
+    setPendingDeletePath(null);
 
     try {
       const response = await axios.delete(
@@ -595,6 +614,60 @@ function ProcessorDocuments() {
                     onClick={closeMessageModal}
                   >
                     OK
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Delete Confirmation Modal */}
+        {showDeleteConfirm && (
+          <div
+            className="modal show d-block"
+            style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+            onClick={handleCancelDelete}
+          >
+            <div
+              className="modal-dialog modal-dialog-centered"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="modal-content">
+                <div className="modal-header bg-danger text-white">
+                  <h5 className="modal-title d-flex align-items-center gap-2">
+                    <AlertCircle size={20} />
+                    Confirm Document Deletion
+                  </h5>
+                  <button
+                    type="button"
+                    className="btn-close btn-close-white"
+                    onClick={handleCancelDelete}
+                  ></button>
+                </div>
+                <div className="modal-body">
+                  <p className="mb-2">
+                    Are you sure you want to delete this document?
+                  </p>
+                  <p className="text-danger fw-bold mb-0">
+                    <AlertCircle size={16} className="me-1" />
+                    This action cannot be undone.
+                  </p>
+                </div>
+                <div className="modal-footer">
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={handleCancelDelete}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-danger"
+                    onClick={handleConfirmDelete}
+                  >
+                    <Trash size={16} className="me-1" />
+                    Delete Document
                   </button>
                 </div>
               </div>

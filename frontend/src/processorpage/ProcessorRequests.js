@@ -59,6 +59,9 @@ function ProcessorRequests() {
   const [showMessageModal, setShowMessageModal] = useState(false);
   const [messageModal, setMessageModal] = useState({ title: "", message: "", type: "success" });
 
+  // Remove payment confirmation modal
+  const [showRemovePaymentConfirm, setShowRemovePaymentConfirm] = useState(false);
+
   const navigate = useNavigate();
   const API_URL = "https://oabs-f7by.onrender.com";
   // const API_URL = "http://localhost:3000";
@@ -399,10 +402,12 @@ function ProcessorRequests() {
     }
   };
 
-  const handleRemovePayment = async () => {
-    if (!window.confirm("Are you sure you want to remove this payment requirement? This action cannot be undone.")) {
-      return;
-    }
+  const handleRemovePayment = () => {
+    setShowRemovePaymentConfirm(true);
+  };
+
+  const handleConfirmRemovePayment = async () => {
+    setShowRemovePaymentConfirm(false);
 
     try {
       setRemovingPayment(true);
@@ -456,6 +461,10 @@ function ProcessorRequests() {
 
   const closeMessageModal = () => {
     setShowMessageModal(false);
+  };
+
+  const handleCancelRemovePayment = () => {
+    setShowRemovePaymentConfirm(false);
   };
 
   // Pagination
@@ -1282,6 +1291,60 @@ function ProcessorRequests() {
                   onClick={closeMessageModal}
                 >
                   Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Remove Payment Confirmation Modal */}
+      {showRemovePaymentConfirm && (
+        <div
+          className="modal show d-block"
+          style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+          onClick={handleCancelRemovePayment}
+        >
+          <div
+            className="modal-dialog modal-dialog-centered"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-content">
+              <div className="modal-header bg-danger text-white">
+                <h5 className="modal-title d-flex align-items-center gap-2">
+                  <AlertCircle size={20} />
+                  Confirm Payment Removal
+                </h5>
+                <button
+                  type="button"
+                  className="btn-close btn-close-white"
+                  onClick={handleCancelRemovePayment}
+                ></button>
+              </div>
+              <div className="modal-body">
+                <p className="mb-2">
+                  Are you sure you want to remove this payment requirement?
+                </p>
+                <p className="text-danger fw-bold mb-0">
+                  <AlertTriangle size={16} className="me-1" />
+                  This action cannot be undone.
+                </p>
+              </div>
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={handleCancelRemovePayment}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-danger"
+                  onClick={handleConfirmRemovePayment}
+                >
+                  <Trash2 size={16} className="me-1" />
+                  Remove Payment
                 </button>
               </div>
             </div>

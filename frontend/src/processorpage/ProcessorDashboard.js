@@ -11,6 +11,7 @@ import {
   TrendingUp,
   AlertTriangle,
   FolderOpen,
+  Ban,
 } from "lucide-react";
 
 function ProcessorDashboard() {
@@ -97,9 +98,9 @@ function ProcessorDashboard() {
             requests: {
               total: filteredRequests.length,
               pending: filteredRequests.filter((r) => r.status === "Pending").length,
-              processing: filteredRequests.filter((r) => r.status === "Processing").length,
+              processing: filteredRequests.filter((r) => r.status === "Under Review").length,
               approved: filteredRequests.filter((r) => r.status === "Approved").length,
-              released: filteredRequests.filter((r) => r.status === "Released").length,
+              released: filteredRequests.filter((r) => r.status === "Completed").length,
             },
             categories: categories.length,
           };
@@ -178,10 +179,13 @@ function ProcessorDashboard() {
   const getStatusBadge = (status) => {
     const badges = {
       Pending: { color: "warning", icon: <Clock size={12} /> },
+      "Under Review": { color: "info", icon: <AlertTriangle size={12} /> },
       Processing: { color: "info", icon: <AlertTriangle size={12} /> },
       Approved: { color: "success", icon: <CheckCircle size={12} /> },
       Rejected: { color: "danger", icon: <XCircle size={12} /> },
+      Completed: { color: "primary", icon: <CheckCircle size={12} /> },
       Released: { color: "primary", icon: <CheckCircle size={12} /> },
+      Cancelled: { color: "secondary", icon: <Ban size={12} /> },
     };
 
     const badge = badges[status] || badges.Pending;
@@ -217,7 +221,7 @@ function ProcessorDashboard() {
             <h2 className="display-5 fw-bold text-dark mb-2">
               Welcome, {username}!
             </h2>
-            
+            <p className="text-muted">Here's what's happening with your system today</p>
           </div>
 
           {error && (
@@ -234,7 +238,7 @@ function ProcessorDashboard() {
                 <div className="card-body">
                   <div className="d-flex justify-content-between align-items-start">
                     <div>
-                      <p className="text-muted mb-1 small">My Requests</p>
+                      <p className="text-muted mb-1 small">Requests</p>
                       <h3 className="mb-0 fw-bold text-primary">
                         {stats?.requests?.total || 0}
                       </h3>
@@ -317,7 +321,7 @@ function ProcessorDashboard() {
               <div className="card h-100 border-0 shadow-sm">
                 <div className="card-body">
                   <div className="d-flex justify-content-between align-items-center mb-2">
-                    <span className="text-muted small">Processing</span>
+                    <span className="text-muted small">Under Review</span>
                     <span className="badge bg-info">{stats?.requests?.processing || 0}</span>
                   </div>
                   <div className="progress" style={{ height: "6px" }}>
@@ -365,7 +369,7 @@ function ProcessorDashboard() {
               <div className="card h-100 border-0 shadow-sm">
                 <div className="card-body">
                   <div className="d-flex justify-content-between align-items-center mb-2">
-                    <span className="text-muted small">Released</span>
+                    <span className="text-muted small">Completed</span>
                     <span className="badge bg-primary">{stats?.requests?.released || 0}</span>
                   </div>
                   <div className="progress" style={{ height: "6px" }}>
