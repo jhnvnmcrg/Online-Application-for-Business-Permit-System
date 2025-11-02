@@ -126,7 +126,7 @@ function MainPayments() {
 
   const handleOpenVerifyModal = async (payment) => {
     setSelectedPayment(payment);
-    setVerifyStatus("");
+    setVerifyStatus("Verified"); // Automatically set to Verified
     setVerifyRemarks("");
 
     // Set today's date as default payment date
@@ -153,21 +153,14 @@ function MainPayments() {
   const handleVerifyPayment = async (e) => {
     e.preventDefault();
 
-    if (!verifyStatus) {
-      setError("Please select verification status");
+    // Validate required fields for verified payments
+    if (!receiptNumber) {
+      setError("Receipt number is required for verified payments");
       return;
     }
-
-    // For OTC payments being verified, require receipt number and payment date
-    if (verifyStatus === "Verified") {
-      if (!receiptNumber) {
-        setError("Receipt number is required for verified payments");
-        return;
-      }
-      if (!paymentDate) {
-        setError("Payment date is required for verified payments");
-        return;
-      }
+    if (!paymentDate) {
+      setError("Payment date is required for verified payments");
+      return;
     }
 
     try {
@@ -175,16 +168,12 @@ function MainPayments() {
       setError("");
 
       const requestData = {
-        status: verifyStatus,
+        status: "Verified",
         processedBy: adminId,
         remarks: verifyRemarks || null,
+        receiptNumber: receiptNumber,
+        paymentDate: paymentDate,
       };
-
-      // Only include receipt_number and payment_date if status is Verified
-      if (verifyStatus === "Verified") {
-        requestData.receiptNumber = receiptNumber;
-        requestData.paymentDate = paymentDate;
-      }
 
       const response = await axios.put(
         `${API_URL}/api/payment/verify/${selectedPayment.payment_id}`,
@@ -199,21 +188,17 @@ function MainPayments() {
         setReceiptNumber("");
         setPaymentDate("");
 
-        if (verifyStatus === "Verified") {
-          // Ask if they want to print the receipt
-          const printNow = window.confirm("Payment verified successfully! Would you like to print the official receipt now?");
-          if (printNow) {
-            // Find the updated payment and open receipt modal
-            const updatedPayments = await fetchPayments();
-            const verifiedPayment = payments.find(p => p.payment_id === selectedPayment.payment_id);
-            if (verifiedPayment) {
-              handlePrintReceipt(verifiedPayment);
-            }
-          } else {
-            showMessage("Success", "Payment verified successfully. You can print the receipt later from the actions menu.", "success");
+        // Ask if they want to print the receipt
+        const printNow = window.confirm("Payment verified successfully! Would you like to print the official receipt now?");
+        if (printNow) {
+          // Find the updated payment and open receipt modal
+          const updatedPayments = await fetchPayments();
+          const verifiedPayment = payments.find(p => p.payment_id === selectedPayment.payment_id);
+          if (verifiedPayment) {
+            handlePrintReceipt(verifiedPayment);
           }
         } else {
-          showMessage("Success", `Payment ${verifyStatus.toLowerCase()} successfully`, "success");
+          showMessage("Success", "Payment verified successfully. You can print the receipt later from the actions menu.", "success");
         }
       } else {
         setError(response.data.message || "Failed to verify payment");
@@ -786,68 +771,46 @@ function MainPayments() {
                 <form onSubmit={handleVerifyPayment}>
                   <div className="mb-3">
                     <label className="form-label">
-                      Verification Status <span className="text-danger">*</span>
+                      Official Receipt Number <span className="text-danger">*</span>
                     </label>
-                    <select
-                      className="form-select"
-                      value={verifyStatus}
-                      onChange={(e) => setVerifyStatus(e.target.value)}
-                      required
-                    >
-                      <option value="">-- Select Status --</option>
-                      <option value="Verified">✅ Verified (Payment Received)</option>
-                      <option value="Rejected">❌ Rejected (Payment Not Received)</option>
-                    </select>
+                    <input
+                      type="text"
+                      className="form-control bg-light"
+                      value={receiptNumber}
+                      readOnly
+                      disabled
+                    />
+                    <small className="text-muted">Auto-generated receipt number</small>
                   </div>
 
-                  {/* Show receipt and payment date fields only for Verified status */}
-                  {verifyStatus === "Verified" && (
-                    <>
-                      <div className="mb-3">
-                        <label className="form-label">
-                          Official Receipt Number <span className="text-danger">*</span>
-                        </label>
-                        <input
-                          type="text"
-                          className="form-control bg-light"
-                          value={receiptNumber}
-                          readOnly
-                          disabled
-                        />
-                        <small className="text-muted">Auto-generated receipt number</small>
-                      </div>
+                  <div className="mb-3">
+                    <label className="form-label">
+                      Payment Date <span className="text-danger">*</span>
+                    </label>
+                    <input
+                      type="date"
+                      className="form-control bg-light"
+                      value={paymentDate}
+                      readOnly
+                      disabled
+                    />
+                    <small className="text-muted">Current date (auto-set to today)</small>
+                  </div>
 
-                      <div className="mb-3">
-                        <label className="form-label">
-                          Payment Date <span className="text-danger">*</span>
-                        </label>
-                        <input
-                          type="date"
-                          className="form-control bg-light"
-                          value={paymentDate}
-                          readOnly
-                          disabled
-                        />
-                        <small className="text-muted">Current date (auto-set to today)</small>
-                      </div>
-
-                      <div className="alert alert-success mb-3">
-                        <small>
-                          <strong>Full Payment Only:</strong> Verify that the full amount of ₱{parseFloat(selectedPayment.amount).toFixed(2)} has been received.
-                        </small>
-                      </div>
-                    </>
-                  )}
+                  <div className="alert alert-success mb-3">
+                    <small>
+                      <strong>Full Payment Only:</strong> Verify that the full amount of ₱{parseFloat(selectedPayment.amount).toFixed(2)} has been received.
+                    </small>
+                  </div>
 
                   <div className="mb-3">
-                    <label className="form-label">Remarks {verifyStatus === "Rejected" ? <span className="text-danger">*</span> : "(Optional)"}</label>
+                    <label className="form-label">Remarks (Optional)</label>
                     <textarea
                       className="form-control"
                       rows={3}
                       value={verifyRemarks}
                       onChange={(e) => setVerifyRemarks(e.target.value)}
-                      placeholder={verifyStatus === "Rejected" ? "Please provide reason for rejection..." : "Add verification notes (e.g., 'Paid in full', 'Cash payment received')..."}
-                      required={verifyStatus === "Rejected"}
+                      placeholder="Add verification notes (e.g., 'Paid in full', 'Cash payment received')..."
                     />
                   </div>
 
@@ -868,10 +831,8 @@ function MainPayments() {
                     </button>
                     <button
                       type="submit"
-                      className={`btn ${
-                        verifyStatus === "Verified" ? "btn-success" : "btn-danger"
-                      }`}
-                      disabled={verifying || !verifyStatus}
+                      className="btn btn-success"
+                      disabled={verifying}
                     >
                       {verifying ? (
                         <>
@@ -883,12 +844,8 @@ function MainPayments() {
                         </>
                       ) : (
                         <>
-                          {verifyStatus === "Verified" ? (
-                            <CheckCircle size={16} className="me-2" />
-                          ) : (
-                            <XCircle size={16} className="me-2" />
-                          )}
-                          {verifyStatus === "Verified" ? "Receive & Verify Payment" : "Reject Payment"}
+                          <CheckCircle size={16} className="me-2" />
+                          Verify Payment
                         </>
                       )}
                     </button>

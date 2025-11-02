@@ -212,6 +212,7 @@ CREATE TABLE public."Payments" (
   description text,
   payment_method text CHECK (payment_method = ANY (ARRAY['Cash'::text, 'Check'::text, 'Money Order'::text])),
   payment_date timestamp with time zone,
+  payment_deadline TIMESTAMP WITH TIME ZONE;
   processed_by bigint,
   remarks text,
   receipt_number text UNIQUE,

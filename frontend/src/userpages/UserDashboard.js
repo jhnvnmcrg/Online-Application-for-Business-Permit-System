@@ -270,16 +270,16 @@ function UserDashboard() {
               <div className="card-body">
                 <div className="d-flex justify-content-between align-items-start">
                   <div>
-                    <p className="text-muted mb-1 small">Payments Due</p>
-                    <h3 className="mb-0 fw-bold text-danger">
-                      {stats?.payments?.overdue || 0}
+                    <p className="text-muted mb-1 small">Completed Request</p>
+                    <h3 className="mb-0 fw-bold text-primary">
+                      {stats?.requests?.released || 0}
                     </h3>
-                    <small className="text-danger">
-                      {stats?.payments?.overdue > 0 ? "Action needed" : "All current"}
+                    <small className="text-muted">
+                      Finished applications
                     </small>
                   </div>
-                  <div className="bg-danger bg-opacity-10 p-2 rounded">
-                    <AlertCircle size={20} className="text-danger" />
+                  <div className="bg-primary bg-opacity-10 p-2 rounded">
+                    <CheckCircle size={20} className="text-primary" />
                   </div>
                 </div>
               </div>

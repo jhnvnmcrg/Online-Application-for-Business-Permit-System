@@ -4118,10 +4118,12 @@ app.get("/api/dashboard/user/stats/:ownerId", async (req, res) => {
       requests: {
         total: requests.length,
         pending: requests.filter(r => r.status === "Pending").length,
+        processing: requests.filter(r => r.status === "Under Review").length,
         underReview: requests.filter(r => r.status === "Under Review").length,
         approved: requests.filter(r => r.status === "Approved").length,
         rejected: requests.filter(r => r.status === "Rejected").length,
         completed: requests.filter(r => r.status === "Completed").length,
+        released: requests.filter(r => r.status === "Completed").length,
       },
       payments: {
         total: payments.length,
