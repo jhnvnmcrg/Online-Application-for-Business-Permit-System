@@ -679,13 +679,13 @@ app.post("/api/user/reset-password", async (req, res) => {
 app.put("/api/user/update-profile/:ownerId", async (req, res) => {
   try {
     const { ownerId } = req.params;
-    const { fullname, email, phoneNumber, businessName, businessAddress } = req.body;
+    const { fullname, email, username, phoneNumber, businessName, businessAddress } = req.body;
 
     // Validation
-    if (!fullname || !email) {
+    if (!fullname || !email || !username) {
       return res.status(400).json({
         success: false,
-        message: "Full name and email are required",
+        message: "Full name, email, and username are required",
       });
     }
 
@@ -704,12 +704,28 @@ app.put("/api/user/update-profile/:ownerId", async (req, res) => {
       });
     }
 
+    // Check if username is already used by another user
+    const { data: existingUsername } = await supabase
+      .from("Owners")
+      .select("owner_id")
+      .eq("username", username)
+      .neq("owner_id", ownerId)
+      .single();
+
+    if (existingUsername) {
+      return res.status(400).json({
+        success: false,
+        message: "Username is already in use by another account",
+      });
+    }
+
     // Update profile
     const { data, error } = await supabase
       .from("Owners")
       .update({
         fullname: fullname,
         email: email,
+        username: username,
         phone_number: phoneNumber || null,
         business_name: businessName || null,
         business_address: businessAddress || null,

@@ -77,6 +77,7 @@ function UserSettings() {
         {
           fullname,
           email,
+          username,
           phoneNumber,
           businessName,
           businessAddress,
@@ -247,16 +248,16 @@ function UserSettings() {
                     <div className="col-md-6 mb-3">
                       <label className="form-label">
                         <User size={16} className="me-1" style={{ display: 'inline' }} />
-                        Username
+                        Username <span className="text-danger">*</span>
                       </label>
                       <input
                         type="text"
-                        className="form-control bg-light"
+                        className="form-control"
                         value={username}
-                        disabled
-                        readOnly
+                        onChange={(e) => setUsername(e.target.value)}
+                        required
+                        disabled={loading}
                       />
-                      <small className="text-muted">Username cannot be changed</small>
                     </div>
 
                     <div className="col-md-6 mb-3">
