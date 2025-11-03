@@ -81,7 +81,7 @@ function ContactUs() {
       }}>
         <div className="container">
           <div className="text-center text-white">
-            <h1 className="display-3 fw-bold mb-4">Contact Us</h1>
+            <h1 className="display-3 fw-bold my-4">Contact Us</h1>
             <p className="lead mb-0" style={{ fontSize: "1.3rem", maxWidth: "800px", margin: "0 auto" }}>
               Have questions? We're here to help. Reach out to us through any of the following channels.
             </p>
@@ -351,10 +351,7 @@ function ContactUs() {
 
               <div className="text-center mt-4">
                 <p className="text-muted">
-                  Still have questions?{' '}
-                  <a href="#contact-form" className="text-danger fw-medium text-decoration-none">
-                    Send us a message
-                  </a>
+                  Still have questions? <span className='text-danger'>Send us a message</span>
                 </p>
               </div>
             </div>

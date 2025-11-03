@@ -27,7 +27,7 @@ function Home() {
         <div className="container">
           <div className="row align-items-center">
             <div className="col-lg-7 text-white">
-              <h1 className="display-3 fw-bold mb-4">
+              <h1 className="display-3 fw-bold my-4">
                 Online Application for Business Permit
               </h1>
               <p className="lead mb-4" style={{ fontSize: "1.3rem" }}>

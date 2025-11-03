@@ -122,7 +122,7 @@ function Tracking() {
       }}>
         <div className="container">
           <div className="text-center text-white">
-            <h1 className="display-3 fw-bold mb-4">Track Your Application</h1>
+            <h1 className="display-3 fw-bold my-4">Track Your Application</h1>
             <p className="lead mb-0" style={{ fontSize: "1.3rem", maxWidth: "800px", margin: "0 auto" }}>
               Enter your tracking code to check the status of your business permit application
             </p>
