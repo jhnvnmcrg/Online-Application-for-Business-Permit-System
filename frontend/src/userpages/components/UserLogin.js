@@ -98,9 +98,9 @@ function UserLogin() {
                 </div>
 
                 <h4 className="fw-semibold text-dark mb-1">
-                  Online Business Permit &
+                  Online Application for
                 </h4>
-                <h4 className="fw-semibold text-dark mb-4">Licensing System</h4>
+                <h4 className="fw-semibold text-dark mb-4">Business Permit</h4>
               </div>
 
               {error && (

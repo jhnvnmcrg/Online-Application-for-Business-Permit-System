@@ -616,11 +616,8 @@ function UserTransaction() {
                           <option value={100}>100</option>
                         </select>
                         <span className="ms-1 small d-none d-md-inline">entries</span>
-                      </div>
-                    </div>
-                    <div className="col-6 col-md-3">
-                      <select
-                        className="form-select form-select-sm"
+                         <select
+                        className="form-select form-select-sm ms-5"
                         value={statusFilter}
                         onChange={(e) => setStatusFilter(e.target.value)}
                       >
@@ -632,6 +629,10 @@ function UserTransaction() {
                         <option value="Released">Released</option>
                         <option value="Cancelled">Cancelled</option>
                       </select>
+                      </div>
+                    </div>
+                    <div className="col-6 col-md-3">
+                     
                     </div>
                     <div className="col-12 col-md-6">
                       <div className="d-flex justify-content-start justify-content-md-end align-items-center">

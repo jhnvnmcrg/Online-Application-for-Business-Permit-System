@@ -130,7 +130,7 @@ function MainRegister() {
                   Create a new Account
                 </h4>
                 <p className="text-muted mb-4" style={{ fontSize: "14px" }}>
-                  Online Business Permit & Licensing System
+                  Online Application for Business Permit
                 </p>
               </div>
 

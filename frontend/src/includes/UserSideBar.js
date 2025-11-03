@@ -133,13 +133,15 @@ function UserSidebar({ children }) {
         className={`sidebar ${
           sidebarOpen ? "sidebar-open" : "sidebar-closed"
         } bg-white shadow-lg`}
-        style={{
-          position: isMobile ? 'fixed' : 'relative',
-          zIndex: isMobile ? 1050 : 'auto',
-          height: isMobile ? '100vh' : 'auto',
+        style={isMobile ? {
+          position: 'fixed',
+          zIndex: 1050,
+          height: '100vh',
           transition: 'transform 0.3s ease',
-          transform: isMobile && !sidebarOpen ? 'translateX(-100%)' : 'translateX(0)',
-        }}
+          transform: !sidebarOpen ? 'translateX(-100%)' : 'translateX(0)',
+          top: 0,
+          left: 0,
+        } : undefined}
       >
         {/* Sidebar Header */}
         <div className="p-3 border-bottom">
@@ -172,7 +174,7 @@ function UserSidebar({ children }) {
             {sidebarOpen && (
               <Link to="/oabps/user/dashboard" className="text-decoration-none">
                 <h5 className="mb-0 fw-bold text-dark" style={{ transition: "color 0.2s" }}>
-                  Online BPLS
+                  OABP
                 </h5>
               </Link>
             )}
@@ -466,11 +468,10 @@ function UserSidebar({ children }) {
         className={`main-content ${
           sidebarOpen ? "main-content-open" : "main-content-closed"
         } d-flex flex-column w-100`}
-        style={{
-          marginLeft: isMobile ? '0' : (sidebarOpen ? '250px' : '0'),
-          width: isMobile ? '100%' : (sidebarOpen ? 'calc(100% - 250px)' : '100%'),
-          transition: 'margin-left 0.3s ease, width 0.3s ease',
-        }}
+        style={isMobile ? {
+          marginLeft: '0',
+          width: '100%',
+        } : undefined}
       >
         {/* Top Navigation */}
         <nav className="navbar navbar-dark bg-dark px-2 px-md-3">
@@ -522,7 +523,7 @@ function UserSidebar({ children }) {
                   </div>
                 </div>
                 <h4 className="navbar-brand mb-0 text-white" style={{ transition: "color 0.2s" }}>
-                  Online BPLS
+                  OABP
                 </h4>
               </Link>
             </div>
