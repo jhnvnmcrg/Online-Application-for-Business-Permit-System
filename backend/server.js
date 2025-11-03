@@ -3163,7 +3163,7 @@ app.get("/api/request/track/:trackingCode", async (req, res) => {
       request_id: data.request_id,
       tracking_code: data.tracking_code,
       status: data.status,
-      category_name: data["Document Categories"]?.category_name || "N/A",
+      category_name: data.DocumentCategories?.category_name || "N/A",
       created_at: data.created_at,
       updated_at: data.updated_at,
     };
