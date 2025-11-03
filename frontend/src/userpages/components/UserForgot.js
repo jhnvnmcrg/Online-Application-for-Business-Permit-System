@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, Building } from "lucide-react";
 import { API_URL } from "../../config/api";
 
 function UserForgot() {
@@ -83,12 +83,24 @@ function UserForgot() {
         <div className="position-relative d-flex align-items-center justify-content-center min-vh-100 px-4 login-container">
           <div className="card shadow-lg login-card">
             <div className="card-body p-4">
+              
+
               <div className="text-center mb-4">
-                <div className="mx-auto mb-3 d-flex align-items-center justify-content-center rounded-circle border border-4 login-logo">
-                  <div className="logo-circle w-100 h-100">
-                    <div className="logo-inner w-50 h-50"></div>
+                {/* Logo */}
+                <div className="d-flex justify-content-center mb-3">
+                  <div
+                    className="d-flex align-items-center justify-content-center rounded-circle"
+                    style={{ width: "80px", height: "80px", backgroundColor: "#fbbf24" }}
+                  >
+                    <div
+                      className="d-flex align-items-center justify-content-center rounded-circle"
+                      style={{ width: "52px", height: "52px", backgroundColor: "#dc3545" }}
+                    >
+                      <Building size={28} className="text-white" />
+                    </div>
                   </div>
                 </div>
+
                 <h4 className="fw-semibold text-dark mb-1">Reset Password</h4>
                 <p className="text-muted mb-4" style={{ fontSize: "14px" }}>
                   Enter your email and new password
@@ -212,7 +224,7 @@ function UserForgot() {
                       e.target.style.color = "#dc3545";
                     }}
                   >
-                    BACK TO LOGIN
+                    CANCEL
                   </Link>
                   <button
                     type="submit"

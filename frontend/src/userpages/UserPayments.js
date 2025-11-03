@@ -146,9 +146,9 @@ function UserPayments() {
   return (
     <>
       <UserSideBAr>
-        <div className="mb-4">
-          <div className="bg-light p-3 border-bottom text-center mb-4">
-            <h2 className="mb-1">Payments</h2>
+        <div className="mb-3 mb-md-4">
+          <div className="bg-light p-2 p-md-3 border-bottom text-center mb-3 mb-md-4">
+            <h4 className="mb-1 h5 h2-md">Payments</h4>
             <small className="text-muted">Manage your payment requirements</small>
           </div>
 
@@ -257,7 +257,7 @@ function UserPayments() {
           onClick={closeModal}
         >
           <div
-            className="modal-dialog modal-lg"
+            className="modal-dialog modal-fullscreen-sm-down modal-lg"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="modal-content">
@@ -393,7 +393,7 @@ function UserPayments() {
           onClick={closePrintSlip}
         >
           <div
-            className="modal-dialog modal-lg"
+            className="modal-dialog modal-fullscreen-sm-down modal-lg"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="modal-content">
@@ -535,7 +535,7 @@ function UserPayments() {
           onClick={closeReceipt}
         >
           <div
-            className="modal-dialog modal-lg"
+            className="modal-dialog modal-fullscreen-sm-down modal-lg"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="modal-content">

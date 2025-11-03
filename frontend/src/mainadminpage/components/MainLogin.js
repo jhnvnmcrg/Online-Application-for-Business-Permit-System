@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { User, Lock, Eye, EyeOff } from "lucide-react";
+import { User, Lock, Eye, EyeOff, Building } from "lucide-react";
 import { API_URL, setAuthToken } from "../../config/api";
 
 function MainLogin() {
@@ -74,15 +74,27 @@ function MainLogin() {
       <div className="min-vh-100 position-relative overflow-hidden">
         <div className="position-absolute top-0 start-0 w-100 h-100 bg-dark bg-opacity-25"></div>
         <div className="position-relative d-flex flex-column align-items-center justify-content-center min-vh-100 px-4 login-container">
-          <h4 className="fw-semibold text-dark mb-1">SUPERADMIN</h4>
+          
           <div className="card shadow-lg login-card">
             <div className="card-body p-4">
+              
+
               <div className="text-center mb-4">
-                <div className="mx-auto mb-3 d-flex align-items-center justify-content-center rounded-circle border border-4 login-logo">
-                  <div className="logo-circle w-100 h-100">
-                    <div className="logo-inner w-50 h-50"></div>
+                {/* Logo */}
+                <div className="d-flex justify-content-center mb-3">
+                  <div
+                    className="d-flex align-items-center justify-content-center rounded-circle"
+                    style={{ width: "80px", height: "80px", backgroundColor: "#fbbf24" }}
+                  >
+                    <div
+                      className="d-flex align-items-center justify-content-center rounded-circle"
+                      style={{ width: "52px", height: "52px", backgroundColor: "#dc3545" }}
+                    >
+                      <Building size={28} className="text-white" />
+                    </div>
                   </div>
                 </div>
+
                 <h4 className="fw-semibold text-dark mb-1">
                   Online Business Permit &
                 </h4>

@@ -137,11 +137,11 @@ function UserDashboard() {
   return (
     <>
       <UserSideBAr>
-        <div className="mb-4">
-          <h2 className="display-5 fw-bold text-dark mb-2">
+        <div className="mb-3 mb-md-4">
+          <h2 className="h3 h2-md fw-bold text-dark mb-2">
             Welcome, {username}!
           </h2>
-          <p className="text-muted">Manage your business permits and applications</p>
+          <p className="text-muted small">Manage your business permits and applications</p>
         </div>
 
         {error && (
@@ -152,11 +152,11 @@ function UserDashboard() {
         )}
 
         {/* Quick Action Cards */}
-        <div className="row g-4 mb-4">
-          <div className="col-lg-4">
+        <div className="row g-2 g-md-4 mb-3 mb-md-4">
+          <div className="col-12 col-md-4">
             <Link to="/oabps/user/checklist" className="text-decoration-none">
               <div className="dashboard-card card bg-danger text-white h-100 hover-shadow">
-                <div className="card-body p-4">
+                <div className="card-body p-3 p-md-4">
                   <div className="d-flex justify-content-between align-items-start mb-3">
                     <div>
                       <h5 className="card-title fw-bold mb-1">New Business</h5>
@@ -170,10 +170,10 @@ function UserDashboard() {
               </div>
             </Link>
           </div>
-          <div className="col-lg-4">
+          <div className="col-12 col-md-4">
             <Link to="/oabps/user/transaction" className="text-decoration-none">
               <div className="dashboard-card card bg-danger text-white h-100 hover-shadow">
-                <div className="card-body p-4">
+                <div className="card-body p-3 p-md-4">
                   <div className="d-flex justify-content-between align-items-start mb-3">
                     <div>
                       <h5 className="card-title fw-bold mb-1">My Transactions</h5>
@@ -187,10 +187,10 @@ function UserDashboard() {
               </div>
             </Link>
           </div>
-          <div className="col-lg-4">
+          <div className="col-12 col-md-4">
             <Link to="/oabps/user/downloadables" className="text-decoration-none">
               <div className="dashboard-card card bg-danger text-white h-100 hover-shadow">
-                <div className="card-body p-4">
+                <div className="card-body p-3 p-md-4">
                   <div className="d-flex justify-content-between align-items-start mb-3">
                     <div>
                       <h5 className="card-title fw-bold mb-1">Downloadables</h5>
@@ -207,79 +207,83 @@ function UserDashboard() {
         </div>
 
         {/* Statistics Cards */}
-        <div className="row g-4 mb-4">
-          <div className="col-md-3 col-sm-6">
+        <div className="row g-2 g-md-4 mb-3 mb-md-4">
+          <div className="col-6 col-md-3">
             <div className="card border-0 shadow-sm h-100">
-              <div className="card-body">
+              <div className="card-body p-2 p-md-3">
                 <div className="d-flex justify-content-between align-items-start">
                   <div>
-                    <p className="text-muted mb-1 small">Total Requests</p>
-                    <h3 className="mb-0 fw-bold text-primary">
+                    <p className="text-muted mb-1" style={{ fontSize: '0.7rem' }}>Total Requests</p>
+                    <h4 className="mb-0 fw-bold text-primary h5 h3-md">
                       {stats?.requests?.total || 0}
-                    </h3>
-                    <small className="text-muted">All applications</small>
+                    </h4>
+                    <small className="text-muted d-none d-md-block">All applications</small>
                   </div>
-                  <div className="bg-primary bg-opacity-10 p-2 rounded">
-                    <FileText size={20} className="text-primary" />
+                  <div className="bg-primary bg-opacity-10 p-1 p-md-2 rounded">
+                    <FileText size={16} className="text-primary d-md-none" />
+                    <FileText size={20} className="text-primary d-none d-md-block" />
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="col-md-3 col-sm-6">
+          <div className="col-6 col-md-3">
             <div className="card border-0 shadow-sm h-100">
-              <div className="card-body">
+              <div className="card-body p-2 p-md-3">
                 <div className="d-flex justify-content-between align-items-start">
                   <div>
-                    <p className="text-muted mb-1 small">Pending</p>
-                    <h3 className="mb-0 fw-bold text-warning">
+                    <p className="text-muted mb-1" style={{ fontSize: '0.7rem' }}>Pending</p>
+                    <h4 className="mb-0 fw-bold text-warning h5 h3-md">
                       {stats?.requests?.pending || 0}
-                    </h3>
-                    <small className="text-muted">Under review</small>
+                    </h4>
+                    <small className="text-muted d-none d-md-block">Under review</small>
                   </div>
-                  <div className="bg-warning bg-opacity-10 p-2 rounded">
-                    <Clock size={20} className="text-warning" />
+                  <div className="bg-warning bg-opacity-10 p-1 p-md-2 rounded">
+                    <Clock size={16} className="text-warning d-md-none" />
+                    <Clock size={20} className="text-warning d-none d-md-block" />
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="col-md-3 col-sm-6">
+          <div className="col-6 col-md-3">
             <div className="card border-0 shadow-sm h-100">
-              <div className="card-body">
+              <div className="card-body p-2 p-md-3">
                 <div className="d-flex justify-content-between align-items-start">
                   <div>
-                    <p className="text-muted mb-1 small">Approved</p>
-                    <h3 className="mb-0 fw-bold text-success">
+                    <p className="text-muted mb-1" style={{ fontSize: '0.7rem' }}>Approved</p>
+                    <h4 className="mb-0 fw-bold text-success h5 h3-md">
                       {stats?.requests?.approved || 0}
-                    </h3>
-                    <small className="text-muted">Ready for payment</small>
+                    </h4>
+                    <small className="text-muted d-none d-md-block">Ready for payment</small>
                   </div>
-                  <div className="bg-success bg-opacity-10 p-2 rounded">
-                    <CheckCircle size={20} className="text-success" />
+                  <div className="bg-success bg-opacity-10 p-1 p-md-2 rounded">
+                    <CheckCircle size={16} className="text-success d-md-none" />
+                    <CheckCircle size={20} className="text-success d-none d-md-block" />
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="col-md-3 col-sm-6">
+          <div className="col-6 col-md-3">
             <div className="card border-0 shadow-sm h-100">
-              <div className="card-body">
+              <div className="card-body p-2 p-md-3">
                 <div className="d-flex justify-content-between align-items-start">
                   <div>
-                    <p className="text-muted mb-1 small">Completed Request</p>
-                    <h3 className="mb-0 fw-bold text-primary">
+                    <p className="text-muted mb-1" style={{ fontSize: '0.7rem' }}>Completed</p>
+                    <h4 className="mb-0 fw-bold text-primary h5 h3-md">
                       {stats?.requests?.released || 0}
-                    </h3>
-                    <small className="text-muted">
-                      Finished applications
+                    </h4>
+                    <small className="text-muted d-none d-md-block">
+                      Finished
                     </small>
                   </div>
-                  <div className="bg-primary bg-opacity-10 p-2 rounded">
-                    <CheckCircle size={20} className="text-primary" />
+                  <div className="bg-primary bg-opacity-10 p-1 p-md-2 rounded">
+                    <CheckCircle size={16} className="text-primary d-md-none" />
+                    <CheckCircle size={20} className="text-primary d-none d-md-block" />
                   </div>
                 </div>
               </div>
@@ -288,13 +292,13 @@ function UserDashboard() {
         </div>
 
         {/* Progress Overview & Recent Activity */}
-        <div className="row g-4">
-          <div className="col-lg-6">
+        <div className="row g-2 g-md-4">
+          <div className="col-12 col-lg-6">
             <div className="card shadow-sm h-100 border-0">
-              <div className="card-header bg-white border-bottom">
-                <h5 className="card-title mb-0 fw-bold">Application Status Overview</h5>
+              <div className="card-header bg-white border-bottom p-2 p-md-3">
+                <h6 className="card-title mb-0 fw-bold">Application Status Overview</h6>
               </div>
-              <div className="card-body">
+              <div className="card-body p-2 p-md-3">
                 <div className="mb-4">
                   <div className="d-flex justify-content-between align-items-center mb-2">
                     <span className="text-muted">Pending Review</span>
@@ -386,12 +390,12 @@ function UserDashboard() {
             </div>
           </div>
 
-          <div className="col-lg-6">
+          <div className="col-12 col-lg-6">
             <div className="card shadow-sm h-100 border-0">
-              <div className="card-header bg-white border-bottom">
-                <h5 className="card-title mb-0 fw-bold">Recent Activity</h5>
+              <div className="card-header bg-white border-bottom p-2 p-md-3">
+                <h6 className="card-title mb-0 fw-bold">Recent Activity</h6>
               </div>
-              <div className="card-body">
+              <div className="card-body p-2 p-md-3">
                 {recentActivity.length === 0 ? (
                   <div className="text-center text-muted py-4">
                     <FileText size={48} className="text-muted opacity-25 mb-2" />
@@ -437,41 +441,41 @@ function UserDashboard() {
 
         {/* Payment Summary */}
         {stats && stats.payments.total > 0 && (
-          <div className="row g-4 mt-1">
+          <div className="row g-2 g-md-4 mt-1">
             <div className="col-12">
               <div className="card border-0 shadow-sm">
-                <div className="card-header bg-white border-bottom">
-                  <h5 className="card-title mb-0 fw-bold d-flex align-items-center gap-2">
-                    <DollarSign size={20} />
+                <div className="card-header bg-white border-bottom p-2 p-md-3">
+                  <h6 className="card-title mb-0 fw-bold d-flex align-items-center gap-2">
+                    <DollarSign size={18} />
                     Payment Summary
-                  </h5>
+                  </h6>
                 </div>
-                <div className="card-body">
+                <div className="card-body p-2 p-md-3">
                   <div className="row">
-                    <div className="col-md-3 col-sm-6 mb-3">
-                      <div className="border-start border-primary border-4 ps-3">
-                        <p className="text-muted mb-1 small">Total Payments</p>
-                        <h4 className="mb-0">{stats.payments.total}</h4>
+                    <div className="col-6 col-md-3 mb-2 mb-md-3">
+                      <div className="border-start border-primary border-4 ps-2 ps-md-3">
+                        <p className="text-muted mb-1" style={{ fontSize: '0.7rem' }}>Total Payments</p>
+                        <h5 className="mb-0 h6 h4-md">{stats.payments.total}</h5>
                       </div>
                     </div>
-                    <div className="col-md-3 col-sm-6 mb-3">
-                      <div className="border-start border-warning border-4 ps-3">
-                        <p className="text-muted mb-1 small">Pending Payment</p>
-                        <h4 className="mb-0">{stats.payments.pending}</h4>
+                    <div className="col-6 col-md-3 mb-2 mb-md-3">
+                      <div className="border-start border-warning border-4 ps-2 ps-md-3">
+                        <p className="text-muted mb-1" style={{ fontSize: '0.7rem' }}>Pending</p>
+                        <h5 className="mb-0 h6 h4-md">{stats.payments.pending}</h5>
                       </div>
                     </div>
-                    <div className="col-md-3 col-sm-6 mb-3">
-                      <div className="border-start border-success border-4 ps-3">
-                        <p className="text-muted mb-1 small">Verified</p>
-                        <h4 className="mb-0">{stats.payments.verified}</h4>
+                    <div className="col-6 col-md-3 mb-2 mb-md-3">
+                      <div className="border-start border-success border-4 ps-2 ps-md-3">
+                        <p className="text-muted mb-1" style={{ fontSize: '0.7rem' }}>Verified</p>
+                        <h5 className="mb-0 h6 h4-md">{stats.payments.verified}</h5>
                       </div>
                     </div>
-                    <div className="col-md-3 col-sm-6 mb-3">
-                      <div className="border-start border-info border-4 ps-3">
-                        <p className="text-muted mb-1 small">Total Amount</p>
-                        <h4 className="mb-0">
+                    <div className="col-6 col-md-3 mb-2 mb-md-3">
+                      <div className="border-start border-info border-4 ps-2 ps-md-3">
+                        <p className="text-muted mb-1" style={{ fontSize: '0.7rem' }}>Total Amount</p>
+                        <h5 className="mb-0 h6 h4-md">
                           ₱{stats.payments.totalAmount.toFixed(2)}
-                        </h4>
+                        </h5>
                       </div>
                     </div>
                   </div>

@@ -570,9 +570,9 @@ function UserTransaction() {
   return (
     <>
       <UserSideBAr>
-        <div className="mb-4">
-          <div className="bg-light p-3 border-bottom text-center mb-4">
-            <h2 className="mb-1">Transactions</h2>
+        <div className="mb-3 mb-md-4">
+          <div className="bg-light p-2 p-md-3 border-bottom text-center mb-3 mb-md-4">
+            <h4 className="mb-1 h5 h2-md">Transactions</h4>
             <small className="text-muted">View all your permit requests</small>
           </div>
 
@@ -598,13 +598,13 @@ function UserTransaction() {
                   )}
 
                   {/* Controls Row */}
-                  <div className="row mb-3">
-                    <div className="col-md-3">
+                  <div className="row mb-3 g-2">
+                    <div className="col-6 col-md-3">
                       <div className="d-flex align-items-center">
-                        <span className="me-2">Show</span>
+                        <span className="me-1 small d-none d-md-inline">Show</span>
                         <select
                           className="form-select form-select-sm"
-                          style={{ width: "80px" }}
+                          style={{ width: "60px" }}
                           value={entriesPerPage}
                           onChange={(e) =>
                             setEntriesPerPage(parseInt(e.target.value))
@@ -615,16 +615,16 @@ function UserTransaction() {
                           <option value={50}>50</option>
                           <option value={100}>100</option>
                         </select>
-                        <span className="ms-2">entries</span>
+                        <span className="ms-1 small d-none d-md-inline">entries</span>
                       </div>
                     </div>
-                    <div className="col-md-3">
+                    <div className="col-6 col-md-3">
                       <select
                         className="form-select form-select-sm"
                         value={statusFilter}
                         onChange={(e) => setStatusFilter(e.target.value)}
                       >
-                        <option value="All">All Status</option>
+                        <option value="All">All</option>
                         <option value="Pending">Pending</option>
                         <option value="Processing">Processing</option>
                         <option value="Approved">Approved</option>
@@ -633,14 +633,14 @@ function UserTransaction() {
                         <option value="Cancelled">Cancelled</option>
                       </select>
                     </div>
-                    <div className="col-md-6">
-                      <div className="d-flex justify-content-end align-items-center">
-                        <label className="me-2">Search:</label>
+                    <div className="col-12 col-md-6">
+                      <div className="d-flex justify-content-start justify-content-md-end align-items-center">
+                        <label className="me-2 small d-none d-md-inline">Search:</label>
                         <input
                           type="text"
-                          className="form-control form-control-sm"
-                          style={{ width: "250px" }}
-                          placeholder="Tracking code or category..."
+                          className="form-control form-control-sm w-100"
+                          style={{ maxWidth: "250px" }}
+                          placeholder="Search..."
                           value={searchTerm}
                           onChange={(e) => setSearchTerm(e.target.value)}
                         />
@@ -744,7 +744,7 @@ function UserTransaction() {
           onClick={closeModal}
         >
           <div
-            className="modal-dialog modal-lg modal-dialog-scrollable"
+            className="modal-dialog modal-dialog-scrollable modal-fullscreen-sm-down modal-lg"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="modal-content">
@@ -1109,7 +1109,7 @@ function UserTransaction() {
           onClick={() => setShowUpdateModal(false)}
         >
           <div
-            className="modal-dialog modal-xl modal-dialog-scrollable"
+            className="modal-dialog modal-dialog-scrollable modal-fullscreen-sm-down modal-xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="modal-content">

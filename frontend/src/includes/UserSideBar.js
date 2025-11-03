@@ -12,20 +12,39 @@ import {
   House,
   History,
   UserRoundCog,
-  
+  Building,
   LogOut,
   Settings,
 } from "lucide-react";
 // Import the external CSS file
 
 function UserSidebar({ children }) {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  // Check if mobile on initial load
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 768);
   const [expandedMenus, setExpandedMenus] = useState({});
   const [username, setUsername] = useState("User");
   const [showUserMenu, setShowUserMenu] = useState(false);
   const userMenuRef = useRef(null);
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Handle window resize for responsive behavior
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      // Auto-close sidebar on mobile, auto-open on desktop
+      if (mobile && sidebarOpen) {
+        setSidebarOpen(false);
+      } else if (!mobile && !sidebarOpen) {
+        setSidebarOpen(true);
+      }
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [sidebarOpen]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -63,7 +82,7 @@ function UserSidebar({ children }) {
   };
 
   const handleLogout = () => {
-    
+
     localStorage.removeItem("owner");
     localStorage.removeItem("ownerToken");
     localStorage.removeItem("userType");
@@ -75,6 +94,13 @@ function UserSidebar({ children }) {
     setShowUserMenu(false);
     // Navigate to settings page
     navigate("/oabps/user/settings");
+  };
+
+  // Close sidebar on mobile when clicking a link
+  const handleLinkClick = () => {
+    if (isMobile) {
+      setSidebarOpen(false);
+    }
   };
 
   // Check if current path matches any menu item
@@ -92,25 +118,62 @@ function UserSidebar({ children }) {
   };
 
   return (
-    <div className="d-flex">
+    <div className="d-flex position-relative">
+      {/* Mobile Overlay */}
+      {isMobile && sidebarOpen && (
+        <div
+          className="position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-50"
+          style={{ zIndex: 1040 }}
+          onClick={() => setSidebarOpen(false)}
+        ></div>
+      )}
+
       {/* Sidebar */}
       <div
         className={`sidebar ${
           sidebarOpen ? "sidebar-open" : "sidebar-closed"
         } bg-white shadow-lg`}
+        style={{
+          position: isMobile ? 'fixed' : 'relative',
+          zIndex: isMobile ? 1050 : 'auto',
+          height: isMobile ? '100vh' : 'auto',
+          transition: 'transform 0.3s ease',
+          transform: isMobile && !sidebarOpen ? 'translateX(-100%)' : 'translateX(0)',
+        }}
       >
         {/* Sidebar Header */}
         <div className="p-3 border-bottom">
           <div className="d-flex align-items-center">
             <Link to="/oabps/user/dashboard" className="text-decoration-none">
-              <div className="logo-circle me-3">
-                <div className="logo-inner"></div>
+              <div
+                className="d-flex align-items-center justify-content-center rounded-circle me-3"
+                style={{
+                  width: "48px",
+                  height: "48px",
+                  backgroundColor: "#fbbf24",
+                  transition: "transform 0.2s",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.05)")}
+                onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+              >
+                <div
+                  className="d-flex align-items-center justify-content-center rounded-circle"
+                  style={{
+                    width: "32px",
+                    height: "32px",
+                    backgroundColor: "#dc3545",
+                  }}
+                >
+                  <Building size={18} className="text-white" />
+                </div>
               </div>
             </Link>
 
             {sidebarOpen && (
               <Link to="/oabps/user/dashboard" className="text-decoration-none">
-                <h5 className="mb-0 fw-bold text-dark">Online BPLS</h5>
+                <h5 className="mb-0 fw-bold text-dark" style={{ transition: "color 0.2s" }}>
+                  Online BPLS
+                </h5>
               </Link>
             )}
           </div>
@@ -121,9 +184,29 @@ function UserSidebar({ children }) {
           {/* Dashboard Link */}
           <Link
             to="/oabps/user/dashboard"
+            onClick={handleLinkClick}
             className={`sidebar-submenu-item btn w-100 d-flex align-items-center justify-content-between p-3 text-start text-decoration-none ${
               isActiveItem("/oabps/user/dashboard") ? "active" : ""
             }`}
+            style={{
+              borderRadius: "8px",
+              transition: "all 0.2s ease",
+              backgroundColor: isActiveItem("/oabps/user/dashboard") ? "#dc3545" : "transparent",
+              color: isActiveItem("/oabps/user/dashboard") ? "#fff" : "#495057",
+              border: "none",
+            }}
+            onMouseEnter={(e) => {
+              if (!isActiveItem("/oabps/user/dashboard")) {
+                e.currentTarget.style.backgroundColor = "#f8f9fa";
+                e.currentTarget.style.transform = "translateX(4px)";
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isActiveItem("/oabps/user/dashboard")) {
+                e.currentTarget.style.backgroundColor = "transparent";
+                e.currentTarget.style.transform = "translateX(0)";
+              }
+            }}
           >
             <div className="d-flex align-items-center">
               <House size={20} />
@@ -138,6 +221,25 @@ function UserSidebar({ children }) {
               className={`sidebar-menu-item btn w-100 d-flex align-items-center justify-content-between p-3 text-start ${
                 isBusinessServicesActive() ? "active" : ""
               }`}
+              style={{
+                borderRadius: "8px",
+                transition: "all 0.2s ease",
+                backgroundColor: isBusinessServicesActive() ? "#dc3545" : "transparent",
+                color: isBusinessServicesActive() ? "#fff" : "#495057",
+                border: "none",
+              }}
+              onMouseEnter={(e) => {
+                if (!isBusinessServicesActive()) {
+                  e.currentTarget.style.backgroundColor = "#f8f9fa";
+                  e.currentTarget.style.transform = "translateX(4px)";
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isBusinessServicesActive()) {
+                  e.currentTarget.style.backgroundColor = "transparent";
+                  e.currentTarget.style.transform = "translateX(0)";
+                }
+              }}
             >
               <div className="d-flex align-items-center">
                 <FileText size={20} />
@@ -157,19 +259,59 @@ function UserSidebar({ children }) {
               <div className="ms-4 mt-1">
                 <Link
                   to="/oabps/user/checklist"
+                  onClick={handleLinkClick}
                   className={`sidebar-submenu-item btn w-100 text-start p-2 small text-decoration-none ${
                     isActiveItem("/oabps/user/checklist")
                       ? "active"
                       : ""
                   }`}
+                  style={{
+                    borderRadius: "6px",
+                    transition: "all 0.2s ease",
+                    backgroundColor: isActiveItem("/oabps/user/checklist") ? "#dc3545" : "transparent",
+                    color: isActiveItem("/oabps/user/checklist") ? "#fff" : "#6c757d",
+                    border: "none",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isActiveItem("/oabps/user/checklist")) {
+                      e.currentTarget.style.backgroundColor = "#e9ecef";
+                      e.currentTarget.style.paddingLeft = "12px";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isActiveItem("/oabps/user/checklist")) {
+                      e.currentTarget.style.backgroundColor = "transparent";
+                      e.currentTarget.style.paddingLeft = "8px";
+                    }
+                  }}
                 >
                   New Application
                 </Link>
                 <Link
                   to="/oabps/user/renewal"
+                  onClick={handleLinkClick}
                   className={`sidebar-submenu-item btn w-100 text-start p-2 small text-decoration-none ${
                     isActiveItem("/oabps/user/renewal") ? "active" : ""
                   }`}
+                  style={{
+                    borderRadius: "6px",
+                    transition: "all 0.2s ease",
+                    backgroundColor: isActiveItem("/oabps/user/renewal") ? "#dc3545" : "transparent",
+                    color: isActiveItem("/oabps/user/renewal") ? "#fff" : "#6c757d",
+                    border: "none",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isActiveItem("/oabps/user/renewal")) {
+                      e.currentTarget.style.backgroundColor = "#e9ecef";
+                      e.currentTarget.style.paddingLeft = "12px";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isActiveItem("/oabps/user/renewal")) {
+                      e.currentTarget.style.backgroundColor = "transparent";
+                      e.currentTarget.style.paddingLeft = "8px";
+                    }
+                  }}
                 >
                   Renewal Services
                 </Link>
@@ -180,9 +322,29 @@ function UserSidebar({ children }) {
           {/* Transactions Link */}
           <Link
             to="/oabps/user/transaction"
+            onClick={handleLinkClick}
             className={`sidebar-submenu-item btn w-100 d-flex align-items-center justify-content-between p-3 text-start text-decoration-none ${
               isActiveItem("/oabps/user/transaction") ? "active" : ""
             }`}
+            style={{
+              borderRadius: "8px",
+              transition: "all 0.2s ease",
+              backgroundColor: isActiveItem("/oabps/user/transaction") ? "#dc3545" : "transparent",
+              color: isActiveItem("/oabps/user/transaction") ? "#fff" : "#495057",
+              border: "none",
+            }}
+            onMouseEnter={(e) => {
+              if (!isActiveItem("/oabps/user/transaction")) {
+                e.currentTarget.style.backgroundColor = "#f8f9fa";
+                e.currentTarget.style.transform = "translateX(4px)";
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isActiveItem("/oabps/user/transaction")) {
+                e.currentTarget.style.backgroundColor = "transparent";
+                e.currentTarget.style.transform = "translateX(0)";
+              }
+            }}
           >
             <div className="d-flex align-items-center">
               <History size={20} />
@@ -195,9 +357,29 @@ function UserSidebar({ children }) {
           {/* Payments Link */}
           <Link
             to="/oabps/user/payments"
+            onClick={handleLinkClick}
             className={`sidebar-submenu-item btn w-100 d-flex align-items-center justify-content-between p-3 text-start text-decoration-none ${
               isActiveItem("/oabps/user/payments") ? "active" : ""
             }`}
+            style={{
+              borderRadius: "8px",
+              transition: "all 0.2s ease",
+              backgroundColor: isActiveItem("/oabps/user/payments") ? "#dc3545" : "transparent",
+              color: isActiveItem("/oabps/user/payments") ? "#fff" : "#495057",
+              border: "none",
+            }}
+            onMouseEnter={(e) => {
+              if (!isActiveItem("/oabps/user/payments")) {
+                e.currentTarget.style.backgroundColor = "#f8f9fa";
+                e.currentTarget.style.transform = "translateX(4px)";
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isActiveItem("/oabps/user/payments")) {
+                e.currentTarget.style.backgroundColor = "transparent";
+                e.currentTarget.style.transform = "translateX(0)";
+              }
+            }}
           >
             <div className="d-flex align-items-center">
               <CreditCard size={20} />
@@ -210,9 +392,29 @@ function UserSidebar({ children }) {
           {/* Application Forms Link */}
           <Link
             to="/oabps/user/forms"
+            onClick={handleLinkClick}
             className={`sidebar-submenu-item btn w-100 d-flex align-items-center justify-content-between p-3 text-start text-decoration-none ${
               isActiveItem("/oabps/user/forms") ? "active" : ""
             }`}
+            style={{
+              borderRadius: "8px",
+              transition: "all 0.2s ease",
+              backgroundColor: isActiveItem("/oabps/user/forms") ? "#dc3545" : "transparent",
+              color: isActiveItem("/oabps/user/forms") ? "#fff" : "#495057",
+              border: "none",
+            }}
+            onMouseEnter={(e) => {
+              if (!isActiveItem("/oabps/user/forms")) {
+                e.currentTarget.style.backgroundColor = "#f8f9fa";
+                e.currentTarget.style.transform = "translateX(4px)";
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isActiveItem("/oabps/user/forms")) {
+                e.currentTarget.style.backgroundColor = "transparent";
+                e.currentTarget.style.transform = "translateX(0)";
+              }
+            }}
           >
             <div className="d-flex align-items-center">
               <Library size={20} />
@@ -225,9 +427,29 @@ function UserSidebar({ children }) {
           {/* Downloadables Link */}
           <Link
             to="/oabps/user/downloadables"
+            onClick={handleLinkClick}
             className={`sidebar-submenu-item btn w-100 d-flex align-items-center justify-content-between p-3 text-start text-decoration-none ${
               isActiveItem("/oabps/user/downloadables") ? "active" : ""
             }`}
+            style={{
+              borderRadius: "8px",
+              transition: "all 0.2s ease",
+              backgroundColor: isActiveItem("/oabps/user/downloadables") ? "#dc3545" : "transparent",
+              color: isActiveItem("/oabps/user/downloadables") ? "#fff" : "#495057",
+              border: "none",
+            }}
+            onMouseEnter={(e) => {
+              if (!isActiveItem("/oabps/user/downloadables")) {
+                e.currentTarget.style.backgroundColor = "#f8f9fa";
+                e.currentTarget.style.transform = "translateX(4px)";
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isActiveItem("/oabps/user/downloadables")) {
+                e.currentTarget.style.backgroundColor = "transparent";
+                e.currentTarget.style.transform = "translateX(0)";
+              }
+            }}
           >
             <div className="d-flex align-items-center">
               <FileDown size={20} />
@@ -244,26 +466,64 @@ function UserSidebar({ children }) {
         className={`main-content ${
           sidebarOpen ? "main-content-open" : "main-content-closed"
         } d-flex flex-column w-100`}
+        style={{
+          marginLeft: isMobile ? '0' : (sidebarOpen ? '250px' : '0'),
+          width: isMobile ? '100%' : (sidebarOpen ? 'calc(100% - 250px)' : '100%'),
+          transition: 'margin-left 0.3s ease, width 0.3s ease',
+        }}
       >
         {/* Top Navigation */}
-        <nav className="navbar navbar-dark bg-dark px-3">
+        <nav className="navbar navbar-dark bg-dark px-2 px-md-3">
           <div className="d-flex align-items-center w-100 justify-content-between">
             <div className="d-flex align-items-center">
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
                 className="btn btn-outline-light me-3"
                 aria-label="Toggle sidebar"
+                style={{
+                  transition: "all 0.2s ease",
+                  borderRadius: "8px",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.2)";
+                  e.currentTarget.style.transform = "scale(1.05)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = "transparent";
+                  e.currentTarget.style.transform = "scale(1)";
+                }}
               >
                 <Menu size={20} />
               </button>
               <Link
                 to="/oabps/user/dashboard"
-                className="d-flex align-items-center text-decoration-none"
+                className="d-flex align-items-center text-decoration-none d-none d-md-flex"
               >
-                <div className="logo-circle me-3">
-                  <div className="logo-inner"></div>
+                <div
+                  className="d-flex align-items-center justify-content-center rounded-circle me-3"
+                  style={{
+                    width: "40px",
+                    height: "40px",
+                    backgroundColor: "#fbbf24",
+                    transition: "transform 0.2s",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.05)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+                >
+                  <div
+                    className="d-flex align-items-center justify-content-center rounded-circle"
+                    style={{
+                      width: "26px",
+                      height: "26px",
+                      backgroundColor: "#dc3545",
+                    }}
+                  >
+                    <Building size={16} className="text-white" />
+                  </div>
                 </div>
-                <h4 className="navbar-brand mb-0 text-white">Online BPLS</h4>
+                <h4 className="navbar-brand mb-0 text-white" style={{ transition: "color 0.2s" }}>
+                  Online BPLS
+                </h4>
               </Link>
             </div>
             <div
@@ -272,60 +532,111 @@ function UserSidebar({ children }) {
             >
               <div
                 onClick={() => setShowUserMenu(!showUserMenu)}
-                style={{ cursor: "pointer" }}
+                className="d-flex align-items-center justify-content-center rounded-circle"
+                style={{
+                  cursor: "pointer",
+                  width: "40px",
+                  height: "40px",
+                  transition: "all 0.2s ease",
+                  backgroundColor: showUserMenu ? "rgba(255, 255, 255, 0.2)" : "transparent",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.2)";
+                  e.currentTarget.style.transform = "scale(1.05)";
+                }}
+                onMouseLeave={(e) => {
+                  if (!showUserMenu) {
+                    e.currentTarget.style.backgroundColor = "transparent";
+                  }
+                  e.currentTarget.style.transform = "scale(1)";
+                }}
               >
                 <UserRoundCog className="text-white" size={24} />
-
               </div>
               
 
               {/* User Dropdown Menu */}
               {showUserMenu && (
                 <div
-                  className="position-absolute bg-white shadow-lg rounded border"
+                  className="position-absolute bg-white shadow-lg border-0"
                   style={{
                     top: "100%",
                     right: 0,
                     marginTop: "0.5rem",
-                    minWidth: "200px",
+                    minWidth: "220px",
                     zIndex: 1000,
+                    borderRadius: "12px",
+                    overflow: "hidden",
+                    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
                   }}
                 >
-                  <div className="py-1">
+                  <div className="py-2">
                     <div
-                      className="d-flex align-items-center px-3 py-2 text-decoration-none"
+                      className="px-3 py-2 mb-1"
+                      style={{
+                        borderBottom: "1px solid #e9ecef",
+                      }}
+                    >
+                      <small className="text-muted fw-medium">Account</small>
+                    </div>
+                    <div
+                      className="d-flex align-items-center px-3 py-2 text-decoration-none mx-2"
                       onClick={handleSettings}
                       style={{
                         cursor: "pointer",
-                        transition: "background-color 0.2s",
+                        transition: "all 0.2s ease",
+                        borderRadius: "8px",
                       }}
-                      onMouseEnter={(e) =>
-                        (e.currentTarget.style.backgroundColor = "#f8f9fa")
-                      }
-                      onMouseLeave={(e) =>
-                        (e.currentTarget.style.backgroundColor = "transparent")
-                      }
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = "#f8f9fa";
+                        e.currentTarget.style.transform = "translateX(4px)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = "transparent";
+                        e.currentTarget.style.transform = "translateX(0)";
+                      }}
                     >
-                      <Settings size={18} className="me-2 text-secondary" />
-                      <span className="text-dark">Settings</span>
+                      <div
+                        className="d-flex align-items-center justify-content-center rounded-circle me-2"
+                        style={{
+                          width: "32px",
+                          height: "32px",
+                          backgroundColor: "#e9ecef",
+                        }}
+                      >
+                        <Settings size={16} className="text-secondary" />
+                      </div>
+                      <span className="text-dark fw-medium">Settings</span>
                     </div>
-                    <hr className="my-1" />
+                    <hr className="my-2" />
                     <div
-                      className="d-flex align-items-center px-3 py-2 text-decoration-none"
+                      className="d-flex align-items-center px-3 py-2 text-decoration-none mx-2"
                       onClick={handleLogout}
                       style={{
                         cursor: "pointer",
-                        transition: "background-color 0.2s",
+                        transition: "all 0.2s ease",
+                        borderRadius: "8px",
                       }}
-                      onMouseEnter={(e) =>
-                        (e.currentTarget.style.backgroundColor = "#f8f9fa")
-                      }
-                      onMouseLeave={(e) =>
-                        (e.currentTarget.style.backgroundColor = "transparent")
-                      }
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = "#ffe5e5";
+                        e.currentTarget.style.transform = "translateX(4px)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = "transparent";
+                        e.currentTarget.style.transform = "translateX(0)";
+                      }}
                     >
-                      <LogOut size={18} className="me-2 text-danger" />
-                      <span className="text-danger">Logout</span>
+                      <div
+                        className="d-flex align-items-center justify-content-center rounded-circle me-2"
+                        style={{
+                          width: "32px",
+                          height: "32px",
+                          backgroundColor: "#fee2e2",
+                        }}
+                      >
+                        <LogOut size={16} className="text-danger" />
+                      </div>
+                      <span className="text-danger fw-medium">Logout</span>
                     </div>
                   </div>
                 </div>
@@ -335,7 +646,7 @@ function UserSidebar({ children }) {
         </nav>
 
         {/* Main Content - This will render whatever is passed as children */}
-        <main className="flex-grow-1 p-4">
+        <main className="flex-grow-1 p-2 p-md-4">
           <div className="container-fluid">{children}</div>
         </main>
       </div>
