@@ -13,7 +13,6 @@ app.use(
   cors({
     origin: [
       "http://localhost:3000",
-      "https://oabsfront.onrender.com",
       "https://oabp-frontend.onrender.com",
     ],
     credentials: true,
