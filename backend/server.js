@@ -3126,6 +3126,61 @@ app.get("/api/request/all", async (req, res) => {
   }
 });
 
+// Public tracking endpoint - no authentication required
+app.get("/api/request/track/:trackingCode", async (req, res) => {
+  try {
+    const { trackingCode } = req.params;
+
+    if (!trackingCode) {
+      return res.status(400).json({
+        success: false,
+        message: "Tracking code is required",
+      });
+    }
+
+    const { data, error } = await supabase
+      .from("Requests")
+      .select(`
+        *,
+        Document Categories:category_id (
+          category_id,
+          category_name,
+          description
+        )
+      `)
+      .eq("tracking_code", trackingCode)
+      .single();
+
+    if (error || !data) {
+      return res.status(404).json({
+        success: false,
+        message: "No application found with this tracking code",
+      });
+    }
+
+    // Return only necessary information for public tracking
+    const trackingInfo = {
+      request_id: data.request_id,
+      tracking_code: data.tracking_code,
+      status: data.status,
+      category_name: data["Document Categories"]?.category_name || "N/A",
+      created_at: data.created_at,
+      updated_at: data.updated_at,
+    };
+
+    res.status(200).json({
+      success: true,
+      request: trackingInfo,
+    });
+  } catch (err) {
+    console.error("Tracking error:", err);
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while tracking your application",
+    });
+  }
+});
+
 // Update request status
 app.put("/api/request/update-status/:requestId", upload.single("attachmentFile"), async (req, res) => {
   try {

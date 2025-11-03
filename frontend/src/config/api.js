@@ -124,6 +124,7 @@ export const API_ENDPOINTS = {
     UPDATE_STATUS: (requestId) => `/api/request/update-status/${requestId}`,
     CANCEL: (requestId) => `/api/request/cancel/${requestId}`,
     TIMELINE: (requestId) => `/api/request/timeline/${requestId}`,
+    TRACK: (trackingCode) => `/api/request/track/${trackingCode}`, // Public tracking - no auth required
   },
 
   // Payment endpoints
