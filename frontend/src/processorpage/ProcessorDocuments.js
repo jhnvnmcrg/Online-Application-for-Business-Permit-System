@@ -405,15 +405,7 @@ function ProcessorDocuments() {
                     )}
                     <div className="mb-3">
                       
-                      <input
-                        type="text"
-                        className="form-control"
-                        id="categoryName"
-                        value={categories.find(cat => cat.category_id === categoryId)?.category_name || "Not Assigned"}
-                        disabled
-                        
-                        
-                      />
+                      
                       <select
                         className="form-select"
                         id="categoryName"
@@ -426,7 +418,7 @@ function ProcessorDocuments() {
                         {categories.map((category) => (
                           <option
                             key={category.category_id}
-                            value={categories.find(cat => cat.category_id === categoryId)?.category_name || "Not Assigned"}
+                            value={categories.find(cat => cat.category_id === categoryId)?.category_name}
                           >
                             {category.category_name}
                           </option>
