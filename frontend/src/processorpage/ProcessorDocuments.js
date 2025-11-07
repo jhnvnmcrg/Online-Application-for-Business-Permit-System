@@ -418,9 +418,9 @@ function ProcessorDocuments() {
                         {categories.map((category) => (
                           <option
                             key={category.category_id}
-                            value={categories.find(cat => cat.category_id === categoryId)?.category_id}
+                            value={category.category_i}
                           >
-                            {category.category_id}
+                            {category.category_name}
                           </option>
                         ))}
                       </select>
