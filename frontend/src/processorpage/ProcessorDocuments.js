@@ -330,7 +330,7 @@ function ProcessorDocuments() {
                   <thead className="table-light">
                     <tr>
                       <th>#</th>
-                      
+                      <th>Category Name</th>
                       <th>Document Name</th>
                       <th>Description</th>
                       <th>Date Added</th>
@@ -348,7 +348,10 @@ function ProcessorDocuments() {
                       filteredDocuments.map((doc, index) => (
                         <tr key={doc.document_id}>
                           <td>{index + 1}</td>
-
+                          <td>
+                            {categories.find((cat) => cat.category_id === doc.category_id)
+                              ?.category_name || "N/A"}
+                          </td>
                           <td>{doc.document_name}</td>
                           <td>{doc.description}</td>
                           <td>{new Date(doc.created_at).toLocaleDateString()}</td>
