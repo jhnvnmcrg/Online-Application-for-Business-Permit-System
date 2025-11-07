@@ -418,7 +418,7 @@ function ProcessorDocuments() {
                         {categories.map((category) => (
                           <option
                             key={category.category_id}
-                            value={category.category_i}
+                            value={category.category_id}
                           >
                             {category.category_name}
                           </option>
