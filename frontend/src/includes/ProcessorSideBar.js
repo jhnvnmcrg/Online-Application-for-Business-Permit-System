@@ -18,6 +18,7 @@ import {
   Settings,
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { WORKFLOW_ROUTES } from "../config/routes";
 
 function ProcessorSideBar({ children }) {
   const location = useLocation();
@@ -92,19 +93,19 @@ function ProcessorSideBar({ children }) {
   };
 
   const handleLogout = () => {
-    
+
     localStorage.removeItem("userType");
     localStorage.removeItem("processor");
     localStorage.removeItem("processorToken");
 
     // Redirect to login page
-    navigate("/oabps/processor/login");
+    navigate(WORKFLOW_ROUTES.AUTH);
   };
 
   const handleSettings = () => {
     setShowUserMenu(false);
     // Navigate to settings page
-    navigate("/oabps/processor/settings");
+    navigate(WORKFLOW_ROUTES.CONFIG);
   };
 
   const menuItems = [
@@ -112,32 +113,32 @@ function ProcessorSideBar({ children }) {
       id: "dashboard",
       label: "Dashboard",
       icon: LayoutDashboard,
-      path: "/oabps/processor/dashboard",
+      path: WORKFLOW_ROUTES.HUB,
     },
 
     {
       id: "documents",
       label: "Documents",
       icon: FolderOpen,
-      path: "/oabps/processor/documents",
+      path: WORKFLOW_ROUTES.FILES,
     },
     {
       id: "requests",
       label: "Requests",
       icon: ClipboardClock,
-      path: "/oabps/processor/requests",
+      path: WORKFLOW_ROUTES.QUEUE,
     },
     {
       id: "payment",
       label: "Payments",
       icon: CreditCard,
-      path: "/oabps/processor/payments",
+      path: WORKFLOW_ROUTES.LEDGER,
     },
     {
       id: "transaction",
       label: "Transactions",
       icon: History,
-      path: "/oabps/processor/transactions",
+      path: WORKFLOW_ROUTES.RECORDS,
     },
   ];
 

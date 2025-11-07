@@ -18,6 +18,7 @@ import {
   Settings,
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { SYSTEM_ROUTES } from "../config/routes";
 
 function MainSideBar({ children }) {
   const location = useLocation();
@@ -92,19 +93,19 @@ function MainSideBar({ children }) {
   };
 
   const handleLogout = () => {
-    
+
     localStorage.removeItem("userType");
     localStorage.removeItem("mainadmin");
     localStorage.removeItem("mainadminToken");
 
     // Redirect to login page
-    navigate("/oabps/main/login");
+    navigate(SYSTEM_ROUTES.AUTH);
   };
 
   const handleSettings = () => {
     setShowUserMenu(false);
     // Navigate to settings page
-    navigate("/oabps/main/settings");
+    navigate(SYSTEM_ROUTES.CONFIG);
   };
 
   const menuItems = [
@@ -112,51 +113,51 @@ function MainSideBar({ children }) {
       id: "dashboard",
       label: "Dashboard",
       icon: LayoutDashboard,
-      path: "/oabps/main/dashboard",
+      path: SYSTEM_ROUTES.CONSOLE,
     },
     {
       id: "documents",
       label: "Documents",
       icon: FolderOpen,
-      path: "/oabps/main/documents",
+      path: SYSTEM_ROUTES.FILES,
     },
     {
       id: "categories",
       label: "Document Categories",
       icon: Folders,
-      path: "/oabps/main/documentcategory",
+      path: SYSTEM_ROUTES.CATEGORIES,
     },
 
     {
       id: "forms",
       label: "Document Forms",
       icon: Folders,
-      path: "/oabps/main/documentforms",
+      path: SYSTEM_ROUTES.TEMPLATES,
     },
     {
       id: "requests",
       label: "Requests",
       icon: ClipboardClock,
-      path: "/oabps/main/requests",
+      path: SYSTEM_ROUTES.QUEUE,
     },
-    
+
     {
       id: "payments",
       label: "Payments",
       icon: CreditCard,
-      path: "/oabps/main/payments",
+      path: SYSTEM_ROUTES.LEDGER,
     },
     {
       id: "transaction",
       label: "Transactions",
       icon: History,
-      path: "/oabps/main/transactions",
+      path: SYSTEM_ROUTES.RECORDS,
     },
     {
       id: "assign",
       label: "Assign Roles",
       icon: User,
-      path: "/oabps/main/assign",
+      path: SYSTEM_ROUTES.ROLES,
     },
     {
       id: "users",
@@ -167,12 +168,12 @@ function MainSideBar({ children }) {
         {
           id: "admins",
           label: "Admins",
-          path: "/oabps/main/admins",
+          path: SYSTEM_ROUTES.STAFF,
         },
         {
           id: "owners",
           label: "Owners",
-          path: "/oabps/main/users",
+          path: SYSTEM_ROUTES.MEMBERS,
         },
       ],
     },
@@ -181,7 +182,7 @@ function MainSideBar({ children }) {
       id: "login-audits",
       label: "Login Audits",
       icon: History,
-      path: "/oabps/main/logaudits",
+      path: SYSTEM_ROUTES.AUDIT,
     }
   ];
 

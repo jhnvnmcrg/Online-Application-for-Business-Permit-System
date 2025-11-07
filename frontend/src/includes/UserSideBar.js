@@ -16,6 +16,7 @@ import {
   LogOut,
   Settings,
 } from "lucide-react";
+import { PORTAL_ROUTES } from "../config/routes";
 // Import the external CSS file
 
 function UserSidebar({ children }) {
@@ -87,13 +88,13 @@ function UserSidebar({ children }) {
     localStorage.removeItem("ownerToken");
     localStorage.removeItem("userType");
     // Redirect to login
-    navigate("/oabps/user/login");
+    navigate(PORTAL_ROUTES.AUTH);
   };
 
   const handleSettings = () => {
     setShowUserMenu(false);
     // Navigate to settings page
-    navigate("/oabps/user/settings");
+    navigate(PORTAL_ROUTES.CONFIG);
   };
 
   // Close sidebar on mobile when clicking a link
@@ -112,8 +113,8 @@ function UserSidebar({ children }) {
   const isBusinessServicesActive = () => {
     return (
       location.pathname.includes("/business/") ||
-      location.pathname === "/oabps/user/checklist" ||
-      location.pathname === "/oabps/user/renewal"
+      location.pathname === PORTAL_ROUTES.APPLY ||
+      location.pathname === PORTAL_ROUTES.RENEW
     );
   };
 
@@ -146,7 +147,7 @@ function UserSidebar({ children }) {
         {/* Sidebar Header */}
         <div className="p-3 border-bottom">
           <div className="d-flex align-items-center">
-            <Link to="/oabps/user/dashboard" className="text-decoration-none">
+            <Link to={PORTAL_ROUTES.HUB} className="text-decoration-none">
               <div
                 className="d-flex align-items-center justify-content-center rounded-circle me-3"
                 style={{
@@ -172,7 +173,7 @@ function UserSidebar({ children }) {
             </Link>
 
             {sidebarOpen && (
-              <Link to="/oabps/user/dashboard" className="text-decoration-none">
+              <Link to={PORTAL_ROUTES.HUB} className="text-decoration-none">
                 <h5 className="mb-0 fw-bold text-dark" style={{ transition: "color 0.2s" }}>
                   OABP
                 </h5>
@@ -185,7 +186,7 @@ function UserSidebar({ children }) {
         <div className="p-2 flex-grow-1">
           {/* Dashboard Link */}
           <Link
-            to="/oabps/user/dashboard"
+            to={PORTAL_ROUTES.HUB}
             onClick={handleLinkClick}
             className={`sidebar-submenu-item btn w-100 d-flex align-items-center justify-content-between p-3 text-start text-decoration-none ${
               isActiveItem("/oabps/user/dashboard") ? "active" : ""
@@ -260,7 +261,7 @@ function UserSidebar({ children }) {
             {sidebarOpen && expandedMenus["businessServices"] && (
               <div className="ms-4 mt-1">
                 <Link
-                  to="/oabps/user/checklist"
+                  to={PORTAL_ROUTES.APPLY}
                   onClick={handleLinkClick}
                   className={`sidebar-submenu-item btn w-100 text-start p-2 small text-decoration-none ${
                     isActiveItem("/oabps/user/checklist")
@@ -290,7 +291,7 @@ function UserSidebar({ children }) {
                   New Application
                 </Link>
                 <Link
-                  to="/oabps/user/renewal"
+                  to={PORTAL_ROUTES.RENEW}
                   onClick={handleLinkClick}
                   className={`sidebar-submenu-item btn w-100 text-start p-2 small text-decoration-none ${
                     isActiveItem("/oabps/user/renewal") ? "active" : ""
@@ -323,7 +324,7 @@ function UserSidebar({ children }) {
 
           {/* Transactions Link */}
           <Link
-            to="/oabps/user/transaction"
+            to={PORTAL_ROUTES.HISTORY}
             onClick={handleLinkClick}
             className={`sidebar-submenu-item btn w-100 d-flex align-items-center justify-content-between p-3 text-start text-decoration-none ${
               isActiveItem("/oabps/user/transaction") ? "active" : ""
@@ -358,7 +359,7 @@ function UserSidebar({ children }) {
 
           {/* Payments Link */}
           <Link
-            to="/oabps/user/payments"
+            to={PORTAL_ROUTES.LEDGER}
             onClick={handleLinkClick}
             className={`sidebar-submenu-item btn w-100 d-flex align-items-center justify-content-between p-3 text-start text-decoration-none ${
               isActiveItem("/oabps/user/payments") ? "active" : ""
@@ -393,7 +394,7 @@ function UserSidebar({ children }) {
 
           {/* Application Forms Link */}
           <Link
-            to="/oabps/user/forms"
+            to={PORTAL_ROUTES.TEMPLATES}
             onClick={handleLinkClick}
             className={`sidebar-submenu-item btn w-100 d-flex align-items-center justify-content-between p-3 text-start text-decoration-none ${
               isActiveItem("/oabps/user/forms") ? "active" : ""
@@ -428,7 +429,7 @@ function UserSidebar({ children }) {
 
           {/* Downloadables Link */}
           <Link
-            to="/oabps/user/downloadables"
+            to={PORTAL_ROUTES.RESOURCES}
             onClick={handleLinkClick}
             className={`sidebar-submenu-item btn w-100 d-flex align-items-center justify-content-between p-3 text-start text-decoration-none ${
               isActiveItem("/oabps/user/downloadables") ? "active" : ""
@@ -497,7 +498,7 @@ function UserSidebar({ children }) {
                 <Menu size={20} />
               </button>
               <Link
-                to="/oabps/user/dashboard"
+                to={PORTAL_ROUTES.HUB}
                 className="d-flex align-items-center text-decoration-none d-none d-md-flex"
               >
                 <div
