@@ -218,7 +218,7 @@ function UserSidebar({ children }) {
           </Link>
 
           {/* Business Services Dropdown */}
-          <div className="mb-2">
+          {/* <div className="mb-2">
             <button
               onClick={() => toggleMenu("businessServices")}
               className={`sidebar-menu-item btn w-100 d-flex align-items-center justify-content-between p-3 text-start ${
@@ -320,7 +320,7 @@ function UserSidebar({ children }) {
                 </Link>
               </div>
             )}
-          </div>
+          </div> */}
 
           <Link
             to={PORTAL_ROUTES.APPLY}
@@ -331,22 +331,22 @@ function UserSidebar({ children }) {
                 : ""
             }`}
             style={{
-              borderRadius: "6px",
+              borderRadius: "8px",
               transition: "all 0.2s ease",
               backgroundColor: isActiveItem("/oabps/user/checklist") ? "#dc3545" : "transparent",
-              color: isActiveItem("/oabps/user/checklist") ? "#fff" : "#6c757d",
+              color: isActiveItem("/oabps/user/checklist") ? "#fff" : "#495057",
               border: "none",
             }}
             onMouseEnter={(e) => {
               if (!isActiveItem("/oabps/user/checklist")) {
-                e.currentTarget.style.backgroundColor = "#e9ecef";
-                e.currentTarget.style.paddingLeft = "12px";
+                e.currentTarget.style.backgroundColor = "#f8f9fa";
+                e.currentTarget.style.transform = "translateX(4px)";
               }
             }}
             onMouseLeave={(e) => {
               if (!isActiveItem("/oabps/user/checklist")) {
                 e.currentTarget.style.backgroundColor = "transparent";
-                e.currentTarget.style.paddingLeft = "8px";
+                e.currentTarget.style.transform = "translateX(0)";
               }
             }}
           >
