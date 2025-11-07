@@ -322,6 +322,37 @@ function UserSidebar({ children }) {
             )}
           </div>
 
+          <Link
+            to={PORTAL_ROUTES.APPLY}
+            onClick={handleLinkClick}
+            className={`sidebar-submenu-item btn w-100 d-flex align-items-center justify-content-between p-3 text-start text-decoration-none ${
+              isActiveItem("/oabps/user/checklist")
+                ? "active"
+                : ""
+            }`}
+            style={{
+              borderRadius: "6px",
+              transition: "all 0.2s ease",
+              backgroundColor: isActiveItem("/oabps/user/checklist") ? "#dc3545" : "transparent",
+              color: isActiveItem("/oabps/user/checklist") ? "#fff" : "#6c757d",
+              border: "none",
+            }}
+            onMouseEnter={(e) => {
+              if (!isActiveItem("/oabps/user/checklist")) {
+                e.currentTarget.style.backgroundColor = "#e9ecef";
+                e.currentTarget.style.paddingLeft = "12px";
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isActiveItem("/oabps/user/checklist")) {
+                e.currentTarget.style.backgroundColor = "transparent";
+                e.currentTarget.style.paddingLeft = "8px";
+              }
+            }}
+          >
+            New Application
+          </Link>
+
           {/* Transactions Link */}
           <Link
             to={PORTAL_ROUTES.HISTORY}
