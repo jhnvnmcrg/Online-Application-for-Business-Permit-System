@@ -418,17 +418,13 @@ function ProcessorDocuments() {
                         {categories.map((category) => (
                           <option
                             key={category.category_id}
-                            value={categories.find(cat => cat.category_id === categoryId)?.category_name}
+                            value={categories.find(cat => cat.category_id === categoryId)?.category_id}
                           >
                             {category.category_name}
                           </option>
                         ))}
                       </select>
-                      <input
-                        type="hidden"
-                        id="categoryId"
-                        value={categoryId}
-                      />
+                      
                     </div>
                     <div className="mb-3">
                       <label htmlFor="documentFile" className="form-label">
