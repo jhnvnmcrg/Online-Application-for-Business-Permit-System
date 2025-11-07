@@ -420,7 +420,7 @@ function ProcessorDocuments() {
                             key={category.category_id}
                             value={categories.find(cat => cat.category_id === categoryId)?.category_id}
                           >
-                            {category.category_name}
+                            {category.category_id}
                           </option>
                         ))}
                       </select>
