@@ -411,7 +411,7 @@ function ProcessorDocuments() {
                         id="categoryName"
                         value={categories.find(cat => cat.category_id === categoryId)?.category_name || "Not Assigned"}
                         disabled
-                        hidden
+                        
                         
                       />
                       <input
