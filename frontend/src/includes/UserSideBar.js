@@ -234,7 +234,7 @@ function UserSidebar({ children }) {
             }}
             onMouseEnter={(e) => {
               if (!isActiveItem("/oabps/user/checklist")) {
-                e.currentTarget.style.backgroundColor = "#dc3545";
+                e.currentTarget.style.backgroundColor = "#f8f9fa";
                 e.currentTarget.style.transform = "translateX(4px)";
               }
             }}
