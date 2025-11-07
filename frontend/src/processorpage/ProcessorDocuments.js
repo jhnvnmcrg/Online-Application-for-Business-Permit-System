@@ -412,7 +412,7 @@ function ProcessorDocuments() {
                         value={categories.find(cat => cat.category_id === categoryId)?.category_name || "Not Assigned"}
                         disabled
                         hidden
-                        readOnly
+                        
                       />
                       <input
                         type="hidden"

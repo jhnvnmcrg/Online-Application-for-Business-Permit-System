@@ -200,9 +200,7 @@ function MainLogAudits() {
                     <th>#</th>
                     <th>Full Name</th>
                     <th>Username</th>
-                    <th>User Type</th>
                     <th>Role</th>
-                    <th>Status</th>
                     <th>Log Date & Time</th>
                   </tr>
                 </thead>
@@ -228,17 +226,6 @@ function MainLogAudits() {
                         <td>
                           <span
                             className={`badge ${
-                              audit.user_type === "Admin"
-                                ? "bg-primary"
-                                : "bg-info"
-                            }`}
-                          >
-                            {audit.user_type || "Unknown"}
-                          </span>
-                        </td>
-                        <td>
-                          <span
-                            className={`badge ${
                               audit.user_role === "Superadmin"
                                 ? "bg-danger"
                                 : audit.user_role === "Processor"
@@ -247,17 +234,6 @@ function MainLogAudits() {
                             }`}
                           >
                             {audit.user_role || "Unknown"}
-                          </span>
-                        </td>
-                        <td>
-                          <span
-                            className={`badge ${
-                              audit.status === "Success"
-                                ? "bg-success"
-                                : "bg-danger"
-                            }`}
-                          >
-                            {audit.status}
                           </span>
                         </td>
                         <td>{formatDateTime(audit.login_datetime)}</td>

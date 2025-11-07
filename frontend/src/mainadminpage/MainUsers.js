@@ -184,11 +184,11 @@ function MainUsers() {
                     <th>#</th>
                     <th>Full Name</th>
                     <th>Email</th>
+                    <th>Username</th>
                     <th>Contact Number</th>
                     <th>Business Name</th>
                     <th>Business Address</th>
-                    <th>Username</th>
-                    <th>Status</th>
+                    
                   </tr>
                 </thead>
                 <tbody>
@@ -214,21 +214,11 @@ function MainUsers() {
                         <td>{indexOfFirstItem + index + 1}</td>
                         <td className="fw-semibold">{owner.fullname || "N/A"}</td>
                         <td>{owner.email || "N/A"}</td>
+                        <td>{owner.username || "N/A"}</td>
                         <td>{owner.phone_number || "N/A"}</td>
                         <td>{owner.business_name || "N/A"}</td>
                         <td>{owner.business_address || "N/A"}</td>
-                        <td>{owner.username || "N/A"}</td>
-                        <td>
-                          <span
-                            className={`badge ${
-                              owner.status === "Active"
-                                ? "bg-success"
-                                : "bg-secondary"
-                            }`}
-                          >
-                            {owner.status || "Active"}
-                          </span>
-                        </td>
+                        
                       </tr>
                     ))
                   )}

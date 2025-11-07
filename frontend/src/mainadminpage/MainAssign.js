@@ -204,8 +204,8 @@ function MainAssign() {
         showMessage(response.data.message || "Failed to update assignment", "error");
       }
     } catch (error) {
-      console.error("Error updating assignment:", error);
-      showMessage(error.response?.data?.error || "Error updating assignment", "error");
+      console.error("Processor already assigned to this Category:", error);
+      showMessage(error.response?.data?.error || "Processor already assigned to this Category", "error");
     } finally {
       setLoading(false);
     }
