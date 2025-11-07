@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import MainSideBar from "../includes/MainSideBar";
 import axios from "axios";
+import { SYSTEM_ROUTES } from "../config/routes";
 import {
   Eye,
   FileText,
@@ -40,7 +41,7 @@ function MainTransactions() {
 
   useEffect(() => {
     if (!user || !adminId) {
-      navigate("/oabps/main/login");
+      navigate(SYSTEM_ROUTES.AUTH);
       return;
     }
     fetchRequests();

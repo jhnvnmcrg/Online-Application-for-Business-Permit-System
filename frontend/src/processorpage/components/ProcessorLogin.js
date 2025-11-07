@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { User, Lock, Eye, EyeOff, Building } from "lucide-react";
 import { API_URL, setAuthToken } from "../../config/api";
+import { WORKFLOW_ROUTES } from "../../config/routes";
 
 function ProcessorLogin() {
   const navigate = useNavigate();
@@ -54,7 +55,7 @@ function ProcessorLogin() {
         }
 
         // Redirect to processor dashboard
-        navigate("/oabps/processor/dashboard");
+        navigate(WORKFLOW_ROUTES.HUB);
       }
     } catch (err) {
       if (err.response?.data?.message) {

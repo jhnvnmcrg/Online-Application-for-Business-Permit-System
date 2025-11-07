@@ -2,7 +2,8 @@ import { Plus, Trash, Pencil, Download, CheckCircle, XCircle, AlertCircle } from
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import ProcessorSideBar from "../includes/ProcessorSideBar";
-import axios from "axios"
+import axios from "axios";
+import { WORKFLOW_ROUTES } from "../config/routes";
 
 function ProcessorDocuments() {
   const [searchName, setSearchName] = useState("");
@@ -58,7 +59,7 @@ function ProcessorDocuments() {
 
     if (!userData) {
       // If no user data, redirect to login
-      navigate("/oabps/processor/login");
+      navigate(WORKFLOW_ROUTES.AUTH);
       return;
     }
 
@@ -70,7 +71,7 @@ function ProcessorDocuments() {
       setAdminId(user.admin_id); // Store admin ID for foreign key
     } catch (error) {
       console.error("Error parsing user data:", error);
-      navigate("/oabps/processor/login");
+      navigate(WORKFLOW_ROUTES.AUTH);
     }
   }, [navigate]);
 

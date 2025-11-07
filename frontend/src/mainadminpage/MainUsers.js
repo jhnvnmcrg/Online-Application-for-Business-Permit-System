@@ -3,6 +3,7 @@ import { Plus, Trash, Pencil, AlertCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { SYSTEM_ROUTES } from "../config/routes";
 
 function MainUsers() {
   const [searchName, setSearchName] = useState("");
@@ -26,7 +27,7 @@ function MainUsers() {
 
     if (!userData) {
       // If no user data, redirect to login
-      navigate("/oabps/main/login");
+      navigate(SYSTEM_ROUTES.AUTH);
       return;
     }
 
@@ -36,7 +37,7 @@ function MainUsers() {
       setUsername(user.username || user.fullname || "User");
     } catch (error) {
       console.error("Error parsing user data:", error);
-      navigate("/oabps/main/login");
+      navigate(SYSTEM_ROUTES.AUTH);
     }
 
     // Fetch owners

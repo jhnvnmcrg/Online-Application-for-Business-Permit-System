@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { User, Mail, Lock, Eye, EyeOff, CheckCircle, XCircle, AlertCircle, Building } from "lucide-react";
 import { API_URL } from "../../config/api";
+import { SYSTEM_ROUTES } from "../../config/routes";
 
 function MainRegister() {
 
@@ -85,7 +86,7 @@ function MainRegister() {
       if (response.data.success) {
         showMessage("Account created successfully! You can now log in.", "success");
         setTimeout(() => {
-          navigate("/oabps/main/login");
+          navigate(SYSTEM_ROUTES.AUTH);
         }, 2000);
       }
     } catch (err) {

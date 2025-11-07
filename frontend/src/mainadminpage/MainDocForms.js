@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import MainSideBar from "../includes/MainSideBar";
 import { Plus, Trash, Pencil, Eye, CheckCircle, XCircle, AlertCircle } from "lucide-react";
 import axios from "axios";
+import { SYSTEM_ROUTES } from "../config/routes";
 
 function MainDocForms() {
   const [showModal, setShowModal] = useState(false);
@@ -108,7 +109,7 @@ function MainDocForms() {
 
     if (!userData) {
       // If no user data, redirect to login
-      navigate("/oabps/main/login");
+      navigate(SYSTEM_ROUTES.AUTH);
       return;
     }
 

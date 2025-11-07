@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import MainSideBar from "../includes/MainSideBar";
 import axios from "axios";
+import { SYSTEM_ROUTES } from "../config/routes";
 
 function MainDocCategory() {
   const [showModal, setShowModal] = useState(false);
@@ -54,7 +55,7 @@ function MainDocCategory() {
 
     if (!userData) {
       // If no user data, redirect to login
-      navigate("/oabps/main/login");
+      navigate(SYSTEM_ROUTES.AUTH);
       return;
     }
 
@@ -64,7 +65,7 @@ function MainDocCategory() {
       setUsername(user.username || user.fullname || "User");
     } catch (error) {
       console.error("Error parsing user data:", error);
-      navigate("/oabps/main/login");
+      navigate(SYSTEM_ROUTES.AUTH);
     }
 
     // Fetch categories

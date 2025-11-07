@@ -14,6 +14,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import { PORTAL_ROUTES } from "../config/routes";
 
 function UserDashboard() {
   const navigate = useNavigate();
@@ -33,7 +34,7 @@ function UserDashboard() {
 
     if (!userData) {
       // If no user data, redirect to login
-      navigate("/oabps/user/login");
+      navigate(PORTAL_ROUTES.AUTH);
       return;
     }
 
@@ -48,7 +49,7 @@ function UserDashboard() {
       }
     } catch (error) {
       console.error("Error parsing user data:", error);
-      navigate("/oabps/user/login");
+      navigate(PORTAL_ROUTES.AUTH);
     }
   }, [navigate]);
 
@@ -154,7 +155,7 @@ function UserDashboard() {
         {/* Quick Action Cards */}
         <div className="row g-2 g-md-4 mb-3 mb-md-4">
           <div className="col-12 col-md-4">
-            <Link to="/oabps/user/checklist" className="text-decoration-none">
+            <Link to={PORTAL_ROUTES.APPLY} className="text-decoration-none">
               <div className="dashboard-card card bg-danger text-white h-100 hover-shadow">
                 <div className="card-body p-3 p-md-4">
                   <div className="d-flex justify-content-between align-items-start mb-3">
@@ -171,7 +172,7 @@ function UserDashboard() {
             </Link>
           </div>
           <div className="col-12 col-md-4">
-            <Link to="/oabps/user/transaction" className="text-decoration-none">
+            <Link to={PORTAL_ROUTES.HISTORY} className="text-decoration-none">
               <div className="dashboard-card card bg-danger text-white h-100 hover-shadow">
                 <div className="card-body p-3 p-md-4">
                   <div className="d-flex justify-content-between align-items-start mb-3">
@@ -188,7 +189,7 @@ function UserDashboard() {
             </Link>
           </div>
           <div className="col-12 col-md-4">
-            <Link to="/oabps/user/downloadables" className="text-decoration-none">
+            <Link to={PORTAL_ROUTES.RESOURCES} className="text-decoration-none">
               <div className="dashboard-card card bg-danger text-white h-100 hover-shadow">
                 <div className="card-body p-3 p-md-4">
                   <div className="d-flex justify-content-between align-items-start mb-3">

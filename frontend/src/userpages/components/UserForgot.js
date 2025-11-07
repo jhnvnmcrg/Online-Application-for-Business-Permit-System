@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Mail, Lock, Eye, EyeOff, Building } from "lucide-react";
 import { API_URL } from "../../config/api";
+import { PORTAL_ROUTES } from "../../config/routes";
 
 function UserForgot() {
   const navigate = useNavigate();
@@ -60,7 +61,7 @@ function UserForgot() {
         setNewPassword("");
         setConfirmPassword("");
         setTimeout(() => {
-          navigate("/oabps/user/login");
+          navigate(PORTAL_ROUTES.AUTH);
         }, 2000);
       }
     } catch (err) {

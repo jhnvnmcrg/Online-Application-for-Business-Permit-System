@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import MainSideBar from "../includes/MainSideBar";
 import axios from "axios";
+import { SYSTEM_ROUTES } from "../config/routes";
 
 function MainDocuments() {
   const [searchName, setSearchName] = useState("");
@@ -62,7 +63,7 @@ function MainDocuments() {
 
     if (!userData) {
       // If no user data, redirect to login
-      navigate("/oabps/main/login");
+      navigate(SYSTEM_ROUTES.AUTH);
       return;
     }
 
@@ -74,7 +75,7 @@ function MainDocuments() {
       setAdminId(user.admin_id); // Store admin ID for foreign key
     } catch (error) {
       console.error("Error parsing user data:", error);
-      navigate("/oabps/main/login");
+      navigate(SYSTEM_ROUTES.AUTH);
     }
 
     // Fetch categories and documents

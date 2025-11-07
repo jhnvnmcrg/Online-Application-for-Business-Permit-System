@@ -3,6 +3,7 @@ import MainSideBar from "../includes/MainSideBar";
 import { User, Lock, Save, Eye, EyeOff, AlertCircle, CheckCircle } from "lucide-react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { SYSTEM_ROUTES } from "../config/routes";
 
 function MainSettings() {
   const navigate = useNavigate();
@@ -34,7 +35,7 @@ function MainSettings() {
     const userData = localStorage.getItem("mainadmin");
 
     if (!userData) {
-      navigate("/oabps/main/login");
+      navigate(SYSTEM_ROUTES.AUTH);
       return;
     }
 
@@ -47,7 +48,7 @@ function MainSettings() {
       setUsername(user.username || "");
     } catch (error) {
       console.error("Error parsing user data:", error);
-      navigate("/oabps/main/login");
+      navigate(SYSTEM_ROUTES.AUTH);
     }
   }, [navigate]);
 

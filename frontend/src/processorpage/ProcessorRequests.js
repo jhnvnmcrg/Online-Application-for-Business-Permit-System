@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import ProcessorSideBar from "../includes/ProcessorSideBar";
 import axios from "axios";
+import { WORKFLOW_ROUTES } from "../config/routes";
 import {
   Eye,
   FileText,
@@ -70,7 +71,7 @@ function ProcessorRequests() {
     const userData = localStorage.getItem("processor");
 
     if (!userData) {
-      navigate("/oabps/processor/login");
+      navigate(WORKFLOW_ROUTES.AUTH);
       return;
     }
 
@@ -79,14 +80,14 @@ function ProcessorRequests() {
       const processorId = user.admin_id;
 
       if (!processorId) {
-        navigate("/oabps/processor/login");
+        navigate(WORKFLOW_ROUTES.AUTH);
         return;
       }
 
       fetchAssignedCategoriesAndRequests(processorId);
     } catch (error) {
       console.error("Error parsing user data:", error);
-      navigate("/oabps/processor/login");
+      navigate(WORKFLOW_ROUTES.AUTH);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

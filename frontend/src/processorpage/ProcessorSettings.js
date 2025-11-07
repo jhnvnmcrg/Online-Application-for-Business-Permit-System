@@ -3,6 +3,7 @@ import ProcessorSideBar from "../includes/ProcessorSideBar";
 import { User, Lock, Save, Eye, EyeOff, AlertCircle, CheckCircle, FolderOpen } from "lucide-react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { WORKFLOW_ROUTES } from "../config/routes";
 
 function ProcessorSettings() {
   const navigate = useNavigate();
@@ -38,7 +39,7 @@ function ProcessorSettings() {
     const userData = localStorage.getItem("processor");
 
     if (!userData) {
-      navigate("/oabps/processor/login");
+      navigate(WORKFLOW_ROUTES.AUTH);
       return;
     }
 
@@ -54,7 +55,7 @@ function ProcessorSettings() {
       fetchAssignedCategories(user.admin_id);
     } catch (error) {
       console.error("Error parsing user data:", error);
-      navigate("/oabps/processor/login");
+      navigate(WORKFLOW_ROUTES.AUTH);
     }
   }, [navigate]);
 

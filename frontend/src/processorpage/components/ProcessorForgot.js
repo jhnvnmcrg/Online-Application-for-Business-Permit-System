@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Mail, Lock, Eye, EyeOff, Building } from "lucide-react";
 import { API_URL } from "../../config/api";
+import { WORKFLOW_ROUTES } from "../../config/routes";
 
 function ProcessorForgot() {
   const navigate = useNavigate();
@@ -60,7 +61,7 @@ function ProcessorForgot() {
         setNewPassword("");
         setConfirmPassword("");
         setTimeout(() => {
-          navigate("/oabps/processor/login");
+          navigate(WORKFLOW_ROUTES.AUTH);
         }, 2000);
       }
     } catch (err) {

@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { API_URL } from "../config/api";
+import { SYSTEM_ROUTES } from "../config/routes";
 
 function MainLogAudits() {
   const [searchName, setSearchName] = useState("");
@@ -22,7 +23,7 @@ function MainLogAudits() {
 
     if (!userData) {
       // If no user data, redirect to login
-      navigate("/oabps/main/login");
+      navigate(SYSTEM_ROUTES.AUTH);
       return;
     }
 
@@ -30,7 +31,7 @@ function MainLogAudits() {
       JSON.parse(userData);
     } catch (error) {
       console.error("Error parsing user data:", error);
-      navigate("/oabps/main/login");
+      navigate(SYSTEM_ROUTES.AUTH);
     }
 
     // Fetch audits

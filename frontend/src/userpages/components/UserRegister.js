@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { User, Mail, Lock, Eye, EyeOff, CheckCircle, XCircle, AlertCircle, Building } from "lucide-react";
 import { API_URL } from "../../config/api";
+import { PORTAL_ROUTES } from "../../config/routes";
 
 function UserRegister() {
   const navigate = useNavigate();
@@ -83,7 +84,7 @@ function UserRegister() {
 
       if (response.data.success) {
         showMessage("Account created successfully! You can now log in.", "success");
-        setTimeout(() => navigate("/oabps/user/login"), 2000);
+        setTimeout(() => navigate(PORTAL_ROUTES.AUTH), 2000);
       }
     } catch (err) {
       if (err.response?.data?.message) {

@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { User, Lock, Eye, EyeOff, Undo2, Building } from "lucide-react";
 import { API_URL, setAuthToken } from "../../config/api";
+import { PORTAL_ROUTES } from "../../config/routes";
 
 function UserLogin() {
   const navigate = useNavigate();
@@ -47,7 +48,7 @@ function UserLogin() {
         }
 
         // Redirect to dashboard
-        navigate("/oabps/user/dashboard");
+        navigate(PORTAL_ROUTES.HUB);
       }
     } catch (err) {
       if (err.response?.data?.message) {

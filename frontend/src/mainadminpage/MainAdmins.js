@@ -3,6 +3,7 @@ import { Plus, Trash, Pencil, Eye, EyeOff, CheckCircle, XCircle, AlertCircle } f
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { SYSTEM_ROUTES } from "../config/routes";
 
 function MainAdmins() {
   const [searchName, setSearchName] = useState("");
@@ -58,7 +59,7 @@ function MainAdmins() {
 
     if (!userData) {
       // If no user data, redirect to login
-      navigate("/oabps/main/login");
+      navigate(SYSTEM_ROUTES.AUTH);
       return;
     }
 
@@ -70,7 +71,7 @@ function MainAdmins() {
       setCurrentAdminId(user.admin_id);
     } catch (error) {
       console.error("Error parsing user data:", error);
-      navigate("/oabps/main/login");
+      navigate(SYSTEM_ROUTES.AUTH);
     }
 
     // Fetch admins list
