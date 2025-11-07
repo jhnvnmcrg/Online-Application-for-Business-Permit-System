@@ -4,423 +4,224 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**OABP (Online Application for Business Permit)** is a full-stack web application for managing business permit applications with three distinct user portals.
+OABP (Online Application for Business Permit) is a document management and business permit tracking system with role-based access control. The system allows business owners to submit permit applications, track their status, and make payments, while administrators manage the workflow and process requests.
 
-**Stack:**
-- Frontend: React 19, React Router v7, Bootstrap 5 + Tailwind CSS
-- Backend: Express 5, Node.js (CommonJS)
-- Database: Supabase (PostgreSQL)
-- Auth: JWT with access (24h) and refresh (7d) tokens
+## Tech Stack
 
-**Deployment:**
-- Backend: https://oabs-f7by.onrender.com
-- Frontend: https://oabp-frontend.onrender.com
-- Database: Supabase hosted PostgreSQL
+**Backend:**
+- Node.js/Express (CommonJS)
+- Supabase (PostgreSQL database)
+- JWT authentication with bcrypt password hashing
+- Multer for file uploads (memory storage, 10MB limit)
 
-## Development Commands
+**Frontend:**
+- React 19 with React Router DOM
+- TailwindCSS + Bootstrap for styling
+- Axios for API requests
+- Authentication via localStorage
 
-**Frontend** (in `/frontend`):
-```bash
-npm start       # Development server on port 3000
-npm run build   # Production build
-npm test        # Run tests
-```
-
-**Backend** (in `/backend`):
-```bash
-npm start       # Start Express server on port 3000
-npm test        # No tests configured
-```
-
-## Environment Variables & Deployment
-
-### Backend Environment Variables
-
-**Required Variables:**
-
-Create a `.env` file in the `/backend` directory with the following:
-
-```bash
-# Supabase Configuration
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_KEY=your-supabase-anon-key
-
-# JWT Configuration
-JWT_SECRET=your-secret-key-for-access-tokens
-JWT_REFRESH_SECRET=your-secret-key-for-refresh-tokens
-
-# Optional - JWT Expiry (defaults shown)
-JWT_EXPIRES_IN=24h
-JWT_REFRESH_EXPIRES_IN=7d
-
-# Optional - Port (defaults to 3000)
-PORT=3000
-```
-
-**Getting Supabase Credentials:**
-1. Go to your Supabase project dashboard
-2. Navigate to Settings → API
-3. Copy the `Project URL` (SUPABASE_URL)
-4. Copy the `anon/public` key (SUPABASE_KEY)
-
-**Generating JWT Secrets:**
-Use strong random strings for JWT secrets. You can generate them using:
-```bash
-# In Node.js
-node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
-
-# Or use any secure random string generator
-```
-
-### Frontend Environment Variables
-
-**Optional Configuration:**
-
-The frontend has the API URL hardcoded in `frontend/src/config/api.js`. If you want to use environment variables instead:
-
-Create a `.env` file in the `/frontend` directory:
-
-```bash
-# API Configuration
-REACT_APP_API_URL=https://oabs-f7by.onrender.com
-
-# For local development:
-# REACT_APP_API_URL=http://localhost:3000
-```
-
-**Note:** Currently the API URL is hardcoded in `api.js` and needs manual change. To use the env variable, update `api.js`:
-```javascript
-export const API_URL = process.env.REACT_APP_API_URL || 'https://oabs-f7by.onrender.com';
-```
-
-### Deployment on Render
-
-**Backend Deployment:**
-
-1. **Create Web Service** on Render
-2. **Connect Repository** - Link your GitHub repo
-3. **Configure Build Settings:**
-   - **Root Directory:** `backend`
-   - **Build Command:** `npm install`
-   - **Start Command:** `npm start`
-   - **Environment:** Node
-
-4. **Add Environment Variables** in Render dashboard:
-   ```
-   SUPABASE_URL=https://your-project.supabase.co
-   SUPABASE_KEY=your-supabase-anon-key
-   JWT_SECRET=your-generated-secret-64-chars
-   JWT_REFRESH_SECRET=your-generated-refresh-secret-64-chars
-   JWT_EXPIRES_IN=24h
-   JWT_REFRESH_EXPIRES_IN=7d
-   PORT=3000
-   ```
-
-5. **Deploy** - Render will automatically deploy your backend
-
-**Frontend Deployment:**
-
-1. **Create Static Site** on Render
-2. **Connect Repository** - Link your GitHub repo
-3. **Configure Build Settings:**
-   - **Root Directory:** `frontend`
-   - **Build Command:** `npm install && npm run build`
-   - **Publish Directory:** `build`
-
-4. **Add Environment Variable** (if using env for API URL):
-   ```
-   REACT_APP_API_URL=https://oabs-f7by.onrender.com
-   ```
-
-5. **Update CORS** in backend after getting frontend URL:
-   - Edit `backend/server.js` CORS configuration
-   - Add your frontend URL to allowed origins:
-   ```javascript
-   cors({
-     origin: [
-       "http://localhost:3000",
-       "https://oabp-frontend.onrender.com"  // Your frontend URL
-     ],
-     credentials: true
-   })
-   ```
-
-6. **Deploy** - Render will build and deploy your frontend
-
-### Deployment Checklist
-
-**Before deploying:**
-- [ ] Set up Supabase project and run `database.sql` schema
-- [ ] Generate secure JWT secrets (64+ characters recommended)
-- [ ] Configure backend environment variables on Render
-- [ ] Deploy backend first and verify it's running
-- [ ] Update `frontend/src/config/api.js` with production backend URL
-- [ ] Add frontend URL to backend CORS configuration
-- [ ] Deploy frontend
-- [ ] Test authentication flow end-to-end
-- [ ] Verify file uploads work (10MB limit)
-- [ ] Test all three user portals (Superadmin, Processor, Owner)
-
-**Important Notes:**
-- Deploy backend **before** frontend (frontend needs backend URL)
-- Update CORS in backend when frontend URL changes
-- Keep JWT secrets secure and never commit them to git
-- Render free tier may have cold start delays (~30 seconds)
-- Database schema should be deployed to Supabase before first backend deployment
-
-## Architecture
-
-### Three-Tier Design
-
-1. **Frontend (React SPA)** - Three separate user portals + public pages
-2. **Backend (Express API)** - Monolithic server.js (4426 lines) with all routes
-3. **Database (Supabase)** - 12 tables with relational schema
-
-### User Roles & Portals
-
-The application has three distinct user types with separate portals:
-
-1. **Superadmin** (`/oabps/main/**`)
-   - Route: `/oabps/main/*`
-   - Code: `frontend/src/mainadminpage/`
-   - Sidebar: `MainSideBar.js`
-   - Storage key: `'mainadmin'`
-   - Full system access: manage categories, forms, processors, users, assignments
-
-2. **Processor** (`/oabps/processor/**`)
-   - Route: `/oabps/processor/*`
-   - Code: `frontend/src/processorpage/`
-   - Sidebar: `ProcessorSideBar.js`
-   - Storage key: None (uses `'authToken'`)
-   - Limited admin: process assigned category requests only
-
-3. **Owner/User** (`/oabps/user/**`)
-   - Route: `/oabps/user/*`
-   - Code: `frontend/src/userpages/`
-   - Sidebar: `UserSideBar.js`
-   - Storage key: `'owner'`
-   - Business owners: submit applications, upload documents, track status, make payments
-
-4. **Public** (`/`)
-   - Code: `frontend/src/homepages/`
-   - Header: `Header.js`
-   - Pages: Home, About, Requirements, Tracking, Contact Us
-
-### Key Architectural Patterns
-
-**Centralized API Configuration**
-- All API endpoints defined in `frontend/src/config/api.js`
-- Base URL: `API_URL` constant (production: Render, local: localhost:3000)
-- Endpoint paths in `API_ENDPOINTS` object
-- When adding new API routes, ALWAYS update this file
-
-**Authentication Flow**
-- JWT stored in localStorage as `'authToken'`
-- User data stored per role: `'mainadmin'` or `'owner'`
-- Middleware chain: `authenticateToken` → role-specific (requireSuperadmin, requireProcessor, requireOwner, requireAdminOrOwner)
-- Location: `backend/middleware/auth.js`, `backend/utils/jwt.js`
-
-**Backend Structure (Monolithic)**
-- ALL routes in single file: `backend/server.js` (4426 lines)
-- Pattern: route handler inline, no separate controllers/services
-- When adding routes: add inline to server.js, then update frontend's api.js
-
-**Database Schema (12 tables)**
-- Schema file: `backend/database.sql`
-- Key relationships:
-  - Admins (Superadmin/Processor) → Assigned Roles → Document Categories
-  - Owners → Requests → Request Form Data + Attachments
-  - Requests → Payments
-  - Document Categories → Form Field Groups → Document Forms → Form Field Options
-
-**Request Workflow**
-- Status flow: `Pending` → `Under Review` → `Approved`/`Rejected`/`Completed`
-- Cancellable by owner when Pending
-- Each request has unique tracking code
-- Processors only see requests for their assigned categories
-
-## Dynamic Form System
-
-The application includes a flexible form builder:
-
-**Form Field Types** (8 types):
-- TEXT, TEXTAREA, NUMBER, FILE, DATE, EMAIL
-- SELECT, RADIO, CHECKBOX (with options in separate table)
-
-**Form Structure:**
-1. **Document Categories** - Top level (e.g., "Business Permit", "Health Permit")
-2. **Form Field Groups** - Group related fields (e.g., "Business Information", "Owner Details")
-3. **Document Forms** - Individual fields with validation rules
-4. **Form Field Options** - Options for select/radio/checkbox fields
-
-**Form Submission:**
-- User fills dynamic form → stored in `Request Form Data` table
-- Files uploaded separately → `Request Attachments` table (10MB limit via multer)
-- Both linked to parent `Requests` entry
-
-**When modifying forms:**
-- Changes to form definitions affect NEW submissions only
-- Existing submissions retain original form data structure
-- Be careful with field deletions - historical data may reference them
-
-## File Structure
+## Repository Structure
 
 ```
 oabp/
-├── frontend/src/
-│   ├── config/api.js              # API configuration - UPDATE WHEN ADDING ROUTES
-│   ├── includes/                  # Shared components (sidebars, header)
-│   ├── homepages/                 # Public pages (5 pages)
-│   ├── mainadminpage/             # Superadmin portal (12 pages)
-│   ├── processorpage/             # Processor portal (6 pages)
-│   ├── userpages/                 # Owner portal (9 pages)
-│   └── App.js                     # Route configuration
-│
-└── backend/
-    ├── server.js                  # ALL API ROUTES (4426 lines)
-    ├── middleware/auth.js         # Authentication middleware
-    ├── utils/jwt.js               # JWT token utilities
-    └── database.sql               # Complete database schema
+├── backend/
+│   ├── server.js           # Monolithic API server (4480 lines, all endpoints)
+│   ├── database.sql        # Database schema reference
+│   ├── middleware/
+│   │   └── auth.js        # JWT authentication middleware
+│   └── utils/
+│       └── jwt.js         # JWT token utilities
+└── frontend/
+    └── src/
+        ├── config/
+        │   └── api.js     # Centralized API configuration
+        ├── homepages/     # Public landing pages
+        ├── mainadminpage/ # Superadmin dashboard & components
+        ├── processorpage/ # Processor dashboard & components
+        └── userpages/     # Business owner dashboard & components
 ```
 
-## Common Development Patterns
+## Development Commands
 
-**Adding a New Feature (Typical Flow):**
-1. Update database schema if needed (run in Supabase SQL editor)
-2. Add API routes to `backend/server.js` (inline handlers)
-3. Add endpoint paths to `frontend/src/config/api.js` in `API_ENDPOINTS`
-4. Create/update components in appropriate portal directory
-5. Test with appropriate user role
-
-**API Request Pattern:**
-```javascript
-// Frontend component
-import axios from 'axios';
-import { API_URL, API_ENDPOINTS, getAuthHeaders } from '../config/api';
-
-const response = await axios.get(
-  `${API_URL}${API_ENDPOINTS.CATEGORY.ALL}`,
-  { headers: getAuthHeaders() }
-);
+**Backend:**
+```bash
+cd backend
+npm start              # Runs server.js on port 3000
 ```
 
-**Backend Route Pattern:**
+**Frontend:**
+```bash
+cd frontend
+npm start              # Starts React dev server on port 3000
+npm run build          # Creates production build
+npm test               # Runs React tests
+```
+
+**Note:** Backend runs on port 3000 by default. You may need to adjust the frontend dev server port to avoid conflicts.
+
+## Architecture
+
+### User Roles & Access Levels
+
+The system has three distinct user types with separate authentication flows:
+
+1. **Superadmin** (role: 'Superadmin' in Admins table)
+   - Full system access
+   - Manages document categories, forms, processors, and assignments
+   - Routes: `/oabps/main/*`
+
+2. **Processor** (role: 'Processor' in Admins table)
+   - Assigned to specific document categories
+   - Processes requests for assigned categories
+   - Routes: `/oabps/processor/*`
+
+3. **Owner** (business owners, stored in Owners table)
+   - Submits document requests
+   - Tracks applications and makes payments
+   - Routes: `/oabps/user/*`
+
+### Authentication Flow
+
+- JWT tokens are generated on login and stored in `localStorage` (key: `authToken`)
+- Tokens include `userId`, `userType` ('Admin' or 'Owner'), and `role` (for Admins)
+- Backend middleware in [backend/middleware/auth.js](backend/middleware/auth.js) provides:
+  - `authenticateToken`: Verifies JWT
+  - `requireSuperadmin`: Restricts to Superadmins only
+  - `requireProcessor`: Restricts to Processors only
+  - `requireOwner`: Restricts to Owners only
+  - `requireAdminOrOwner`: Allows Admins or resource owner
+
+### API Architecture
+
+All API endpoints are defined in [backend/server.js](backend/server.js) (single monolithic file). Key endpoint groups:
+
+- `/api/main/*` - Superadmin authentication and management
+- `/api/processor/*` - Processor authentication and operations
+- `/api/user/*` - Owner authentication and profile management
+- `/api/category/*` - Document category management
+- `/api/document/*` - Document library management
+- `/api/form/*` - Dynamic form builder (fields, groups, options)
+- `/api/request/*` - Document request submission and tracking
+- `/api/payment/*` - Payment processing and verification
+- `/api/assignment/*` - Processor-to-category assignments
+- `/api/audit/*` - Login audit logs
+- `/api/dashboard/*` - Dashboard statistics
+
+### Frontend API Configuration
+
+The API base URL is hardcoded in [frontend/src/config/api.js](frontend/src/config/api.js):
+- Production: `https://oabs-f7by.onrender.com`
+- Local development: `http://localhost:3000` (commented out)
+
+To switch between environments, edit the `API_URL` export in this file.
+
+### Database Schema
+
+Key tables and their relationships:
+
+- **Admins**: Superadmins and Processors (with role column)
+- **Owners**: Business owners/end users
+- **Document Categories**: Types of permits/documents (e.g., Business Permit, Renewal)
+- **Document Forms**: Dynamic form fields for each category
+- **Form Field Groups**: Logical grouping of form fields
+- **Form Field Options**: Select/radio/checkbox options
+- **Documents**: Document library with file paths
+- **Requests**: User-submitted applications with tracking codes
+- **Request Form Data**: Captured form field values for each request
+- **Request Attachments**: Files attached during processing
+- **Payments**: Payment tracking with reference numbers and receipts
+- **Assigned Roles**: Links Processors to specific Document Categories
+- **Login Audits**: Tracks login attempts for both Admins and Owners
+
+Request status workflow: `Pending → Under Review → Approved/Rejected → Completed` (or `Cancelled`)
+
+### File Upload Handling
+
+Files are uploaded using `multer` with memory storage:
+- Uploaded to Supabase Storage
+- 10MB size limit per file
+- Single file endpoint: `upload.single('fieldName')`
+- Multiple files endpoint: `upload.any()`
+- File paths stored in database, actual files in Supabase Storage buckets
+
+## Key Development Patterns
+
+### Adding a New API Endpoint
+
+Add directly to [backend/server.js](backend/server.js):
 ```javascript
-// In server.js
-app.get('/api/category/all', authenticateToken, requireAdmin, async (req, res) => {
+app.post("/api/your-endpoint", async (req, res) => {
   try {
-    const { data, error } = await supabase.from('Document Categories').select('*');
-    if (error) throw error;
-    res.json({ success: true, categories: data });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    const { data, error } = await supabase
+      .from("TableName")
+      .insert([req.body]);
+
+    if (error) {
+      return res.status(500).json({ success: false, error: error.message });
+    }
+
+    res.status(200).json({ success: true, data });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 ```
 
-## Authentication & Authorization
+### Adding Authentication to an Endpoint
 
-**Middleware Chain:**
-- `authenticateToken` - Verifies JWT token is valid
-- `requireSuperadmin` - Checks userType=Admin AND role=Superadmin
-- `requireProcessor` - Checks userType=Admin AND role=Processor
-- `requireAdmin` - Checks userType=Admin (any role)
-- `requireOwner` - Checks userType=Owner
-- `requireAdminOrOwner` - Checks either Admin or Owner of resource
-
-**Token Payload:**
+Import middleware and apply:
 ```javascript
-{
-  userId: <id>,
-  userType: 'Admin' | 'Owner',
-  role: 'Superadmin' | 'Processor',  // Only for Admin userType
-  email: <email>
-}
+const { authenticateToken, requireSuperadmin } = require('./middleware/auth');
+
+app.post("/api/admin/action", authenticateToken, requireSuperadmin, async (req, res) => {
+  // req.user contains decoded JWT payload
+});
 ```
 
-**Protected Route Example:**
+### Frontend API Calls
+
+Use the centralized API configuration:
 ```javascript
-app.get('/api/admin/all', authenticateToken, requireSuperadmin, handler);
-app.get('/api/request/owner/:ownerId', authenticateToken, requireAdminOrOwner, handler);
+import { API_URL, getAuthHeaders } from '../config/api';
+import axios from 'axios';
+
+const response = await axios.get(`${API_URL}/api/endpoint`, {
+  headers: getAuthHeaders()
+});
 ```
 
-## State Management
+### Dynamic Form System
 
-**No Redux/Context API** - Simple localStorage + component state:
-- `localStorage.getItem('authToken')` - JWT token
-- `localStorage.getItem('mainadmin')` - Superadmin user object
-- `localStorage.getItem('owner')` - Owner user object
-- Component-level useState for UI state
+Document requests use a dynamic form builder:
+1. Define fields in `Document Forms` table for a category
+2. Optionally group fields using `Form Field Groups`
+3. For SELECT/RADIO/CHECKBOX fields, define options in `Form Field Options`
+4. Frontend fetches form structure via `/api/request/form-fields/:categoryId`
+5. User input is saved to `Request Form Data` table
 
-**Session Persistence:**
-- Check localStorage on page load
-- Redirect to login if missing
-- Token automatically included in headers via getAuthHeaders()
+## Environment Variables
 
-## Styling Approach
+**Backend (.env):**
+```
+SUPABASE_URL=<your-supabase-url>
+SUPABASE_KEY=<your-anon-key>
+PORT=3000
+JWT_SECRET=<your-secret>
+JWT_EXPIRES_IN=24h
+JWT_REFRESH_SECRET=<your-refresh-secret>
+JWT_REFRESH_EXPIRES_IN=7d
+BCRYPT_SALT_ROUNDS=10
+```
 
-**Mixed styling system:**
-- Bootstrap 5 classes for layout/components
-- Tailwind CSS for utility classes
-- Custom CSS in `frontend/src/style.css`
+**Frontend (.env):**
+```
+REACT_APP_API_URL=http://localhost:3000
+```
 
-**When adding styles:**
-- Prefer Bootstrap classes for existing components
-- Use Tailwind for quick utilities (spacing, colors)
-- Add custom CSS only when necessary
+**Important:** The backend `.env` file is tracked in git. In production, ensure secrets are properly secured.
 
-## File Uploads
+## Deployment
 
-**Configuration (backend):**
-- Multer with memory storage (not disk)
-- 10MB file size limit
-- Files typically converted to base64 or forwarded to storage
-- Location: Configured inline in server.js multer setup
-
-**Common upload scenarios:**
-- Request attachments (proof of documents)
-- Payment proof uploads
-- Profile images
-
-## Important Notes
-
-**Backend Monolith:**
-- The entire backend is in `server.js` (4426 lines)
-- No service layer, no controllers - all inline
-- When reading backend code, CMD+F in server.js for route paths
-- Consider modularizing if adding major features
-
-**Supabase Direct Access:**
-- Backend uses Supabase client directly (no ORM)
-- Raw SQL-like queries: `supabase.from('Table').select('*')`
-- Foreign key relationships enforced at database level
-- Refer to database.sql for table structure
-
-**No TypeScript:**
-- Pure JavaScript throughout
-- No type checking - validate inputs carefully
-- PropTypes not used
-
-**Deployed Backend First:**
-- Frontend points to production backend by default
-- To use local backend: change API_URL in frontend/src/config/api.js
-- Backend on Render must be updated before frontend changes that depend on new routes
-
-## Database Relationships
-
-Key foreign keys to remember:
-- `Assigned Roles.admin_id` → `Admins.admin_id`
-- `Assigned Roles.category_id` → `Document Categories.category_id`
-- `Document Forms.category_id` → `Document Categories.category_id`
-- `Requests.owner_id` → `Owners.owner_id`
-- `Requests.category_id` → `Document Categories.category_id`
-- `Request Form Data.request_id` → `Requests.request_id`
-- `Request Attachments.request_id` → `Requests.request_id`
-- `Payments.request_id` → `Requests.request_id`
-
-## Testing
-
-- No test suite currently configured
-- Backend package.json has placeholder test script
-- Frontend has React Testing Library installed but no tests written
-- Manual testing required for all changes
+- Backend is deployed to Render: `https://oabs-f7by.onrender.com`
+- Frontend is deployed to Render: `https://oabp-frontend.onrender.com`
+- CORS is configured in server.js to allow both localhost:3000 and the production frontend URL
