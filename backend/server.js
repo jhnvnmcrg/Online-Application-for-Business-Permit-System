@@ -14,6 +14,7 @@ app.use(
     origin: [
       "http://localhost:3000",
       "https://oabp-frontend.onrender.com",
+      "https://oabp-business-permit-sytem.onrender.com",
     ],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
