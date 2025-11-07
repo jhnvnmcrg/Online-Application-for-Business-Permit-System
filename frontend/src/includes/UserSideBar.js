@@ -216,112 +216,7 @@ function UserSidebar({ children }) {
               {sidebarOpen && <span className="ms-3 fw-medium">Dashboard</span>}
             </div>
           </Link>
-
-          {/* Business Services Dropdown */}
-          {/* <div className="mb-2">
-            <button
-              onClick={() => toggleMenu("businessServices")}
-              className={`sidebar-menu-item btn w-100 d-flex align-items-center justify-content-between p-3 text-start ${
-                isBusinessServicesActive() ? "active" : ""
-              }`}
-              style={{
-                borderRadius: "8px",
-                transition: "all 0.2s ease",
-                backgroundColor: isBusinessServicesActive() ? "#dc3545" : "transparent",
-                color: isBusinessServicesActive() ? "#fff" : "#495057",
-                border: "none",
-              }}
-              onMouseEnter={(e) => {
-                if (!isBusinessServicesActive()) {
-                  e.currentTarget.style.backgroundColor = "#f8f9fa";
-                  e.currentTarget.style.transform = "translateX(4px)";
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!isBusinessServicesActive()) {
-                  e.currentTarget.style.backgroundColor = "transparent";
-                  e.currentTarget.style.transform = "translateX(0)";
-                }
-              }}
-            >
-              <div className="d-flex align-items-center">
-                <FileText size={20} />
-                {sidebarOpen && (
-                  <span className="ms-3 fw-medium">Business Services</span>
-                )}
-              </div>
-              {sidebarOpen &&
-                (expandedMenus["businessServices"] ? (
-                  <ChevronDown size={16} />
-                ) : (
-                  <ChevronRight size={16} />
-                ))}
-            </button>
-
-            {sidebarOpen && expandedMenus["businessServices"] && (
-              <div className="ms-4 mt-1">
-                <Link
-                  to={PORTAL_ROUTES.APPLY}
-                  onClick={handleLinkClick}
-                  className={`sidebar-submenu-item btn w-100 text-start p-2 small text-decoration-none ${
-                    isActiveItem("/oabps/user/checklist")
-                      ? "active"
-                      : ""
-                  }`}
-                  style={{
-                    borderRadius: "6px",
-                    transition: "all 0.2s ease",
-                    backgroundColor: isActiveItem("/oabps/user/checklist") ? "#dc3545" : "transparent",
-                    color: isActiveItem("/oabps/user/checklist") ? "#fff" : "#6c757d",
-                    border: "none",
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!isActiveItem("/oabps/user/checklist")) {
-                      e.currentTarget.style.backgroundColor = "#e9ecef";
-                      e.currentTarget.style.paddingLeft = "12px";
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isActiveItem("/oabps/user/checklist")) {
-                      e.currentTarget.style.backgroundColor = "transparent";
-                      e.currentTarget.style.paddingLeft = "8px";
-                    }
-                  }}
-                >
-                  New Application
-                </Link>
-                <Link
-                  to={PORTAL_ROUTES.RENEW}
-                  onClick={handleLinkClick}
-                  className={`sidebar-submenu-item btn w-100 text-start p-2 small text-decoration-none ${
-                    isActiveItem("/oabps/user/renewal") ? "active" : ""
-                  }`}
-                  style={{
-                    borderRadius: "6px",
-                    transition: "all 0.2s ease",
-                    backgroundColor: isActiveItem("/oabps/user/renewal") ? "#dc3545" : "transparent",
-                    color: isActiveItem("/oabps/user/renewal") ? "#fff" : "#6c757d",
-                    border: "none",
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!isActiveItem("/oabps/user/renewal")) {
-                      e.currentTarget.style.backgroundColor = "#e9ecef";
-                      e.currentTarget.style.paddingLeft = "12px";
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isActiveItem("/oabps/user/renewal")) {
-                      e.currentTarget.style.backgroundColor = "transparent";
-                      e.currentTarget.style.paddingLeft = "8px";
-                    }
-                  }}
-                >
-                  Renewal Services
-                </Link>
-              </div>
-            )}
-          </div> */}
-
+          {/* New Application Link */}
           <Link
             to={PORTAL_ROUTES.APPLY}
             onClick={handleLinkClick}
@@ -339,7 +234,7 @@ function UserSidebar({ children }) {
             }}
             onMouseEnter={(e) => {
               if (!isActiveItem("/oabps/user/checklist")) {
-                e.currentTarget.style.backgroundColor = "#f8f9fa";
+                e.currentTarget.style.backgroundColor = "#dc3545";
                 e.currentTarget.style.transform = "translateX(4px)";
               }
             }}
