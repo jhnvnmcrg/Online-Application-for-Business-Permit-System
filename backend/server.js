@@ -13,6 +13,7 @@ app.use(
   cors({
     origin: [
       "http://localhost:3000",
+      "http://localhost:10000",
       "https://oabp-frontend.onrender.com",
       "https://oabp-business-permit-sytem.onrender.com",
     ],
