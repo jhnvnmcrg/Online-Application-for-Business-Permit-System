@@ -350,7 +350,12 @@ function UserSidebar({ children }) {
               }
             }}
           >
-            New Application
+           <div className="d-flex align-items-center">
+              <FileText size={20} />
+              {sidebarOpen && (
+                <span className="ms-3 fw-medium">New Application</span>
+              )}
+            </div>
           </Link>
 
           {/* Transactions Link */}
