@@ -414,6 +414,24 @@ function ProcessorDocuments() {
                         
                         
                       />
+                      <select
+                        className="form-select"
+                        id="categoryName"
+                        value={categoryId}
+                        onChange={(e) => setCategoryId(e.target.value)}
+                        required
+                        disabled={loading}
+                      >
+                        <option value="">Search Category</option>
+                        {categories.map((category) => (
+                          <option
+                            key={category.category_id}
+                            value={categories.find(cat => cat.category_id === categoryId)?.category_name || "Not Assigned"}
+                          >
+                            {category.category_name}
+                          </option>
+                        ))}
+                      </select>
                       <input
                         type="hidden"
                         id="categoryId"
