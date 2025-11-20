@@ -324,7 +324,7 @@ function UserSidebar({ children }) {
           </Link>
 
           {/* Application Forms Link */}
-          <Link
+          {/* <Link
             to={PORTAL_ROUTES.TEMPLATES}
             onClick={handleLinkClick}
             className={`sidebar-submenu-item btn w-100 d-flex align-items-center justify-content-between p-3 text-start text-decoration-none ${
@@ -356,7 +356,7 @@ function UserSidebar({ children }) {
                 <span className="ms-3 fw-medium">Application Forms</span>
               )}
             </div>
-          </Link>
+          </Link> */}
 
           {/* Downloadables Link */}
           <Link

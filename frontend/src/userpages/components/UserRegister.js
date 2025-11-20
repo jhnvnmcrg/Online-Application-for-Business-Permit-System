@@ -1,7 +1,17 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { User, Mail, Lock, Eye, EyeOff, CheckCircle, XCircle, AlertCircle, Building } from "lucide-react";
+import {
+  User,
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  Building,
+} from "lucide-react";
 import { API_URL } from "../../config/api";
 import { PORTAL_ROUTES } from "../../config/routes";
 
@@ -57,16 +67,37 @@ function UserRegister() {
       return;
     }
 
-    if (formData.password !== formData.retypePassword) {
-      setError("Passwords do not match!");
+    // Full name should have at least 2 words
+    if (!/^[A-Za-z]+(?:\s+[A-Za-z]+)+$/.test(formData.fullname)) {
+      setError("Please enter your full name");
       return;
     }
 
+    // Username validation: no spaces, min 4 characters
+    if (!/^[A-Za-z0-9_]{4,}$/.test(formData.username)) {
+      setError("Username must be at least 4 characters with no spaces.");
+      return;
+    }
+
+    // Email format validation
+    if (!/^\S+@\S+\.\S+$/.test(formData.email)) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+
+    // Password minimum length
     if (formData.password.length < 6) {
       setError("Password must be at least 6 characters long!");
       return;
     }
 
+    // Matching passwords
+    if (formData.password !== formData.retypePassword) {
+      setError("Passwords do not match!");
+      return;
+    }
+
+    // Privacy policy
     if (!agreeToPolicy) {
       setError("Please agree to the Privacy Policy to continue.");
       return;
@@ -83,7 +114,10 @@ function UserRegister() {
       });
 
       if (response.data.success) {
-        showMessage("Account created successfully! You can now log in.", "success");
+        showMessage(
+          "Account created successfully! You can now log in.",
+          "success"
+        );
         setTimeout(() => navigate(PORTAL_ROUTES.AUTH), 2000);
       }
     } catch (err) {
@@ -106,17 +140,24 @@ function UserRegister() {
         <div className="position-relative d-flex align-items-center justify-content-center min-vh-100 px-4 login-container">
           <div className="card shadow-lg login-card">
             <div className="card-body p-4">
-              
               <div className="text-center mb-4">
                 {/* Logo */}
                 <div className="d-flex justify-content-center mb-3">
                   <div
                     className="d-flex align-items-center justify-content-center rounded-circle"
-                    style={{ width: "80px", height: "80px", backgroundColor: "#fbbf24" }}
+                    style={{
+                      width: "80px",
+                      height: "80px",
+                      backgroundColor: "#fbbf24",
+                    }}
                   >
                     <div
                       className="d-flex align-items-center justify-content-center rounded-circle"
-                      style={{ width: "52px", height: "52px", backgroundColor: "#dc3545" }}
+                      style={{
+                        width: "52px",
+                        height: "52px",
+                        backgroundColor: "#dc3545",
+                      }}
                     >
                       <Building size={28} className="text-white" />
                     </div>
@@ -239,7 +280,11 @@ function UserRegister() {
                       onClick={() => setShowRetypePassword(!showRetypePassword)}
                       disabled={isLoading}
                     >
-                      {showRetypePassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                      {showRetypePassword ? (
+                        <EyeOff size={20} />
+                      ) : (
+                        <Eye size={20} />
+                      )}
                     </button>
                   </div>
                 </div>
@@ -265,7 +310,10 @@ function UserRegister() {
                       style={{ color: "#dc3545" }}
                       onClick={(e) => {
                         e.preventDefault();
-                        showMessage("Privacy Policy would be displayed here.", "info");
+                        showMessage(
+                          "Privacy Policy would be displayed here.",
+                          "info"
+                        );
                       }}
                     >
                       PRIVACY POLICY

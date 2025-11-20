@@ -160,7 +160,7 @@ function MainAssign() {
       }
     } catch (error) {
       console.error("Error adding assignment:", error);
-      showMessage(error.response?.data?.error || "Error adding assignment", "error");
+      showMessage(error.response?.data?.error || "Already Assigned", "error");
     } finally {
       setLoading(false);
     }

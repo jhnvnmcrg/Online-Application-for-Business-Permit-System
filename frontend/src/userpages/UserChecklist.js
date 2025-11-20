@@ -29,6 +29,117 @@ function UserChecklist() {
     fetchCategories();
   }, []);
 
+  const validateForm = () => {
+  const errors = {};
+
+  formFields.forEach((field) => {
+    const value = formData[field.field_name];
+    const file = fileFields[field.field_name];
+
+    // Required field check
+    if (field.is_required) {
+      if (field.field_type === "FILE") {
+        if (!file) {
+          errors[field.field_name] = `${field.field_name} is required`;
+        } else {
+          // File size validation (5MB limit)
+          if (file.size > 5 * 1024 * 1024) {
+            errors[field.field_name] = "File size must not exceed 5MB";
+          }
+          
+          // File type validation
+          const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
+          if (!allowedTypes.includes(file.type)) {
+            errors[field.field_name] = "Only PDF, JPG, and PNG files are allowed";
+          }
+        }
+      } else if (!value || value.trim() === "") {
+        errors[field.field_name] = `${field.field_name} is required`;
+      }
+    }
+
+    // Additional validations for non-file fields
+    if (value && value.trim() !== "") {
+      // Email validation
+      if (field.field_type === "EMAIL" || field.field_name.toLowerCase().includes('email')) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(value)) {
+          errors[field.field_name] = "Please enter a valid email address";
+        }
+      }
+
+      // Phone number validation (Philippine format)
+      if (field.field_type === "TEXT" && field.field_name.toLowerCase().includes('phone')) {
+        const phoneRegex = /^(09|\+639)\d{9}$/;
+        if (!phoneRegex.test(value.replace(/[\s-]/g, ''))) {
+          errors[field.field_name] = "Please enter a valid Philippine phone number (e.g., 09123456789)";
+        }
+      }
+
+      // Number validation
+      if (field.field_type === "NUMBER") {
+        const numValue = parseFloat(value);
+        if (isNaN(numValue)) {
+          errors[field.field_name] = "Please enter a valid number";
+        }
+        if (field.validation_rule) {
+          try {
+            const rule = JSON.parse(field.validation_rule);
+            if (rule.min !== undefined && numValue < rule.min) {
+              errors[field.field_name] = `Value must be at least ${rule.min}`;
+            }
+            if (rule.max !== undefined && numValue > rule.max) {
+              errors[field.field_name] = `Value must not exceed ${rule.max}`;
+            }
+          } catch (e) {
+            console.error("Invalid validation rule:", e);
+          }
+        }
+      }
+
+      // Date validation
+      if (field.field_type === "DATE") {
+        const dateValue = new Date(value);
+        if (isNaN(dateValue.getTime())) {
+          errors[field.field_name] = "Please enter a valid date";
+        }
+        // Check if date is not in the future (if applicable)
+        if (field.field_name.toLowerCase().includes('birth') || 
+            field.field_name.toLowerCase().includes('registration')) {
+          if (dateValue > new Date()) {
+            errors[field.field_name] = "Date cannot be in the future";
+          }
+        }
+      }
+
+      // Custom validation rules
+      if (field.validation_rule) {
+        try {
+          const rule = JSON.parse(field.validation_rule);
+          if (rule.pattern) {
+            const regex = new RegExp(rule.pattern);
+            if (!regex.test(value)) {
+              errors[field.field_name] = rule.message || `Invalid format for ${field.field_name}`;
+            }
+          }
+          // Text length validation
+          if (rule.minLength && value.length < rule.minLength) {
+            errors[field.field_name] = `Must be at least ${rule.minLength} characters`;
+          }
+          if (rule.maxLength && value.length > rule.maxLength) {
+            errors[field.field_name] = `Must not exceed ${rule.maxLength} characters`;
+          }
+        } catch (e) {
+          console.error("Invalid validation rule:", e);
+        }
+      }
+    }
+  });
+
+  setValidationErrors(errors);
+  return Object.keys(errors).length === 0;
+};
+
   const fetchCategories = async () => {
     try {
       setLoading(true);
@@ -108,57 +219,57 @@ function UserChecklist() {
   };
 
   // Validate form based on field requirements and validation rules
-  const validateForm = () => {
-    const errors = {};
+  // const validateForm = () => {
+  //   const errors = {};
 
-    formFields.forEach((field) => {
-      const value = formData[field.field_name];
-      const file = fileFields[field.field_name];
+  //   formFields.forEach((field) => {
+  //     const value = formData[field.field_name];
+  //     const file = fileFields[field.field_name];
 
-      // Check if required field is empty
-      if (field.is_required) {
-        if (field.field_type === "FILE") {
-          if (!file) {
-            errors[field.field_name] = `${field.field_name} is required`;
-          }
-        } else if (!value || value.trim() === "") {
-          errors[field.field_name] = `${field.field_name} is required`;
-        }
-      }
+  //     // Check if required field is empty
+  //     if (field.is_required) {
+  //       if (field.field_type === "FILE") {
+  //         if (!file) {
+  //           errors[field.field_name] = `${field.field_name} is required`;
+  //         }
+  //       } else if (!value || value.trim() === "") {
+  //         errors[field.field_name] = `${field.field_name} is required`;
+  //       }
+  //     }
 
-      // Apply validation rules if present
-      if (value && field.validation_rule) {
-        try {
-          const rule = JSON.parse(field.validation_rule);
+  //     // Apply validation rules if present
+  //     if (value && field.validation_rule) {
+  //       try {
+  //         const rule = JSON.parse(field.validation_rule);
 
-          // Validate min/max for numbers
-          if (field.field_type === "NUMBER") {
-            const numValue = parseFloat(value);
-            if (rule.min !== undefined && numValue < rule.min) {
-              errors[field.field_name] = `Value must be at least ${rule.min}`;
-            }
-            if (rule.max !== undefined && numValue > rule.max) {
-              errors[field.field_name] = `Value must not exceed ${rule.max}`;
-            }
-          }
+  //         // Validate min/max for numbers
+  //         if (field.field_type === "NUMBER") {
+  //           const numValue = parseFloat(value);
+  //           if (rule.min !== undefined && numValue < rule.min) {
+  //             errors[field.field_name] = `Value must be at least ${rule.min}`;
+  //           }
+  //           if (rule.max !== undefined && numValue > rule.max) {
+  //             errors[field.field_name] = `Value must not exceed ${rule.max}`;
+  //           }
+  //         }
 
-          // Validate pattern (regex)
-          if (rule.pattern) {
-            const regex = new RegExp(rule.pattern);
-            if (!regex.test(value)) {
-              errors[field.field_name] =
-                rule.message || `Invalid format for ${field.field_name}`;
-            }
-          }
-        } catch (e) {
-          console.error("Invalid validation rule:", e);
-        }
-      }
-    });
+  //         // Validate pattern (regex)
+  //         if (rule.pattern) {
+  //           const regex = new RegExp(rule.pattern);
+  //           if (!regex.test(value)) {
+  //             errors[field.field_name] =
+  //               rule.message || `Invalid format for ${field.field_name}`;
+  //           }
+  //         }
+  //       } catch (e) {
+  //         console.error("Invalid validation rule:", e);
+  //       }
+  //     }
+  //   });
 
-    setValidationErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
+  //   setValidationErrors(errors);
+  //   return Object.keys(errors).length === 0;
+  // };
 
   // Submit the form
   const handleSubmit = async (e) => {
