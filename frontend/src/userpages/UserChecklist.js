@@ -48,9 +48,9 @@ function UserChecklist() {
           }
           
           // File type validation
-          const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
+          const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
           if (!allowedTypes.includes(file.type)) {
-            errors[field.field_name] = "Only PDF, JPG, and PNG files are allowed";
+            errors[field.field_name] = "Only WORD, WORDX, PDF, JPG, and PNG files are allowed";
           }
         }
       } else if (!value || value.trim() === "") {
@@ -277,7 +277,7 @@ function UserChecklist() {
 
     // Validate form
     if (!validateForm()) {
-      setError("Please fix the validation errors before submitting");
+      setError("Please fill required field before submitting");
       return;
     }
 
